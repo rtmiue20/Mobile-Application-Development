@@ -4,14 +4,12 @@ plugins {
 
 android {
     namespace = "vn.edu.ueh.rtmiue20.project"
-    compileSdk {
-        version = release(37)
-    }
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "vn.edu.ueh.rtmiue20.project"
-        minSdk = 35
-        targetSdk = 37
+        minSdk = 26
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 

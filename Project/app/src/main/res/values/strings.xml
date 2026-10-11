@@ -1,3 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Project</string>
+    <string name="app_name">BookShare</string>
+    <string name="welcome_title">Mừng bạn trở lại với\nBookShare!</string>
+    <string name="welcome_subtitle">Tiếp tục hành trình trao tặng và lan tỏa tri thức cùng cộng đồng yêu sách.</string>
+    <string name="label_email_username">Email hoặc Tên đăng nhập</string>
+    <string name="hint_email_username">Nhập email hoặc tên đăng nhập</string>
+    <string name="label_password">Mật khẩu</string>
+    <string name="hint_password">Nhập mật khẩu</string>
+    <string name="remember_me">Ghi nhớ đăng nhập</string>
+    <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="btn_login">Đăng nhập</string>
+    <string name="or_continue_with">hoặc tiếp tục với</string>
+    <string name="btn_google_login">Đăng nhập bằng Google</string>
+    <string name="no_account_prefix">Bạn chưa có tài khoản? </string>
+    <string name="register_now">Đăng ký ngay</string>
+    <string name="community_guidelines">Bằng việc đăng nhập, bạn đồng ý với Quy chuẩn Cộng đồng của BookShare.</string>
+
+    <!-- Strings for Register Screen -->
+    <string name="welcome_register_badge">CỘNG ĐỒNG BẠN ĐỌC</string>
+    <string name="welcome_register_title">Gia nhập BookShare!</string>
+    <string name="welcome_register_subtitle">Cùng hàng ngàn bạn đọc trao tặng, trao đổi và lan tỏa tri thức mỗi ngày.</string>
+    <string name="label_fullname">Họ và tên</string>
+    <string name="hint_fullname">Nguyễn Văn A</string>
+    <string name="label_email">Địa chỉ Email</string>
+    <string name="hint_email">Nhập địa chỉ email</string>
+    <string name="label_password_hint_right">Tối thiểu 8 ký tự</string>
+    <string name="hint_register_password">Tối thiểu 8 ký tự</string>
+    <string name="label_confirm_password">Xác nhận mật khẩu</string>
+    <string name="hint_confirm_password">Nhập lại mật khẩu</string>
+    <string name="agree_terms">Tôi đồng ý với Điều khoản dịch vụ và Quy chuẩn cộng đồng của BookShare.</string>
+    <string name="btn_register">Đăng ký tài khoản</string>
+    <string name="or_register_with">HOẶC ĐĂNG KÝ NHANH VỚI</string>
+    <string name="btn_google_register">Đăng ký bằng Google</string>
+    <string name="trust_stamp">Cộng đồng tin cậy - Bảo vệ thông tin độc giả</string>
+    <string name="already_has_account_prefix">Đã có tài khoản? </string>
+    <string name="login_now">Đăng nhập ngay</string>
+
+    <!-- Strings for Forgot Password Screen -->
+    <string name="title_forgot_password">Quên mật khẩu?</string>
+    <string name="desc_forgot_password">Đừng lo lắng! Vui lòng nhập địa chỉ email đã đăng ký với BookShare. Chúng tôi sẽ gửi liên kết xác thực đặt lại mật khẩu cho bạn ngay tức thì.</string>
+    <string name="label_account_email">Email tài khoản</string>
+    <string name="hint_recovery_email">Nhập email khôi phục</string>
+    <string name="info_email_access">Đảm bảo bạn có quyền truy cập vào hòm thư này.</string>
+    <string name="btn_send_recovery">Gửi liên kết đặt lại mật khẩu</string>
+    <string name="btn_sending">Đang gửi...</string>
+    <string name="btn_resend_recovery">Đã gửi lại liên kết</string>
+    <string name="title_tip">Mẹo nhỏ cho bạn</string>
+    <string name="desc_tip">Kiểm tra cả thư mục Spam, Quảng cáo hoặc Thùng rác nếu bạn không thấy email xuất hiện trong hộp thư đến sau vài phút.</string>
+    <string name="title_success">Đã gửi thành công!</string>
+    <string name="desc_success">Hệ thống vừa gửi hướng dẫn khôi phục mật khẩu. Vui lòng mở email để tiếp tục.</string>
+    <string name="btn_back_to_login">Quay lại Đăng nhập</string>
 </resources>
