@@ -1,6 +1,7 @@
 package vn.edu.ueh.rtmiue20.project;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -19,13 +20,25 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseUser;
+
 import java.util.Objects;
+
+import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -46,6 +59,10 @@ public class RegisterActivity extends AppCompatActivity {
     private boolean isPasswordVisible = false;
     private boolean isConfirmPasswordVisible = false;
 
+    private AuthRepository authRepository;
+    private GoogleSignInClient googleSignInClient;
+    private ActivityResultLauncher<Intent> googleSignInLauncher;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,7 +75,10 @@ public class RegisterActivity extends AppCompatActivity {
             return insets;
         });
 
+        authRepository = AuthRepository.getInstance();
+
         initViews();
+        setupGoogleSignIn();
         setupFormattedTexts();
         setupListeners();
     }
@@ -76,10 +96,35 @@ public class RegisterActivity extends AppCompatActivity {
         tvLoginNow = findViewById(R.id.tvLoginNow);
     }
 
+    private void setupGoogleSignIn() {
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+
+        googleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        googleSignInLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                        try {
+                            GoogleSignInAccount account = task.getResult(ApiException.class);
+                            if (account != null && account.getIdToken() != null) {
+                                performGoogleAuth(account.getIdToken());
+                            }
+                        } catch (ApiException e) {
+                            Toast.makeText(this, "Đăng ký Google thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+        );
+    }
+
     private void setupFormattedTexts() {
         int greenColor = ContextCompat.getColor(this, R.color.secondary_green);
 
-        // Format Login Link Footer Text
         String prefix = "Đã có tài khoản? ";
         String loginNowStr = getString(R.string.login_now);
         String fullLoginText = prefix + loginNowStr;
@@ -96,19 +141,16 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        // Password toggles
         btnToggleRegisterPassword.setOnClickListener(v -> togglePasswordVisibility());
         btnToggleConfirmPassword.setOnClickListener(v -> toggleConfirmPasswordVisibility());
 
-        // Register action
         btnRegisterAccount.setOnClickListener(v -> handleRegistration());
 
-        // Google register action
-        btnGoogleRegister.setOnClickListener(v -> 
-            Toast.makeText(this, "Đang đăng ký bằng tài khoản Google...", Toast.LENGTH_SHORT).show()
-        );
+        btnGoogleRegister.setOnClickListener(v -> {
+            Intent signInIntent = googleSignInClient.getSignInIntent();
+            googleSignInLauncher.launch(signInIntent);
+        });
 
-        // Login Link action -> Finish activity to return to MainActivity
         tvLoginNow.setOnClickListener(v -> finish());
     }
 
@@ -173,13 +215,47 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        // Save registered email to SharedPreferences so Login screen can pre-fill
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit().putString(KEY_IDENTIFIER, email).apply();
+        btnRegisterAccount.setEnabled(false);
+        Toast.makeText(this, "Đang khởi tạo tài khoản...", Toast.LENGTH_SHORT).show();
 
-        Toast.makeText(this, "Đăng ký tài khoản thành công!\nChào mừng " + fullName + " đến với BookShare", Toast.LENGTH_LONG).show();
+        authRepository.registerWithEmail(email, password, fullName, new AuthRepository.AuthCallback() {
+            @Override
+            public void onSuccess(FirebaseUser user) {
+                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                prefs.edit().putString(KEY_IDENTIFIER, email).apply();
 
-        // Finish activity and return to Login
-        finish();
+                Toast.makeText(RegisterActivity.this, "Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show();
+
+                Intent intent = new Intent(RegisterActivity.this, ProfileActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                btnRegisterAccount.setEnabled(true);
+                Toast.makeText(RegisterActivity.this, "Lỗi đăng ký: " + errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void performGoogleAuth(String idToken) {
+        Toast.makeText(this, "Đang xác thực bằng tài khoản Google...", Toast.LENGTH_SHORT).show();
+        authRepository.loginWithGoogle(idToken, new AuthRepository.AuthCallback() {
+            @Override
+            public void onSuccess(FirebaseUser user) {
+                Toast.makeText(RegisterActivity.this, "Đăng ký Google thành công!", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(RegisterActivity.this, ProfileActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                Toast.makeText(RegisterActivity.this, "Lỗi đăng ký Google: " + errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 }

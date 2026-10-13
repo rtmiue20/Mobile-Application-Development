@@ -20,11 +20,23 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseUser;
+
+import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,6 +55,9 @@ public class MainActivity extends AppCompatActivity {
     private View layoutCommunityGuidelines;
 
     private boolean isPasswordVisible = false;
+    private AuthRepository authRepository;
+    private GoogleSignInClient googleSignInClient;
+    private ActivityResultLauncher<Intent> googleSignInLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +71,16 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        authRepository = AuthRepository.getInstance();
+
+        // Check if user is already logged in
+        if (authRepository.isLoggedIn()) {
+            navigateToProfile();
+            return;
+        }
+
         initViews();
+        setupGoogleSignIn();
         setupRegisterText();
         loadSavedCredentials();
         setupListeners();
@@ -65,6 +89,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (authRepository.isLoggedIn()) {
+            navigateToProfile();
+            return;
+        }
         loadSavedCredentials();
     }
 
@@ -78,6 +106,32 @@ public class MainActivity extends AppCompatActivity {
         btnGoogleLogin = findViewById(R.id.btnGoogleLogin);
         tvRegisterNow = findViewById(R.id.tvRegisterNow);
         layoutCommunityGuidelines = findViewById(R.id.layoutCommunityGuidelines);
+    }
+
+    private void setupGoogleSignIn() {
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+
+        googleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        googleSignInLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                        try {
+                            GoogleSignInAccount account = task.getResult(ApiException.class);
+                            if (account != null && account.getIdToken() != null) {
+                                performGoogleAuth(account.getIdToken());
+                            }
+                        } catch (ApiException e) {
+                            Toast.makeText(this, "Đăng nhập Google thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+        );
     }
 
     private void setupRegisterText() {
@@ -110,18 +164,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        // Toggle Ẩn/Hiện Mật khẩu
         btnTogglePassword.setOnClickListener(v -> togglePasswordVisibility());
-
-        // Đăng nhập
         btnLogin.setOnClickListener(v -> handleLogin());
 
-        // Đăng nhập bằng Google
-        btnGoogleLogin.setOnClickListener(v -> 
-            Toast.makeText(this, "Đang đăng nhập bằng Google...", Toast.LENGTH_SHORT).show()
-        );
+        btnGoogleLogin.setOnClickListener(v -> {
+            Intent signInIntent = googleSignInClient.getSignInIntent();
+            googleSignInLauncher.launch(signInIntent);
+        });
 
-        // Quên mật khẩu
         tvForgotPassword.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, ForgotPasswordActivity.class);
             String currentInput = etIdentifier.getText().toString().trim();
@@ -131,13 +181,11 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // Chuyển sang Đăng ký
         tvRegisterNow.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, RegisterActivity.class);
             startActivity(intent);
         });
 
-        // Quy chuẩn Cộng đồng
         layoutCommunityGuidelines.setOnClickListener(v -> 
             Toast.makeText(this, "Quy chuẩn Cộng đồng BookShare", Toast.LENGTH_SHORT).show()
         );
@@ -161,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
         String password = etPassword.getText().toString().trim();
 
         if (identifier.isEmpty()) {
-            etIdentifier.setError("Vui lòng nhập Email hoặc Tên đăng nhập");
+            etIdentifier.setError("Vui lòng nhập Email tài khoản");
             etIdentifier.requestFocus();
             return;
         }
@@ -172,6 +220,42 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        btnLogin.setEnabled(false);
+        Toast.makeText(this, "Đang xử lý đăng nhập...", Toast.LENGTH_SHORT).show();
+
+        authRepository.loginWithEmail(identifier, password, new AuthRepository.AuthCallback() {
+            @Override
+            public void onSuccess(FirebaseUser user) {
+                saveRememberMe(identifier);
+                Toast.makeText(MainActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
+                navigateToProfile();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                btnLogin.setEnabled(true);
+                Toast.makeText(MainActivity.this, "Lỗi đăng nhập: " + errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void performGoogleAuth(String idToken) {
+        Toast.makeText(this, "Đang xác thực bằng tài khoản Google...", Toast.LENGTH_SHORT).show();
+        authRepository.loginWithGoogle(idToken, new AuthRepository.AuthCallback() {
+            @Override
+            public void onSuccess(FirebaseUser user) {
+                Toast.makeText(MainActivity.this, "Đăng nhập Google thành công!", Toast.LENGTH_SHORT).show();
+                navigateToProfile();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                Toast.makeText(MainActivity.this, "Lỗi đăng nhập Google: " + errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void saveRememberMe(String identifier) {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
@@ -183,7 +267,11 @@ public class MainActivity extends AppCompatActivity {
             editor.remove(KEY_IDENTIFIER);
         }
         editor.apply();
+    }
 
-        Toast.makeText(this, "Đăng nhập thành công!\nChào mừng " + identifier + " quay lại BookShare", Toast.LENGTH_LONG).show();
+    private void navigateToProfile() {
+        Intent intent = new Intent(MainActivity.this, ProfileActivity.class);
+        startActivity(intent);
+        finish();
     }
 }
