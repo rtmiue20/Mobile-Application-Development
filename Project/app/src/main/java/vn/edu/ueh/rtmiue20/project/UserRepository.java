@@ -1,4 +1,4 @@
-package vn.edu.ueh.rtmiue20.project.data.repository;
+package vn.edu.ueh.rtmiue20.project;
 
 import android.net.Uri;
 
@@ -11,8 +11,6 @@ import com.google.firebase.storage.StorageReference;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import vn.edu.ueh.rtmiue20.project.data.model.User;
 
 public class UserRepository {
 
@@ -99,11 +97,9 @@ public class UserRepository {
                     if (task.isSuccessful() && task.getResult() != null) {
                         String downloadUrl = task.getResult().toString();
 
-                        // Update in Firestore
                         firestore.collection("users").document(uid)
                                 .update("avatarUrl", downloadUrl)
                                 .addOnSuccessListener(unused -> {
-                                    // Update Firebase Auth profile photo
                                     FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
                                     if (firebaseUser != null) {
                                         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()

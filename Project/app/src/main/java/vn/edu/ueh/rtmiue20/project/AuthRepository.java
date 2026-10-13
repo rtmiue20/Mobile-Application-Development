@@ -1,12 +1,10 @@
-package vn.edu.ueh.rtmiue20.project.data.repository;
+package vn.edu.ueh.rtmiue20.project;
 
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.firestore.FirebaseFirestore;
-
-import vn.edu.ueh.rtmiue20.project.data.model.User;
 
 public class AuthRepository {
 
@@ -150,7 +148,7 @@ public class AuthRepository {
                     }
                     callback.onSuccess(firebaseUser);
                 })
-                .addOnFailureListener(e -> callback.onSuccess(firebaseUser)); // Allow login if status check fails offline
+                .addOnFailureListener(e -> callback.onSuccess(firebaseUser));
     }
 
     public void sendPasswordResetEmail(String email, ActionCallback callback) {

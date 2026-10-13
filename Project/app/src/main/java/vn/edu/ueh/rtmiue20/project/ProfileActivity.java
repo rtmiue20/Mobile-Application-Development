@@ -5,7 +5,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,23 +19,14 @@ import androidx.core.view.WindowInsetsCompat;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
 
-import vn.edu.ueh.rtmiue20.project.data.model.User;
-import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
-import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
-
 public class ProfileActivity extends AppCompatActivity {
 
-    private ImageView btnBackProfile;
-    private ImageView btnEditProfileHeader;
     private ImageView ivAvatar;
-    private View btnChangeAvatar;
     private TextView tvProfileFullName;
     private TextView tvProfileEmail;
     private TextView tvProfileRole;
-    private TextView tvProfilePhone;
-    private TextView tvProfileBio;
-    private LinearLayout btnEditProfile;
-    private LinearLayout btnLogoutProfile;
+    private View btnEditProfile;
+    private View btnLogoutProfile;
 
     private AuthRepository authRepository;
     private UserRepository userRepository;
@@ -69,15 +59,10 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        btnBackProfile = findViewById(R.id.btnBackProfile);
-        btnEditProfileHeader = findViewById(R.id.btnEditProfileHeader);
         ivAvatar = findViewById(R.id.ivAvatar);
-        btnChangeAvatar = findViewById(R.id.btnChangeAvatar);
         tvProfileFullName = findViewById(R.id.tvProfileFullName);
         tvProfileEmail = findViewById(R.id.tvProfileEmail);
         tvProfileRole = findViewById(R.id.tvProfileRole);
-        tvProfilePhone = findViewById(R.id.tvProfilePhone);
-        tvProfileBio = findViewById(R.id.tvProfileBio);
         btnEditProfile = findViewById(R.id.btnEditProfile);
         btnLogoutProfile = findViewById(R.id.btnLogoutProfile);
     }
@@ -95,24 +80,24 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        btnBackProfile.setOnClickListener(v -> finish());
+        if (btnEditProfile != null) {
+            btnEditProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(ProfileActivity.this, EditProfileActivity.class);
+                startActivity(intent);
+            });
+        }
 
-        View.OnClickListener editClickListener = v -> {
-            Intent intent = new Intent(ProfileActivity.this, EditProfileActivity.class);
-            startActivity(intent);
-        };
-        btnEditProfileHeader.setOnClickListener(editClickListener);
-        btnEditProfile.setOnClickListener(editClickListener);
+        if (ivAvatar != null) {
+            ivAvatar.setOnClickListener(v -> {
+                Intent intent = new Intent(Intent.ACTION_PICK);
+                intent.setType("image/*");
+                imagePickerLauncher.launch(intent);
+            });
+        }
 
-        View.OnClickListener changeAvatarClickListener = v -> {
-            Intent intent = new Intent(Intent.ACTION_PICK);
-            intent.setType("image/*");
-            imagePickerLauncher.launch(intent);
-        };
-        btnChangeAvatar.setOnClickListener(changeAvatarClickListener);
-        ivAvatar.setOnClickListener(changeAvatarClickListener);
-
-        btnLogoutProfile.setOnClickListener(v -> handleLogout());
+        if (btnLogoutProfile != null) {
+            btnLogoutProfile.setOnClickListener(v -> handleLogout());
+        }
     }
 
     private void loadUserProfile() {
@@ -123,39 +108,45 @@ public class ProfileActivity extends AppCompatActivity {
             return;
         }
 
-        tvProfileEmail.setText(currentUser.getEmail());
+        if (tvProfileEmail != null && currentUser.getEmail() != null) {
+            tvProfileEmail.setText(currentUser.getEmail());
+        }
 
         userRepository.getUserProfile(currentUser.getUid(), new UserRepository.UserCallback() {
             @Override
             public void onSuccess(User user) {
-                tvProfileFullName.setText(user.getFullName() != null && !user.getFullName().isEmpty() ? user.getFullName() : "Chưa đặt tên");
-                tvProfilePhone.setText(user.getPhoneNumber() != null && !user.getPhoneNumber().isEmpty() ? user.getPhoneNumber() : "Chưa cập nhật");
-                tvProfileBio.setText(user.getBio() != null && !user.getBio().isEmpty() ? user.getBio() : "Chưa có thông tin giới thiệu");
-
-                if ("admin".equalsIgnoreCase(user.getRole())) {
-                    tvProfileRole.setText("Quản trị viên (Admin)");
-                } else {
-                    tvProfileRole.setText("Thành viên");
+                if (tvProfileFullName != null) {
+                    tvProfileFullName.setText(user.getFullName() != null && !user.getFullName().isEmpty() ? user.getFullName() : "Nguyễn Hà Linh");
                 }
 
-                if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-                    Glide.with(ProfileActivity.this)
-                            .load(user.getAvatarUrl())
-                            .placeholder(R.drawable.ic_person)
-                            .error(R.drawable.ic_person)
-                            .into(ivAvatar);
-                } else if (currentUser.getPhotoUrl() != null) {
-                    Glide.with(ProfileActivity.this)
-                            .load(currentUser.getPhotoUrl())
-                            .placeholder(R.drawable.ic_person)
-                            .error(R.drawable.ic_person)
-                            .into(ivAvatar);
+                if (tvProfileRole != null) {
+                    if ("admin".equalsIgnoreCase(user.getRole())) {
+                        tvProfileRole.setText("✔ Quản trị viên (Admin)");
+                    } else {
+                        tvProfileRole.setText("✔ Thành viên uy tín 5 sao");
+                    }
+                }
+
+                if (ivAvatar != null) {
+                    if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
+                        Glide.with(ProfileActivity.this)
+                                .load(user.getAvatarUrl())
+                                .placeholder(R.drawable.ic_person)
+                                .error(R.drawable.ic_person)
+                                .into(ivAvatar);
+                    } else if (currentUser.getPhotoUrl() != null) {
+                        Glide.with(ProfileActivity.this)
+                                .load(currentUser.getPhotoUrl())
+                                .placeholder(R.drawable.ic_person)
+                                .error(R.drawable.ic_person)
+                                .into(ivAvatar);
+                    }
                 }
             }
 
             @Override
             public void onError(String errorMessage) {
-                if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().isEmpty()) {
+                if (tvProfileFullName != null && currentUser.getDisplayName() != null && !currentUser.getDisplayName().isEmpty()) {
                     tvProfileFullName.setText(currentUser.getDisplayName());
                 }
             }
@@ -172,10 +163,12 @@ public class ProfileActivity extends AppCompatActivity {
             @Override
             public void onSuccess(String avatarUrl) {
                 Toast.makeText(ProfileActivity.this, "Cập nhật ảnh đại diện thành công!", Toast.LENGTH_SHORT).show();
-                Glide.with(ProfileActivity.this)
-                        .load(avatarUrl)
-                        .placeholder(R.drawable.ic_person)
-                        .into(ivAvatar);
+                if (ivAvatar != null) {
+                    Glide.with(ProfileActivity.this)
+                            .load(avatarUrl)
+                            .placeholder(R.drawable.ic_person)
+                            .into(ivAvatar);
+                }
             }
 
             @Override

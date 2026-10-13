@@ -38,8 +38,6 @@ import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Objects;
 
-import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
-
 public class RegisterActivity extends AppCompatActivity {
 
     private static final String PREFS_NAME = "BookSharePrefs";

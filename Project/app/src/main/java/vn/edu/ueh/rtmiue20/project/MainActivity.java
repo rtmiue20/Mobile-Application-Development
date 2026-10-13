@@ -36,8 +36,6 @@ import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseUser;
 
-import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
-
 public class MainActivity extends AppCompatActivity {
 
     private static final String PREFS_NAME = "BookSharePrefs";

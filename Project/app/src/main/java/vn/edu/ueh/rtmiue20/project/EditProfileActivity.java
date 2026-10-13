@@ -14,10 +14,6 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.auth.FirebaseUser;
 
-import vn.edu.ueh.rtmiue20.project.data.model.User;
-import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
-import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
-
 public class EditProfileActivity extends AppCompatActivity {
 
     private ImageView btnBackEditProfile;
