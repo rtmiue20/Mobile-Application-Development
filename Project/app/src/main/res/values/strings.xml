@@ -51,6 +51,19 @@
     <string name="desc_success">Hệ thống vừa gửi hướng dẫn khôi phục mật khẩu. Vui lòng mở email để tiếp tục.</string>
     <string name="btn_back_to_login">Quay lại Đăng nhập</string>
 
+    <!-- Google Sign-In & Profile Strings -->
+    <string name="default_web_client_id">1234567890-exampleclientid.apps.googleusercontent.com</string>
+    <string name="title_profile">Hồ sơ cá nhân</string>
+    <string name="title_edit_profile">Chỉnh sửa hồ sơ</string>
+    <string name="btn_edit_profile">Chỉnh sửa thông tin</string>
+    <string name="btn_change_avatar">Đổi ảnh đại diện</string>
+    <string name="btn_logout">Đăng xuất</string>
+    <string name="label_phone">Số điện thoại</string>
+    <string name="hint_phone">Nhập số điện thoại</string>
+    <string name="label_bio">Giới thiệu bản thân</string>
+    <string name="hint_bio">Viết vài dòng tự giới thiệu về sở thích đọc sách của bạn...</string>
+    <string name="btn_save">Lưu thay đổi</string>
+
     <!-- Strings for Comment Feature (FR08) -->
     <string name="hint_comment">Viết bình luận...</string>
     <string name="cd_send_comment">Gửi bình luận</string>

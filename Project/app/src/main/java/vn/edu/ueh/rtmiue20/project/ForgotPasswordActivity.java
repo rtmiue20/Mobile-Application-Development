@@ -3,8 +3,6 @@ package vn.edu.ueh.rtmiue20.project;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Patterns;
@@ -36,6 +34,8 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     private View layoutSuccessBanner;
     private View btnBackToLogin;
 
+    private AuthRepository authRepository;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,6 +47,8 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        authRepository = AuthRepository.getInstance();
 
         initViews();
         loadEmail();
@@ -65,7 +67,6 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     }
 
     private void loadEmail() {
-        // First check Intent extra
         String emailExtra = getIntent().getStringExtra("email");
         if (emailExtra != null && !emailExtra.trim().isEmpty()) {
             etRecoveryEmail.setText(emailExtra.trim());
@@ -73,7 +74,6 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             return;
         }
 
-        // Otherwise check SharedPreferences
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String savedEmail = prefs.getString(KEY_IDENTIFIER, "");
         if (!savedEmail.isEmpty()) {
@@ -83,13 +83,11 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        // Clear email button click
         btnClearEmail.setOnClickListener(v -> {
             etRecoveryEmail.setText("");
             etRecoveryEmail.requestFocus();
         });
 
-        // Show/hide clear button based on input content
         etRecoveryEmail.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -103,10 +101,7 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         });
 
-        // Submit recovery button click
         btnSubmitRecovery.setOnClickListener(v -> handleSendRecovery());
-
-        // Back to login button click
         btnBackToLogin.setOnClickListener(v -> finish());
     }
 
@@ -125,23 +120,32 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             return;
         }
 
-        // Show loading state
         btnSubmitRecovery.setEnabled(false);
         ivSubmitIcon.setVisibility(View.GONE);
         pbSubmitLoading.setVisibility(View.VISIBLE);
         tvSubmitText.setText(R.string.btn_sending);
 
-        // Simulate sending password reset email
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            pbSubmitLoading.setVisibility(View.GONE);
-            ivSubmitIcon.setVisibility(View.VISIBLE);
-            tvSubmitText.setText(R.string.btn_resend_recovery);
-            btnSubmitRecovery.setEnabled(true);
+        authRepository.sendPasswordResetEmail(email, new AuthRepository.ActionCallback() {
+            @Override
+            public void onSuccess() {
+                pbSubmitLoading.setVisibility(View.GONE);
+                ivSubmitIcon.setVisibility(View.VISIBLE);
+                tvSubmitText.setText(R.string.btn_resend_recovery);
+                btnSubmitRecovery.setEnabled(true);
+                layoutSuccessBanner.setVisibility(View.VISIBLE);
 
-            // Display success banner
-            layoutSuccessBanner.setVisibility(View.VISIBLE);
+                Toast.makeText(ForgotPasswordActivity.this, "Đã gửi email hướng dẫn khôi phục tới " + email, Toast.LENGTH_LONG).show();
+            }
 
-            Toast.makeText(ForgotPasswordActivity.this, "Đã gửi hướng dẫn khôi phục tới " + email, Toast.LENGTH_LONG).show();
-        }, 1200);
+            @Override
+            public void onError(String errorMessage) {
+                pbSubmitLoading.setVisibility(View.GONE);
+                ivSubmitIcon.setVisibility(View.VISIBLE);
+                tvSubmitText.setText(R.string.btn_send_recovery);
+                btnSubmitRecovery.setEnabled(true);
+
+                Toast.makeText(ForgotPasswordActivity.this, "Lỗi gửi email khôi phục: " + errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 }
