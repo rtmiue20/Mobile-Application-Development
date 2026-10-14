@@ -63,4 +63,12 @@
     <string name="label_bio">Giới thiệu bản thân</string>
     <string name="hint_bio">Viết vài dòng tự giới thiệu về sở thích đọc sách của bạn...</string>
     <string name="btn_save">Lưu thay đổi</string>
+
+    <!-- Strings for Comment Feature (FR08) -->
+    <string name="hint_comment">Viết bình luận...</string>
+    <string name="cd_send_comment">Gửi bình luận</string>
+    <string name="cd_comment_avatar">Ảnh đại diện</string>
+    <string name="msg_comment_empty">Vui lòng nhập nội dung bình luận</string>
+    <string name="msg_comment_need_login">Bạn cần đăng nhập để bình luận</string>
+    <string name="cd_favorite">Lưu sách yêu thích</string>
 </resources>
