@@ -38,6 +38,11 @@ public class AuthRepository {
         return firebaseAuth.getCurrentUser();
     }
 
+    public String getCurrentUserId() {
+        FirebaseUser user = firebaseAuth.getCurrentUser();
+        return user != null ? user.getUid() : null;
+    }
+
     public boolean isLoggedIn() {
         return firebaseAuth.getCurrentUser() != null;
     }

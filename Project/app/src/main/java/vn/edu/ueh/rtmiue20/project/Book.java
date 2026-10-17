@@ -15,8 +15,24 @@ public class Book {
     private String imageUrl;
     private String ownerId;
     private long createdAt;
+    private String category;
+    private String condition;
+    private String status = "available";
 
     public Book() {}   // Firestore bắt buộc có constructor rỗng (slide 90)
+
+    public Book(@NonNull String id, String title, String author, String description, String imageUrl, String ownerId, long createdAt, String category, String condition, String status) {
+        this.id = id;
+        this.title = title;
+        this.author = author;
+        this.description = description;
+        this.imageUrl = imageUrl;
+        this.ownerId = ownerId;
+        this.createdAt = createdAt;
+        this.category = category;
+        this.condition = condition;
+        this.status = (status != null && !status.isEmpty()) ? status : "available";
+    }
 
     @NonNull
     public String getId() { return id; }
@@ -39,4 +55,13 @@ public class Book {
 
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+
+    public String getCondition() { return condition; }
+    public void setCondition(String condition) { this.condition = condition; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

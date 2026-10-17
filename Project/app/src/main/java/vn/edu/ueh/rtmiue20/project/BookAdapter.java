@@ -3,10 +3,13 @@ package vn.edu.ueh.rtmiue20.project;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,19 +38,50 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookHolder> {
     @Override
     public void onBindViewHolder(@NonNull BookHolder h, int position) {
         Book b = books.get(position);
-        h.title.setText(b.getTitle());
-        h.author.setText(b.getAuthor());
+        
+        h.tvTitle.setText(b.getTitle() != null ? b.getTitle() : "");
+        h.tvAuthor.setText(b.getAuthor() != null ? b.getAuthor() : "");
+        
+        String category = b.getCategory();
+        if (category == null || category.isEmpty()) {
+            category = "Khác";
+        }
+        h.tvCategory.setText(category);
+        
+        String condition = b.getCondition();
+        if (condition == null || condition.isEmpty()) {
+            condition = "Mới";
+        }
+        h.tvCondition.setText(condition);
+        
+        if (b.getImageUrl() == null || b.getImageUrl().isEmpty()) {
+            Glide.with(h.itemView.getContext())
+                 .load(R.drawable.ic_bookshare_logo)
+                 .into(h.ivBookCover);
+        } else {
+            Glide.with(h.itemView.getContext())
+                 .load(b.getImageUrl())
+                 .placeholder(R.drawable.ic_bookshare_logo)
+                 .error(R.drawable.ic_bookshare_logo)
+                 .into(h.ivBookCover);
+        }
+
         h.itemView.setOnClickListener(v -> listener.onClick(b));
     }
 
     @Override public int getItemCount() { return books.size(); }
 
     static class BookHolder extends RecyclerView.ViewHolder {
-        TextView title, author;
+        ImageView ivBookCover;
+        TextView tvCategory, tvTitle, tvAuthor, tvCondition;
+        
         BookHolder(View v) {
             super(v);
-            title = v.findViewById(R.id.tvTitle);
-            author = v.findViewById(R.id.tvAuthor);
+            ivBookCover = v.findViewById(R.id.ivBookCover);
+            tvCategory = v.findViewById(R.id.tvCategory);
+            tvTitle = v.findViewById(R.id.tvTitle);
+            tvAuthor = v.findViewById(R.id.tvAuthor);
+            tvCondition = v.findViewById(R.id.tvCondition);
         }
     }
 }
