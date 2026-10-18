@@ -103,6 +103,9 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
         btnSubmitRecovery.setOnClickListener(v -> handleSendRecovery());
         btnBackToLogin.setOnClickListener(v -> finish());
+
+        View btnHeaderBack = findViewById(R.id.btnHeaderBack);
+        if (btnHeaderBack != null) btnHeaderBack.setOnClickListener(v -> finish());
     }
 
     private void handleSendRecovery() {
