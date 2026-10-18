@@ -1,4 +1,4 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.ui.profile;
 
 import android.os.Bundle;
 import android.widget.EditText;
@@ -13,6 +13,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.auth.FirebaseUser;
+
+import vn.edu.ueh.rtmiue20.project.R;
+import vn.edu.ueh.rtmiue20.project.data.model.User;
+import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
+import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
 
 public class EditProfileActivity extends AppCompatActivity {
 

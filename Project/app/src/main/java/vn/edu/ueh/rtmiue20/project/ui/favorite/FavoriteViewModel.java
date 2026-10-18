@@ -1,7 +1,9 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.ui.favorite;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
+
+import vn.edu.ueh.rtmiue20.project.data.repository.FavoriteRepository;
 
 public class FavoriteViewModel extends ViewModel {
 

@@ -1,4 +1,4 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.data.repository;
 
 import android.net.Uri;
 
@@ -8,6 +8,8 @@ import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+
+import vn.edu.ueh.rtmiue20.project.data.model.User;
 
 import java.util.HashMap;
 import java.util.Map;

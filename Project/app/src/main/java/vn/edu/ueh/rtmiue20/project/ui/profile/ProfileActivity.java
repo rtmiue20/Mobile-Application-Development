@@ -1,4 +1,4 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.ui.profile;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -18,6 +18,12 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
+
+import vn.edu.ueh.rtmiue20.project.MainActivity;
+import vn.edu.ueh.rtmiue20.project.R;
+import vn.edu.ueh.rtmiue20.project.data.model.User;
+import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
+import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
 
 public class ProfileActivity extends AppCompatActivity {
 

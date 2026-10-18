@@ -1,4 +1,4 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.data.model;
 
 import com.google.firebase.firestore.Exclude;
 

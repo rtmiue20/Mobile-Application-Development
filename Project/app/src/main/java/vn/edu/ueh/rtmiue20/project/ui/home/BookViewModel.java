@@ -1,10 +1,13 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.ui.home;
 
 import android.app.Application;
 import android.net.Uri;
 
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+
+import vn.edu.ueh.rtmiue20.project.data.model.Book;
+import vn.edu.ueh.rtmiue20.project.data.repository.BookRepository;
 
 import java.util.List;
 
