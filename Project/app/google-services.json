@@ -1,26 +1,21 @@
 {
   "project_info": {
-    "project_number": "1234567890",
-    "project_id": "bookshare-app",
-    "storage_bucket": "bookshare-app.appspot.com"
+    "project_number": "863907893764",
+    "project_id": "bookshare-2ccca",
+    "storage_bucket": "bookshare-2ccca.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1234567890:android:1234567890abcdef",
+        "mobilesdk_app_id": "1:863907893764:android:90bfc8b0d62e4ad7009b51",
         "android_client_info": {
           "package_name": "vn.edu.ueh.rtmiue20.project"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "1234567890-exampleclientid.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyExampleApiKeyForBookShare1234"
+          "current_key": "AIzaSyDzXxg9yTzndt_HMPdJ3Cl9xTfrx-zWtQs"
         }
       ],
       "services": {
