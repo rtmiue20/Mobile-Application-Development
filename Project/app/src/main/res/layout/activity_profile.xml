@@ -12,11 +12,68 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="20dp"
-        android:paddingBottom="24dp">
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="28dp">
 
-        <!-- User Main Info Header Card -->
+        <!-- Top Header Bar -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="8dp"
+                    android:contentDescription="@string/app_name"
+                    android:src="@drawable/ic_bookshare_logo" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/app_name"
+                        android:textColor="@color/primary_dark_green"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="CÁ NHÂN"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btnBackProfile"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Trở về"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="@color/text_primary" />
+        </RelativeLayout>
+
+        <!-- Profile Header Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -33,10 +90,11 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
-                <!-- Avatar Circle with Verified Checkmark -->
+                <!-- Avatar Container with Verified Badge -->
                 <RelativeLayout
                     android:layout_width="100dp"
-                    android:layout_height="100dp">
+                    android:layout_height="100dp"
+                    android:layout_marginBottom="12dp">
 
                     <com.google.android.material.imageview.ShapeableImageView
                         android:id="@+id/ivAvatar"
@@ -54,7 +112,7 @@
                         android:layout_height="26dp"
                         android:layout_alignParentEnd="true"
                         android:layout_alignParentBottom="true"
-                        app:cardBackgroundColor="#0F2A23"
+                        app:cardBackgroundColor="@color/primary_dark_green"
                         app:cardCornerRadius="13dp"
                         app:cardElevation="2dp"
                         app:strokeWidth="0dp">
@@ -69,12 +127,11 @@
                     </com.google.android.material.card.MaterialCardView>
                 </RelativeLayout>
 
-                <!-- Full Name & Subtitle -->
+                <!-- User Name & Subtitle -->
                 <TextView
                     android:id="@+id/tvProfileFullName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
                     android:text="Nguyễn Hà Linh"
                     android:textColor="@color/text_primary"
                     android:textSize="20sp"
@@ -84,12 +141,12 @@
                     android:id="@+id/tvProfileEmail"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
+                    android:layout_marginTop="4dp"
                     android:text="halinh.nguyen@email.com • Cầu Giấy, Hà Nội"
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
 
-                <!-- Badge: Member Status -->
+                <!-- Trust Pill Badge -->
                 <TextView
                     android:id="@+id/tvProfileRole"
                     android:layout_width="wrap_content"
@@ -103,12 +160,12 @@
                     android:textSize="12sp"
                     android:textStyle="bold" />
 
-                <!-- Edit Profile Pill Button -->
+                <!-- Edit Profile Button -->
                 <LinearLayout
                     android:id="@+id/btnEditProfile"
                     android:layout_width="wrap_content"
                     android:layout_height="38dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="14dp"
                     android:background="@drawable/bg_btn_google"
                     android:gravity="center"
                     android:orientation="horizontal"
@@ -118,7 +175,7 @@
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:layout_marginEnd="6dp"
-                        android:contentDescription="Sửa"
+                        android:contentDescription="Edit"
                         android:src="@drawable/ic_person"
                         app:tint="@color/text_primary" />
 
@@ -133,7 +190,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Stats Row (3 Cards) -->
+        <!-- Community Impact Stats (3 Columns) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -144,7 +201,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="6dp"
                 android:layout_weight="1"
                 app:cardBackgroundColor="@color/card_bg"
                 app:cardCornerRadius="20dp"
@@ -159,8 +216,8 @@
                     android:padding="14dp">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:contentDescription="Tặng"
                         android:src="@drawable/ic_leaf"
                         app:tint="@color/secondary_green" />
@@ -170,8 +227,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="14"
-                        android:textColor="@color/text_primary"
-                        android:textSize="20sp"
+                        android:textColor="@color/primary_dark_green"
+                        android:textSize="22sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -187,7 +244,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="4dp"
+                android:layout_marginHorizontal="3dp"
                 android:layout_weight="1"
                 app:cardBackgroundColor="@color/card_bg"
                 app:cardCornerRadius="20dp"
@@ -202,8 +259,8 @@
                     android:padding="14dp">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:contentDescription="Nhận"
                         android:src="@drawable/ic_info"
                         app:tint="@color/secondary_green" />
@@ -213,8 +270,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="6"
-                        android:textColor="@color/text_primary"
-                        android:textSize="20sp"
+                        android:textColor="@color/primary_dark_green"
+                        android:textSize="22sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -230,7 +287,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 app:cardBackgroundColor="@color/card_bg"
                 app:cardCornerRadius="20dp"
@@ -245,8 +302,8 @@
                     android:padding="14dp">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:contentDescription="Rating"
                         android:src="@drawable/ic_lightbulb"
                         app:tint="#D97706" />
@@ -256,7 +313,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="4.9 (28)"
-                        android:textColor="@color/text_primary"
+                        android:textColor="@color/primary_dark_green"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -270,11 +327,11 @@
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- Community Honor Banner -->
+        <!-- Reading Honor / Ambassador Badge Banner -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
+            android:layout_marginBottom="16dp"
             app:cardBackgroundColor="@color/primary_dark_green"
             app:cardCornerRadius="20dp"
             app:cardElevation="2dp"
@@ -300,9 +357,9 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:layout_gravity="center"
-                        android:contentDescription="Trophy"
+                        android:contentDescription="Ambassador"
                         android:src="@drawable/ic_verified"
-                        app:tint="#0F2A23" />
+                        app:tint="#012D1D" />
                 </com.google.android.material.card.MaterialCardView>
 
                 <LinearLayout
@@ -324,7 +381,7 @@
                         android:layout_marginTop="2dp"
                         android:text="Đại sứ Lan tỏa Tri thức 2025"
                         android:textColor="#FFFFFF"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -352,10 +409,10 @@
                     android:layout_marginBottom="12dp"
                     android:text="KỆ SÁCH &amp; GIAO DỊCH"
                     android:textColor="@color/text_hint"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
-                <!-- Row 1: My Posts -->
+                <!-- Item 1: My Posts -->
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -396,7 +453,7 @@
                         app:tint="@color/text_hint" />
                 </RelativeLayout>
 
-                <!-- Row 2: Favorite Books -->
+                <!-- Item 2: Favorite Books -->
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -434,7 +491,7 @@
                         app:tint="@color/text_hint" />
                 </RelativeLayout>
 
-                <!-- Row 3: History & Requests -->
+                <!-- Item 3: History & Requests -->
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -467,7 +524,7 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="20dp"
             app:cardBackgroundColor="@color/card_bg"
             app:cardCornerRadius="20dp"
             app:cardElevation="2dp"
@@ -485,10 +542,10 @@
                     android:layout_marginBottom="12dp"
                     android:text="HỆ THỐNG &amp; CÀI ĐẶT"
                     android:textColor="@color/text_hint"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
-                <!-- Row 1: App Settings -->
+                <!-- Item 1: App Settings -->
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -515,7 +572,7 @@
                         app:tint="@color/text_hint" />
                 </RelativeLayout>
 
-                <!-- Row 2: Help & Terms -->
+                <!-- Item 2: Help & Policies -->
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -542,7 +599,7 @@
                         app:tint="@color/text_hint" />
                 </RelativeLayout>
 
-                <!-- Row 3: Logout Button -->
+                <!-- Item 3: Logout -->
                 <RelativeLayout
                     android:id="@+id/btnLogoutProfile"
                     android:layout_width="match_parent"
@@ -556,7 +613,7 @@
                         android:layout_alignParentStart="true"
                         android:layout_centerVertical="true"
                         android:text="@string/btn_logout"
-                        android:textColor="#EF4444"
+                        android:textColor="@color/red_danger"
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
@@ -567,9 +624,33 @@
                         android:layout_centerVertical="true"
                         android:contentDescription="Arrow"
                         android:src="@drawable/ic_arrow_forward"
-                        app:tint="#EF4444" />
+                        app:tint="@color/red_danger" />
                 </RelativeLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- Community Micro Footer -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BookShare Việt Nam • Phiên bản 2.4.1"
+                android:textColor="@color/text_hint"
+                android:textSize="12sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Chia sẻ tri thức - Kết nối yêu thương"
+                android:textColor="@color/text_hint"
+                android:textSize="11sp" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

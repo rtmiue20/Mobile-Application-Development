@@ -1,9 +1,12 @@
 package vn.edu.ueh.rtmiue20.project;
 
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -17,10 +20,14 @@ import com.google.firebase.auth.FirebaseUser;
 public class EditProfileActivity extends AppCompatActivity {
 
     private ImageView btnBackEditProfile;
+    private View btnSaveProfile;
+    private View btnSaveProfileMain;
+    private View btnCancelEditProfile;
     private EditText etEditFullName;
     private EditText etEditPhone;
     private EditText etEditBio;
-    private LinearLayout btnSaveProfile;
+    private TextView tvBioCounter;
+    private TextView tvEditEmail;
 
     private AuthRepository authRepository;
     private UserRepository userRepository;
@@ -41,16 +48,39 @@ public class EditProfileActivity extends AppCompatActivity {
         userRepository = UserRepository.getInstance();
 
         initViews();
+        setupBioCounter();
         loadExistingData();
         setupListeners();
     }
 
     private void initViews() {
         btnBackEditProfile = findViewById(R.id.btnBackEditProfile);
+        btnSaveProfile = findViewById(R.id.btnSaveProfile);
+        btnSaveProfileMain = findViewById(R.id.btnSaveProfileMain);
+        btnCancelEditProfile = findViewById(R.id.btnCancelEditProfile);
         etEditFullName = findViewById(R.id.etEditFullName);
         etEditPhone = findViewById(R.id.etEditPhone);
         etEditBio = findViewById(R.id.etEditBio);
-        btnSaveProfile = findViewById(R.id.btnSaveProfile);
+        tvBioCounter = findViewById(R.id.tvBioCounter);
+        tvEditEmail = findViewById(R.id.tvEditEmail);
+    }
+
+    private void setupBioCounter() {
+        if (etEditBio != null && tvBioCounter != null) {
+            etEditBio.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    int len = s != null ? s.length() : 0;
+                    tvBioCounter.setText(len + "/200");
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+        }
     }
 
     private void loadExistingData() {
@@ -60,17 +90,21 @@ public class EditProfileActivity extends AppCompatActivity {
             return;
         }
 
+        if (tvEditEmail != null && currentUser.getEmail() != null) {
+            tvEditEmail.setText(currentUser.getEmail());
+        }
+
         userRepository.getUserProfile(currentUser.getUid(), new UserRepository.UserCallback() {
             @Override
             public void onSuccess(User user) {
-                if (user.getFullName() != null) etEditFullName.setText(user.getFullName());
-                if (user.getPhoneNumber() != null) etEditPhone.setText(user.getPhoneNumber());
-                if (user.getBio() != null) etEditBio.setText(user.getBio());
+                if (etEditFullName != null && user.getFullName() != null) etEditFullName.setText(user.getFullName());
+                if (etEditPhone != null && user.getPhoneNumber() != null) etEditPhone.setText(user.getPhoneNumber());
+                if (etEditBio != null && user.getBio() != null) etEditBio.setText(user.getBio());
             }
 
             @Override
             public void onError(String errorMessage) {
-                if (currentUser.getDisplayName() != null) {
+                if (etEditFullName != null && currentUser.getDisplayName() != null) {
                     etEditFullName.setText(currentUser.getDisplayName());
                 }
             }
@@ -78,25 +112,32 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        btnBackEditProfile.setOnClickListener(v -> finish());
-        btnSaveProfile.setOnClickListener(v -> handleSaveProfile());
+        if (btnBackEditProfile != null) btnBackEditProfile.setOnClickListener(v -> finish());
+        if (btnCancelEditProfile != null) btnCancelEditProfile.setOnClickListener(v -> finish());
+
+        View.OnClickListener saveListener = v -> handleSaveProfile();
+        if (btnSaveProfile != null) btnSaveProfile.setOnClickListener(saveListener);
+        if (btnSaveProfileMain != null) btnSaveProfileMain.setOnClickListener(saveListener);
     }
 
     private void handleSaveProfile() {
         FirebaseUser currentUser = authRepository.getCurrentUser();
         if (currentUser == null) return;
 
-        String fullName = etEditFullName.getText().toString().trim();
-        String phone = etEditPhone.getText().toString().trim();
-        String bio = etEditBio.getText().toString().trim();
+        String fullName = etEditFullName != null ? etEditFullName.getText().toString().trim() : "";
+        String phone = etEditPhone != null ? etEditPhone.getText().toString().trim() : "";
+        String bio = etEditBio != null ? etEditBio.getText().toString().trim() : "";
 
         if (fullName.isEmpty()) {
-            etEditFullName.setError("Vui lòng nhập họ và tên");
-            etEditFullName.requestFocus();
+            if (etEditFullName != null) {
+                etEditFullName.setError("Vui lòng nhập họ và tên");
+                etEditFullName.requestFocus();
+            }
             return;
         }
 
-        btnSaveProfile.setEnabled(false);
+        if (btnSaveProfile != null) btnSaveProfile.setEnabled(false);
+        if (btnSaveProfileMain != null) btnSaveProfileMain.setEnabled(false);
 
         userRepository.updateUserProfile(currentUser.getUid(), fullName, phone, bio, new UserRepository.UpdateCallback() {
             @Override
@@ -107,7 +148,8 @@ public class EditProfileActivity extends AppCompatActivity {
 
             @Override
             public void onError(String errorMessage) {
-                btnSaveProfile.setEnabled(true);
+                if (btnSaveProfile != null) btnSaveProfile.setEnabled(true);
+                if (btnSaveProfileMain != null) btnSaveProfileMain.setEnabled(true);
                 Toast.makeText(EditProfileActivity.this, "Lỗi cập nhật: " + errorMessage, Toast.LENGTH_LONG).show();
             }
         });
