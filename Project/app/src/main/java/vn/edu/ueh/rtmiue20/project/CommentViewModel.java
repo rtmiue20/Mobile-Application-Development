@@ -11,7 +11,6 @@ public class CommentViewModel extends ViewModel {
     private LiveData<List<Comment>> commentsLiveData;
     private String currentBookId;
 
-    // Constructor khong tham so de dung duoc ViewModelProvider mac dinh
     public CommentViewModel() {
         repository = new CommentRepository();
     }
@@ -28,20 +27,23 @@ public class CommentViewModel extends ViewModel {
         repository.addComment(bookId, comment);
     }
 
-    public LiveData<Boolean> getAddSuccess() {
-        return repository.getAddSuccess();
+    // U: Cập nhật bình luận
+    public void updateComment(String bookId, String commentId, String newContent) {
+        repository.updateComment(bookId, commentId, newContent);
     }
 
-    public LiveData<String> getError() {
-        return repository.getError();
+    // D: Xóa bình luận
+    public void deleteComment(String bookId, String commentId) {
+        repository.deleteComment(bookId, commentId);
     }
 
-    public void resetAddSuccess() {
-        repository.resetAddSuccess();
-    }
+    public LiveData<Boolean> getAddSuccess() { return repository.getAddSuccess(); }
+    public LiveData<Boolean> getUpdateSuccess() { return repository.getUpdateSuccess(); }
+    public LiveData<Boolean> getDeleteSuccess() { return repository.getDeleteSuccess(); }
+    public LiveData<String> getError() { return repository.getError(); }
 
-    public void resetError() {
-        repository.resetError();
+    public void resetStatus() {
+        repository.resetStatus();
     }
 
     @Override
