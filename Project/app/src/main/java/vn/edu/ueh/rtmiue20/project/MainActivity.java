@@ -10,12 +10,8 @@ import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    // ==========================================
-    // DEV MODE: Đổi giá trị này thành true nếu muốn bypass màn hình Login, 
-    // đi thẳng vào HomeActivity (Trang chủ) để thiết kế giao diện bên trong app.
-    // Khi chuẩn bị phát hành hoặc đã cấu hình xong Firebase, hãy đổi lại thành false.
-    // ==========================================
-    private static final boolean IS_DEV_MODE = true;
+    // Set IS_DEV_MODE to false to use Firebase Auth flow
+    private static final boolean IS_DEV_MODE = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
