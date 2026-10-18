@@ -1,4 +1,4 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.data.model;
 
 import java.util.HashMap;
 import java.util.Map;

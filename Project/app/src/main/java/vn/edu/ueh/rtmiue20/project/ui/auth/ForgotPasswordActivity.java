@@ -1,4 +1,4 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.ui.auth;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -19,6 +19,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import vn.edu.ueh.rtmiue20.project.R;
+import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
 
 public class ForgotPasswordActivity extends AppCompatActivity {
 

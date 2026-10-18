@@ -1,4 +1,4 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.ui.home;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +10,9 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+
+import vn.edu.ueh.rtmiue20.project.R;
+import vn.edu.ueh.rtmiue20.project.data.model.Book;
 
 import java.util.ArrayList;
 import java.util.List;

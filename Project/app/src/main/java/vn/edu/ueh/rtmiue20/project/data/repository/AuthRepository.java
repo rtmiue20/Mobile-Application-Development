@@ -1,10 +1,12 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.data.repository;
 
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import vn.edu.ueh.rtmiue20.project.data.model.User;
 
 public class AuthRepository {
 

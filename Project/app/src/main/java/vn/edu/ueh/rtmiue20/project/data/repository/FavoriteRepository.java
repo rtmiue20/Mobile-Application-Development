@@ -1,4 +1,4 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.data.repository;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,6 +15,8 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
+
+import vn.edu.ueh.rtmiue20.project.data.model.Favorite;
 
 public class FavoriteRepository {
 

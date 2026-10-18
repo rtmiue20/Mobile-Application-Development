@@ -1,7 +1,10 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.ui.book;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModel;
+
+import vn.edu.ueh.rtmiue20.project.data.model.Comment;
+import vn.edu.ueh.rtmiue20.project.data.repository.CommentRepository;
 
 import java.util.List;
 

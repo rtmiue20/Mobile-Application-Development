@@ -1,4 +1,4 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.ui.book;
 
 import android.os.Bundle;
 import android.view.View;
@@ -24,7 +24,14 @@ import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-import java.util.List;
+import vn.edu.ueh.rtmiue20.project.R;
+import vn.edu.ueh.rtmiue20.project.data.model.Book;
+import vn.edu.ueh.rtmiue20.project.data.model.Comment;
+import vn.edu.ueh.rtmiue20.project.data.model.User;
+import vn.edu.ueh.rtmiue20.project.data.repository.BookRepository;
+import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
+import vn.edu.ueh.rtmiue20.project.ui.home.BookViewModel;
+import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
 
 public class BookDetailActivity extends AppCompatActivity {
 
@@ -209,6 +216,7 @@ public class BookDetailActivity extends AppCompatActivity {
         rvComments.setAdapter(commentAdapter);
         rvComments.setNestedScrollingEnabled(false);
     }
+
     // 1. Dialog lựa chọn Sửa hoặc Xóa khi người dùng nhấn giữ bình luận của mình
     private void showCommentActionDialog(Comment comment) {
         String[] options = {"Chỉnh sửa bình luận", "Xóa bình luận"};

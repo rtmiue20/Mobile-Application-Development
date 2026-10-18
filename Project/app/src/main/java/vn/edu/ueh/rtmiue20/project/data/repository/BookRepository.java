@@ -1,4 +1,4 @@
-package vn.edu.ueh.rtmiue20.project;
+package vn.edu.ueh.rtmiue20.project.data.repository;
 
 import android.app.Application;
 import android.net.Uri;
@@ -11,6 +11,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+
+import vn.edu.ueh.rtmiue20.project.data.local.BookDao;
+import vn.edu.ueh.rtmiue20.project.data.local.BookRoomDatabase;
+import vn.edu.ueh.rtmiue20.project.data.model.Book;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +31,7 @@ public class BookRepository {
     private ListenerRegistration reg;
     private static final ExecutorService io = Executors.newSingleThreadExecutor();
 
-    BookRepository(Application app) {
+    public BookRepository(Application app) {
         dao = BookRoomDatabase.getDatabase(app).bookDao();
         allBooks = dao.getAllBooks();
     }
