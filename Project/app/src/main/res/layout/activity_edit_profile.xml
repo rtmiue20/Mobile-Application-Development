@@ -118,7 +118,7 @@
                         android:layout_height="18dp"
                         android:layout_gravity="center"
                         android:contentDescription="Camera"
-                        android:src="@drawable/ic_send"
+                        android:src="@drawable/ic_camera"
                         app:tint="#FFFFFF" />
                 </com.google.android.material.card.MaterialCardView>
             </RelativeLayout>
