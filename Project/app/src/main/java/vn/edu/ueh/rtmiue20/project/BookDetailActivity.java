@@ -194,43 +194,103 @@ public class BookDetailActivity extends AppCompatActivity {
     // ==========================================
 
     private void initRecyclerView() {
-        commentAdapter = new CommentAdapter();
+        commentAdapter = new CommentAdapter(new CommentAdapter.OnCommentActionListener() {
+            @Override
+            public void onEdit(Comment comment) {
+                showCommentActionDialog(comment);
+            }
+
+            @Override
+            public void onDelete(Comment comment) {
+                confirmDeleteComment(comment);
+            }
+        });
         rvComments.setLayoutManager(new LinearLayoutManager(this));
         rvComments.setAdapter(commentAdapter);
         rvComments.setNestedScrollingEnabled(false);
     }
+    // 1. Dialog lựa chọn Sửa hoặc Xóa khi người dùng nhấn giữ bình luận của mình
+    private void showCommentActionDialog(Comment comment) {
+        String[] options = {"Chỉnh sửa bình luận", "Xóa bình luận"};
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Tùy chọn bình luận")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        showEditCommentDialog(comment);
+                    } else if (which == 1) {
+                        confirmDeleteComment(comment);
+                    }
+                })
+                .show();
+    }
 
-    private void observeViewModel() {
-        if (bookId == null) {
-            return;
+    // 2. Dialog nhập nội dung mới (Update - U)
+    private void showEditCommentDialog(Comment comment) {
+        final EditText input = new EditText(this);
+        input.setText(comment.getContent());
+        if (comment.getContent() != null) {
+            input.setSelection(comment.getContent().length());
         }
 
-        commentViewModel.getComments(bookId).observe(this, new Observer<List<Comment>>() {
-            @Override
-            public void onChanged(List<Comment> comments) {
-                commentAdapter.setComments(comments);
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Chỉnh sửa bình luận")
+                .setView(input)
+                .setPositiveButton("Lưu", (dialog, which) -> {
+                    String newText = input.getText().toString().trim();
+                    if (!newText.isEmpty() && !newText.equals(comment.getContent())) {
+                        commentViewModel.updateComment(bookId, comment.getCommentId(), newText);
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    // 3. Dialog xác nhận xóa bình luận (Delete - D)
+    private void confirmDeleteComment(Comment comment) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Xóa bình luận")
+                .setMessage("Bạn có chắc chắn muốn xóa bình luận này?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    commentViewModel.deleteComment(bookId, comment.getCommentId());
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void observeViewModel() {
+        if (bookId == null) return;
+
+        commentViewModel.getComments(bookId).observe(this, comments -> {
+            commentAdapter.setComments(comments);
+        });
+
+        commentViewModel.getAddSuccess().observe(this, success -> {
+            if (success != null && success) {
+                etComment.setText("");
+                btnSendComment.setEnabled(true);
+                commentViewModel.resetStatus();
             }
         });
 
-        commentViewModel.getAddSuccess().observe(this, new Observer<Boolean>() {
-            @Override
-            public void onChanged(Boolean success) {
-                if (success != null && success) {
-                    etComment.setText("");
-                    btnSendComment.setEnabled(true);
-                    commentViewModel.resetAddSuccess();
-                }
+        commentViewModel.getUpdateSuccess().observe(this, success -> {
+            if (success != null && success) {
+                Toast.makeText(this, "Đã cập nhật bình luận!", Toast.LENGTH_SHORT).show();
+                commentViewModel.resetStatus();
             }
         });
 
-        commentViewModel.getError().observe(this, new Observer<String>() {
-            @Override
-            public void onChanged(String message) {
-                if (message != null) {
-                    btnSendComment.setEnabled(true);
-                    Toast.makeText(BookDetailActivity.this, message, Toast.LENGTH_SHORT).show();
-                    commentViewModel.resetError();
-                }
+        commentViewModel.getDeleteSuccess().observe(this, success -> {
+            if (success != null && success) {
+                Toast.makeText(this, "Đã xóa bình luận!", Toast.LENGTH_SHORT).show();
+                commentViewModel.resetStatus();
+            }
+        });
+
+        commentViewModel.getError().observe(this, message -> {
+            if (message != null) {
+                btnSendComment.setEnabled(true);
+                Toast.makeText(BookDetailActivity.this, message, Toast.LENGTH_SHORT).show();
+                commentViewModel.resetStatus();
             }
         });
     }

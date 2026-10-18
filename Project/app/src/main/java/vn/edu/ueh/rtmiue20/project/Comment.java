@@ -9,8 +9,8 @@ public class Comment {
     private String userName;
     private String content;
     private Long createdAt;
+    private Long updatedAt; // Thêm để theo dõi thời gian chỉnh sửa (Update)
 
-    // Constructor rong bat buoc cho Firebase Firestore
     public Comment() {
     }
 
@@ -20,9 +20,9 @@ public class Comment {
         this.userName = userName;
         this.content = content;
         this.createdAt = createdAt;
+        this.updatedAt = null;
     }
 
-    // commentId lay tu document id nen khong luu vao field cua document
     @Exclude
     public String getCommentId() {
         return commentId;
@@ -63,5 +63,13 @@ public class Comment {
 
     public void setCreatedAt(Long createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Long getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Long updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

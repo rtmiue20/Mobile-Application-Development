@@ -9,19 +9,28 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentViewHolder> {
 
-    private List<Comment> comments = new ArrayList<Comment>();
+    public interface OnCommentActionListener {
+        void onEdit(Comment comment);
+        void onDelete(Comment comment);
+    }
+
+    private List<Comment> comments = new ArrayList<>();
+    private final OnCommentActionListener actionListener;
+
+    public CommentAdapter(OnCommentActionListener listener) {
+        this.actionListener = listener;
+    }
 
     public void setComments(List<Comment> comments) {
-        if (comments == null) {
-            this.comments = new ArrayList<Comment>();
-        } else {
-            this.comments = comments;
-        }
+        this.comments = (comments == null) ? new ArrayList<>() : comments;
         notifyDataSetChanged();
     }
 
@@ -46,10 +55,27 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
                     createdAt,
                     System.currentTimeMillis(),
                     DateUtils.MINUTE_IN_MILLIS);
-            holder.tvTime.setText(relativeTime);
+            if (comment.getUpdatedAt() != null) {
+                holder.tvTime.setText(relativeTime + " (đã chỉnh sửa)");
+            } else {
+                holder.tvTime.setText(relativeTime);
+            }
         } else {
             holder.tvTime.setText("");
         }
+
+        // Kiểm tra quyền: Người dùng hiện tại có phải chủ nhân bình luận không
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        boolean isOwner = currentUser != null && currentUser.getUid().equals(comment.getUserId());
+
+        // Nhấn giữ hoặc nhấn vào bình luận của mình để hiện tùy chọn Sửa / Xóa
+        holder.itemView.setOnLongClickListener(v -> {
+            if (isOwner && actionListener != null) {
+                actionListener.onEdit(comment); // Kích hoạt dialog lựa chọn
+                return true;
+            }
+            return false;
+        });
     }
 
     @Override
@@ -58,10 +84,7 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
     }
 
     static class CommentViewHolder extends RecyclerView.ViewHolder {
-
-        TextView tvUserName;
-        TextView tvTime;
-        TextView tvContent;
+        TextView tvUserName, tvTime, tvContent;
 
         CommentViewHolder(@NonNull View itemView) {
             super(itemView);
