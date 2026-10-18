@@ -2,8 +2,11 @@ package vn.edu.ueh.rtmiue20.project;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -17,6 +20,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -30,6 +34,14 @@ public class BookDetailActivity extends AppCompatActivity {
 
     // Khai báo chung
     private String bookId;
+    private BookViewModel bookViewModel;
+    private UserRepository userRepository;
+
+    // View Chi tiết sách
+    private ImageView ivBookCover, ivOwnerAvatar, btnBack;
+    private TextView tvTitle, tvAuthor, tvCategory, tvCondition, tvDescription, tvOwnerName;
+    private LinearLayout layoutOwnerActions;
+    private Button btnEdit, btnDelete;
 
     // Biến cho FR08 (Bình luận)
     private RecyclerView rvComments;
@@ -59,9 +71,17 @@ public class BookDetailActivity extends AppCompatActivity {
             }
         });
 
-        // Tạm thời hard-code bookId để test trên nhánh của Vương.
-        // Khi gộp code với Phúc, đổi thành: bookId = getIntent().getStringExtra("bookId");
-        bookId = "mock_book_test_123";
+        bookId = getIntent().getStringExtra("bookId");
+        if (bookId == null || bookId.isEmpty()) {
+            bookId = "mock_book_test_123";
+        }
+
+        // Khởi tạo Views
+        initViews();
+
+        // Khởi tạo ViewModels & Repositories
+        bookViewModel = new ViewModelProvider(this).get(BookViewModel.class);
+        userRepository = UserRepository.getInstance();
 
         // Ánh xạ View cho Bình luận (FR08)
         rvComments = findViewById(R.id.rv_comments);
@@ -81,6 +101,92 @@ public class BookDetailActivity extends AppCompatActivity {
         // Gọi các hàm khởi tạo của FR09
         observeFavorite();
         setupFavoriteListener();
+
+        // Tải dữ liệu sách
+        loadBookData();
+    }
+
+    private void initViews() {
+        ivBookCover = findViewById(R.id.ivBookCover);
+        ivOwnerAvatar = findViewById(R.id.ivOwnerAvatar);
+        btnBack = findViewById(R.id.btnBack);
+        tvTitle = findViewById(R.id.tvTitle);
+        tvAuthor = findViewById(R.id.tvAuthor);
+        tvCategory = findViewById(R.id.tvCategory);
+        tvCondition = findViewById(R.id.tvCondition);
+        tvDescription = findViewById(R.id.tvDescription);
+        tvOwnerName = findViewById(R.id.tvOwnerName);
+        layoutOwnerActions = findViewById(R.id.layoutOwnerActions);
+        btnEdit = findViewById(R.id.btnEdit);
+        btnDelete = findViewById(R.id.btnDelete);
+
+        btnBack.setOnClickListener(v -> finish());
+    }
+
+    private void loadBookData() {
+        bookViewModel.getBook(bookId).observe(this, book -> {
+            if (book != null) {
+                bindBookData(book);
+            } else {
+                Toast.makeText(this, "Không tìm thấy thông tin sách", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
+    }
+
+    private void bindBookData(Book book) {
+        tvTitle.setText(book.getTitle() != null ? book.getTitle() : "Chưa cập nhật");
+        tvAuthor.setText(book.getAuthor() != null ? book.getAuthor() : "Chưa cập nhật");
+        tvCategory.setText((book.getCategory() != null && !book.getCategory().isEmpty()) ? book.getCategory() : "Khác");
+        tvCondition.setText((book.getCondition() != null && !book.getCondition().isEmpty()) ? book.getCondition() : "Mới");
+        tvDescription.setText(book.getDescription() != null ? book.getDescription() : "Chưa có mô tả.");
+
+        if (book.getImageUrl() != null && !book.getImageUrl().isEmpty()) {
+            Glide.with(this).load(book.getImageUrl()).into(ivBookCover);
+        } else {
+            ivBookCover.setImageResource(R.drawable.ic_bookshare_logo);
+        }
+
+        // Tải thông tin chủ sách
+        if (book.getOwnerId() != null && !book.getOwnerId().isEmpty()) {
+            userRepository.getUserProfile(book.getOwnerId(), new UserRepository.UserCallback() {
+                @Override
+                public void onSuccess(User user) {
+                    tvOwnerName.setText(user.getFullName());
+                    if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
+                        Glide.with(BookDetailActivity.this).load(user.getAvatarUrl()).into(ivOwnerAvatar);
+                    }
+                }
+                @Override
+                public void onError(String errorMessage) {
+                    tvOwnerName.setText("Người đăng ẩn danh");
+                }
+            });
+        }
+
+        // Kiểm tra Owner Actions
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null && currentUser.getUid().equals(book.getOwnerId())) {
+            layoutOwnerActions.setVisibility(View.VISIBLE);
+            btnDelete.setOnClickListener(v -> {
+                bookViewModel.deleteBook(book.getId(), new BookRepository.ActionCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(BookDetailActivity.this, "Đã xóa sách", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+                    @Override
+                    public void onError(String errorMessage) {
+                        Toast.makeText(BookDetailActivity.this, "Xóa lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            });
+            btnEdit.setOnClickListener(v -> {
+                Toast.makeText(this, "Chức năng Sửa sẽ được cập nhật", Toast.LENGTH_SHORT).show();
+            });
+        } else {
+            layoutOwnerActions.setVisibility(View.GONE);
+        }
     }
 
     // ==========================================

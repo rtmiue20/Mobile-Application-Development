@@ -3,3 +3,9 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.google.services) apply false
 }
+
+if (tasks.findByName("prepareKotlinBuildScriptModel") == null) {
+    tasks.register("prepareKotlinBuildScriptModel") {
+        description = "Placeholder task for IDE Kotlin build script model sync"
+    }
+}
