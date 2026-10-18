@@ -6,23 +6,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_surface"
-    android:fillViewport="true"
-    tools:context=".RegisterActivity">
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="20dp"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="28dp"
         android:paddingBottom="24dp">
 
-        <!-- Welcome Mascot / Art Card -->
+        <!-- Top Welcome Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/input_bg"
+            android:layout_marginBottom="20dp"
+            app:cardBackgroundColor="#EAF5E9"
             app:cardCornerRadius="20dp"
             app:cardElevation="0dp"
             app:strokeWidth="0dp">
@@ -34,31 +33,18 @@
                 android:orientation="horizontal"
                 android:padding="16dp">
 
-                <!-- Logo Box -->
-                <FrameLayout
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    android:background="@drawable/bg_login_card"
-                    android:elevation="1dp">
+                <ImageView
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginEnd="16dp"
+                    android:contentDescription="@string/app_name"
+                    android:src="@drawable/ic_bookshare_logo" />
 
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:padding="8dp"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/ic_bookshare_logo"
-                        tools:ignore="ContentDescription" />
-                </FrameLayout>
-
-                <!-- Text Header -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
                     android:orientation="vertical">
 
-                    <!-- Badge Row -->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -69,9 +55,9 @@
                             android:layout_width="14dp"
                             android:layout_height="14dp"
                             android:layout_marginEnd="4dp"
+                            android:contentDescription="Leaf"
                             android:src="@drawable/ic_leaf"
-                            app:tint="@color/secondary_green"
-                            tools:ignore="ContentDescription" />
+                            app:tint="@color/secondary_green" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -82,7 +68,6 @@
                             android:textStyle="bold" />
                     </LinearLayout>
 
-                    <!-- Title -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -92,29 +77,25 @@
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
-                    <!-- Subtitle -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:maxLines="2"
                         android:text="@string/welcome_register_subtitle"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
-
             </LinearLayout>
-
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Register Card -->
+        <!-- Form Card Container -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginBottom="20dp"
             app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="2dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="3dp"
             app:strokeWidth="0dp">
 
             <LinearLayout
@@ -123,101 +104,98 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
-                <!-- Full Name Label -->
+                <!-- Full Name -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
                     android:text="@string/label_fullname"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <!-- Full Name Field Container -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
                     android:background="@drawable/bg_input_field"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="14dp">
+                    android:paddingHorizontal="16dp">
 
                     <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@string/label_fullname"
                         android:src="@drawable/ic_person"
-                        app:tint="@color/text_hint"
-                        tools:ignore="ContentDescription" />
+                        app:tint="@color/text_hint" />
 
                     <EditText
                         android:id="@+id/etFullName"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="10dp"
+                        android:autofillHints="name"
                         android:background="@null"
                         android:hint="@string/hint_fullname"
                         android:inputType="textPersonName"
-                        android:singleLine="true"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
                         android:textColor="@color/text_primary"
                         android:textColorHint="@color/text_hint"
-                        android:textSize="14sp"
-                        tools:ignore="Autofill" />
+                        android:textSize="14sp" />
                 </LinearLayout>
 
-                <!-- Email Label -->
+                <!-- Email -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="8dp"
                     android:text="@string/label_email"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <!-- Email Field Container -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
                     android:background="@drawable/bg_input_field"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="14dp">
+                    android:paddingHorizontal="16dp">
 
                     <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@string/label_email"
                         android:src="@drawable/ic_mail"
-                        app:tint="@color/text_hint"
-                        tools:ignore="ContentDescription" />
+                        app:tint="@color/text_hint" />
 
                     <EditText
                         android:id="@+id/etEmail"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="10dp"
+                        android:autofillHints="emailAddress"
                         android:background="@null"
                         android:hint="@string/hint_email"
                         android:inputType="textEmailAddress"
-                        android:singleLine="true"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
                         android:textColor="@color/text_primary"
                         android:textColorHint="@color/text_hint"
-                        android:textSize="14sp"
-                        tools:ignore="Autofill" />
+                        android:textSize="14sp" />
                 </LinearLayout>
 
                 <!-- Password Label Row -->
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:layout_marginBottom="8dp">
 
                     <TextView
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_alignParentStart="true"
                         android:text="@string/label_password"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
@@ -226,138 +204,124 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
                         android:text="@string/label_password_hint_right"
                         android:textColor="@color/text_hint"
                         android:textSize="12sp" />
-                </LinearLayout>
+                </RelativeLayout>
 
-                <!-- Password Field Container -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
                     android:background="@drawable/bg_input_field"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="14dp">
+                    android:paddingHorizontal="16dp">
 
                     <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@string/label_password"
                         android:src="@drawable/ic_lock"
-                        app:tint="@color/text_hint"
-                        tools:ignore="ContentDescription" />
+                        app:tint="@color/text_hint" />
 
                     <EditText
                         android:id="@+id/etRegisterPassword"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="10dp"
                         android:layout_weight="1"
+                        android:autofillHints="newPassword"
                         android:background="@null"
                         android:hint="@string/hint_register_password"
                         android:inputType="textPassword"
-                        android:singleLine="true"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
                         android:textColor="@color/text_primary"
                         android:textColorHint="@color/text_hint"
-                        android:textSize="14sp"
-                        tools:ignore="Autofill" />
+                        android:textSize="14sp" />
 
                     <ImageView
                         android:id="@+id/btnToggleRegisterPassword"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:padding="3dp"
+                        android:contentDescription="Hiển thị mật khẩu"
+                        android:padding="2dp"
                         android:src="@drawable/ic_visibility"
-                        app:tint="@color/text_hint"
-                        tools:ignore="ContentDescription" />
+                        app:tint="@color/text_hint" />
                 </LinearLayout>
 
-                <!-- Confirm Password Label -->
+                <!-- Confirm Password -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="8dp"
                     android:text="@string/label_confirm_password"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
-                <!-- Confirm Password Field Container -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="16dp"
                     android:background="@drawable/bg_input_field"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="14dp">
+                    android:paddingHorizontal="16dp">
 
                     <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@string/label_confirm_password"
                         android:src="@drawable/ic_verified_user"
-                        app:tint="@color/text_hint"
-                        tools:ignore="ContentDescription" />
+                        app:tint="@color/text_hint" />
 
                     <EditText
                         android:id="@+id/etConfirmPassword"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="10dp"
                         android:layout_weight="1"
+                        android:autofillHints="newPassword"
                         android:background="@null"
                         android:hint="@string/hint_confirm_password"
                         android:inputType="textPassword"
-                        android:singleLine="true"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
                         android:textColor="@color/text_primary"
                         android:textColorHint="@color/text_hint"
-                        android:textSize="14sp"
-                        tools:ignore="Autofill" />
+                        android:textSize="14sp" />
 
                     <ImageView
                         android:id="@+id/btnToggleConfirmPassword"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:padding="3dp"
+                        android:contentDescription="Hiển thị mật khẩu"
+                        android:padding="2dp"
                         android:src="@drawable/ic_visibility"
-                        app:tint="@color/text_hint"
-                        tools:ignore="ContentDescription" />
+                        app:tint="@color/text_hint" />
                 </LinearLayout>
 
-                <!-- Terms Checkbox -->
+                <!-- Agree Terms CheckBox -->
                 <CheckBox
                     android:id="@+id/cbTerms"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="6dp"
-                    android:buttonTint="@color/primary_dark_green"
-                    android:checked="true"
-                    android:gravity="top|start"
-                    android:lineSpacingExtra="4dp"
-                    android:lineSpacingMultiplier="1.2"
-                    android:paddingStart="8dp"
+                    android:layout_marginBottom="20dp"
+                    android:buttonTint="@color/secondary_green"
                     android:text="@string/agree_terms"
                     android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    tools:ignore="RtlSymmetry,TouchTargetSizeCheck" />
+                    android:textSize="13sp" />
 
-                <!-- Primary Register Button -->
+                <!-- Register Button -->
                 <LinearLayout
                     android:id="@+id/btnRegisterAccount"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
-                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="20dp"
                     android:background="@drawable/bg_btn_primary"
-                    android:clickable="true"
-                    android:focusable="true"
                     android:gravity="center"
                     android:orientation="horizontal">
 
@@ -365,75 +329,79 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/btn_register"
-                        android:textColor="@color/white"
-                        android:textSize="15sp"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
                         android:textStyle="bold" />
 
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_marginStart="8dp"
+                        android:contentDescription="@string/btn_register"
                         android:src="@drawable/ic_arrow_forward"
-                        app:tint="@color/white"
-                        tools:ignore="ContentDescription" />
+                        app:tint="#FFFFFF" />
                 </LinearLayout>
 
-                <!-- Social Divider -->
-                <RelativeLayout
+                <!-- Divider -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="16dp">
+                    android:layout_marginBottom="20dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
 
                     <View
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="1dp"
-                        android:layout_centerInParent="true"
+                        android:layout_weight="1"
                         android:background="@color/divider_color" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_centerInParent="true"
-                        android:background="@color/card_bg"
-                        android:paddingHorizontal="10dp"
+                        android:paddingHorizontal="12dp"
                         android:text="@string/or_register_with"
                         android:textColor="@color/text_hint"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-                </RelativeLayout>
+                        android:textSize="11sp" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="@color/divider_color" />
+                </LinearLayout>
 
                 <!-- Google Register Button -->
                 <LinearLayout
                     android:id="@+id/btnGoogleRegister"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="52dp"
+                    android:layout_marginBottom="16dp"
                     android:background="@drawable/bg_btn_google"
-                    android:clickable="true"
-                    android:focusable="true"
                     android:gravity="center"
                     android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_google"
-                        tools:ignore="ContentDescription" />
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginEnd="10dp"
+                        android:contentDescription="@string/btn_google_register"
+                        android:src="@drawable/ic_google" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
                         android:text="@string/btn_google_register"
                         android:textColor="@color/text_primary"
-                        android:textSize="14sp"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <!-- Trust Stamp -->
+                <!-- Trust Stamp Footer -->
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_gravity="center"
                     android:gravity="center"
                     android:orientation="horizontal">
 
@@ -441,9 +409,9 @@
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:layout_marginEnd="6dp"
+                        android:contentDescription="Trust"
                         android:src="@drawable/ic_verified"
-                        app:tint="@color/secondary_green"
-                        tools:ignore="ContentDescription" />
+                        app:tint="@color/secondary_green" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -452,25 +420,17 @@
                         android:textColor="@color/text_hint"
                         android:textSize="12sp" />
                 </LinearLayout>
-
             </LinearLayout>
-
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Login Link Footer -->
+        <!-- Footer Link -->
         <TextView
             android:id="@+id/tvLoginNow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:padding="6dp"
+            android:layout_gravity="center"
+            android:text="@string/already_has_account_prefix"
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
-
     </LinearLayout>
-
 </ScrollView>
