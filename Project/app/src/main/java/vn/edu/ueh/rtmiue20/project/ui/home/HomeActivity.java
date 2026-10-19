@@ -5,11 +5,8 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -21,8 +18,6 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.ui.book.BookDetailActivity;
@@ -30,38 +25,41 @@ import vn.edu.ueh.rtmiue20.project.ui.book.CreatePostActivity;
 import vn.edu.ueh.rtmiue20.project.ui.profile.ProfileActivity;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
 
-    private BookViewModel bookViewModel;
     private BookAdapter bookAdapter;
     private List<Book> allBooksList = new ArrayList<>();
+    private List<Book> currentFilteredList = new ArrayList<>();
 
     private EditText etSearchBook;
     private ImageView btnClearSearch;
-    private Spinner spinnerCategory, spinnerCondition, spinnerSort;
     private RecyclerView rvBooks;
     private TextView tvEmptyBooks;
+    
+    // Pagination
+    private static final int ITEMS_PER_PAGE = 4;
+    private int currentPage = 1;
+    private int totalPages = 1;
+    private TextView btnPrevPage, btnNextPage, tvPageIndicator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_home);
+        setContentView(R.layout.activity_dashboard);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainHome), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0); // Bottom nav is floating
             return insets;
         });
 
         initViews();
-        setupSpinners();
         setupRecyclerView();
 
-        bookViewModel = new ViewModelProvider(this).get(BookViewModel.class);
+        BookViewModel bookViewModel = new ViewModelProvider(this).get(BookViewModel.class);
         bookViewModel.getAllBooks().observe(this, books -> {
             if (books != null) {
                 allBooksList = books;
@@ -75,49 +73,32 @@ public class HomeActivity extends AppCompatActivity {
     private void initViews() {
         etSearchBook = findViewById(R.id.etSearchBook);
         btnClearSearch = findViewById(R.id.btnClearSearch);
-        spinnerCategory = findViewById(R.id.spinnerCategory);
-        spinnerCondition = findViewById(R.id.spinnerCondition);
-        spinnerSort = findViewById(R.id.spinnerSort);
         rvBooks = findViewById(R.id.rvBooks);
         tvEmptyBooks = findViewById(R.id.tvEmptyBooks);
+        
+        btnPrevPage = findViewById(R.id.btnPrevPage);
+        btnNextPage = findViewById(R.id.btnNextPage);
+        tvPageIndicator = findViewById(R.id.tvPageIndicator);
 
         ImageView btnGoToProfile = findViewById(R.id.btnGoToProfile);
-        btnGoToProfile.setOnClickListener(v -> {
-            startActivity(new Intent(HomeActivity.this, ProfileActivity.class));
-        });
+        if (btnGoToProfile != null) {
+            btnGoToProfile.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, ProfileActivity.class)));
+        }
 
-        FloatingActionButton fabAddBook = findViewById(R.id.fabAddBook);
-        fabAddBook.setOnClickListener(v -> {
-            startActivity(new Intent(HomeActivity.this, CreatePostActivity.class));
-        });
+        ImageView fabAddBook = findViewById(R.id.fabAddBook);
+        if (fabAddBook != null) {
+            fabAddBook.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, CreatePostActivity.class)));
+        }
 
         View btnNavProfile = findViewById(R.id.btnNavProfile);
         if (btnNavProfile != null) {
-            btnNavProfile.setOnClickListener(v -> {
-                startActivity(new Intent(HomeActivity.this, ProfileActivity.class));
-            });
+            btnNavProfile.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, ProfileActivity.class)));
         }
     }
 
-    private void setupSpinners() {
-        String[] categories = {"Tất cả", "Giáo trình", "Văn học", "Kỹ năng", "Kinh tế", "Khác"};
-        ArrayAdapter<String> catAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, categories);
-        catAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerCategory.setAdapter(catAdapter);
-
-        String[] conditions = {"Tất cả tình trạng", "Mới", "Khá mới", "Cũ"};
-        ArrayAdapter<String> condAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, conditions);
-        condAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerCondition.setAdapter(condAdapter);
-
-        String[] sorts = {"Mới nhất", "Tên A-Z"};
-        ArrayAdapter<String> sortAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, sorts);
-        sortAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerSort.setAdapter(sortAdapter);
-    }
-
     private void setupRecyclerView() {
-        int columns = getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ? 3 : 2;
+        // Handle landscape responsiveness
+        int columns = getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ? 4 : 2;
         rvBooks.setLayoutManager(new GridLayoutManager(this, columns));
         bookAdapter = new BookAdapter(book -> {
             Intent intent = new Intent(HomeActivity.this, BookDetailActivity.class);
@@ -131,7 +112,8 @@ public class HomeActivity extends AppCompatActivity {
         etSearchBook.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                btnClearSearch.setVisibility(s.length() > 0 ? View.VISIBLE : View.GONE);
+                btnClearSearch.setVisibility(s.length() != 0 ? View.VISIBLE : View.GONE);
+                currentPage = 1; // Reset to page 1 on search
                 applyFilters();
             }
             @Override public void afterTextChanged(Editable s) {}
@@ -141,29 +123,27 @@ public class HomeActivity extends AppCompatActivity {
             etSearchBook.setText("");
             etSearchBook.clearFocus();
         });
-
-        AdapterView.OnItemSelectedListener filterListener = new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                applyFilters();
+        
+        btnPrevPage.setOnClickListener(v -> {
+            if (currentPage > 1) {
+                currentPage--;
+                updatePagination();
             }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        };
+        });
 
-        spinnerCategory.setOnItemSelectedListener(filterListener);
-        spinnerCondition.setOnItemSelectedListener(filterListener);
-        spinnerSort.setOnItemSelectedListener(filterListener);
+        btnNextPage.setOnClickListener(v -> {
+            if (currentPage < totalPages) {
+                currentPage++;
+                updatePagination();
+            }
+        });
     }
 
     private void applyFilters() {
         if (allBooksList == null) return;
 
-        List<Book> filteredList = new ArrayList<>();
+        currentFilteredList = new ArrayList<>();
         String searchQuery = etSearchBook.getText().toString().trim().toLowerCase();
-        String selCategory = spinnerCategory.getSelectedItem() != null ? spinnerCategory.getSelectedItem().toString() : "Tất cả";
-        String selCondition = spinnerCondition.getSelectedItem() != null ? spinnerCondition.getSelectedItem().toString() : "Tất cả tình trạng";
-        String selSort = spinnerSort.getSelectedItem() != null ? spinnerSort.getSelectedItem().toString() : "Mới nhất";
 
         for (Book b : allBooksList) {
             // 1. Status
@@ -173,55 +153,55 @@ public class HomeActivity extends AppCompatActivity {
             }
 
             // 2. Search
-            boolean matchesSearch = true;
             if (!searchQuery.isEmpty()) {
                 String title = b.getTitle() != null ? b.getTitle().toLowerCase() : "";
                 String author = b.getAuthor() != null ? b.getAuthor().toLowerCase() : "";
                 if (!title.contains(searchQuery) && !author.contains(searchQuery)) {
-                    matchesSearch = false;
-                }
-            }
-            if (!matchesSearch) continue;
-
-            // 3. Category
-            if (!selCategory.equals("Tất cả")) {
-                String cat = b.getCategory() != null && !b.getCategory().isEmpty() ? b.getCategory() : "Khác";
-                if (!cat.equals(selCategory)) {
                     continue;
                 }
             }
 
-            // 4. Condition
-            if (!selCondition.equals("Tất cả tình trạng")) {
-                String cond = b.getCondition() != null && !b.getCondition().isEmpty() ? b.getCondition() : "Mới";
-                if (!cond.equals(selCondition)) {
-                    continue;
-                }
-            }
-
-            filteredList.add(b);
+            currentFilteredList.add(b);
         }
 
-        // 5. Sorting
-        if ("Tên A-Z".equals(selSort)) {
-            Collections.sort(filteredList, (b1, b2) -> {
-                String t1 = b1.getTitle() != null ? b1.getTitle() : "";
-                String t2 = b2.getTitle() != null ? b2.getTitle() : "";
-                return t1.compareToIgnoreCase(t2);
-            });
-        } else {
-            // "Mới nhất" (giảm dần theo createdAt)
-            Collections.sort(filteredList, (b1, b2) -> Long.compare(b2.getCreatedAt(), b1.getCreatedAt()));
+        // Default Sorting (Mới nhất)
+        currentFilteredList.sort((b1, b2) -> Long.compare(b2.getCreatedAt(), b1.getCreatedAt()));
+
+        // Calculate total pages
+        totalPages = (int) Math.ceil((double) currentFilteredList.size() / ITEMS_PER_PAGE);
+        if (totalPages == 0) totalPages = 1;
+        
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
         }
 
-        bookAdapter.update(filteredList);
-
-        if (filteredList.isEmpty()) {
+        updatePagination();
+        
+        TextView tvSectionTitleCount = findViewById(R.id.tvSectionTitle); // Will need a specific ID if we update count dynamically
+        // Just leaving the UI string updates simplified for now
+    }
+    
+    private void updatePagination() {
+        if (currentFilteredList.isEmpty()) {
             tvEmptyBooks.setVisibility(View.VISIBLE);
             rvBooks.setVisibility(View.GONE);
-        } else {
-            tvEmptyBooks.setVisibility(View.GONE);
-            rvBooks.setVisibility(View.VISIBLE);
+            findViewById(R.id.layoutPagination).setVisibility(View.GONE);
+            return;
         }
+        
+        tvEmptyBooks.setVisibility(View.GONE);
+        rvBooks.setVisibility(View.VISIBLE);
+        findViewById(R.id.layoutPagination).setVisibility(View.VISIBLE);
+
+        int startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, currentFilteredList.size());
+        
+        List<Book> pageItems = currentFilteredList.subList(startIndex, endIndex);
+        bookAdapter.update(pageItems);
+        
+        tvPageIndicator.setText(currentPage + " / " + totalPages);
+        
+        btnPrevPage.setVisibility(currentPage > 1 ? View.VISIBLE : View.INVISIBLE);
+        btnNextPage.setVisibility(currentPage < totalPages ? View.VISIBLE : View.INVISIBLE);
     }
 }
