@@ -2,7 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/mainHome"
+    android:id="@+id/mainMemberDashboard"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_surface">
@@ -20,6 +20,7 @@
         <ImageView
             android:layout_width="32dp"
             android:layout_height="32dp"
+            android:contentDescription="Logo"
             android:src="@drawable/ic_bookshare_logo" />
 
         <LinearLayout
@@ -40,7 +41,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="TRANG CHỦ"
+                android:text="TRANG CHỦ THÀNH VIÊN"
                 android:textColor="@color/on_surface_variant"
                 android:textSize="10sp"
                 android:textStyle="bold" />
@@ -49,6 +50,7 @@
         <ImageView
             android:layout_width="24dp"
             android:layout_height="24dp"
+            android:contentDescription="Thông báo"
             android:src="@drawable/ic_notifications"
             app:tint="@color/text_primary" />
 
@@ -57,9 +59,10 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_marginStart="16dp"
-            android:src="@drawable/ic_person"
             android:background="@drawable/bg_fab_add"
+            android:contentDescription="Cá nhân"
             android:padding="4dp"
+            android:src="@drawable/ic_person"
             app:tint="@color/white" />
     </LinearLayout>
 
@@ -90,6 +93,7 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    android:contentDescription="Search"
                     android:src="@drawable/ic_search"
                     app:tint="@color/outline" />
 
@@ -109,6 +113,7 @@
                     android:id="@+id/btnClearSearch"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    android:contentDescription="Clear"
                     android:src="@drawable/ic_close"
                     android:visibility="gone"
                     app:tint="@color/outline" />
@@ -127,6 +132,7 @@
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="@drawable/bg_tag_secondary"
+                    android:contentDescription="Book icon"
                     android:padding="8dp"
                     android:src="@drawable/ic_book"
                     app:tint="@color/on_secondary_container" />
@@ -168,7 +174,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Category Pills (Horizontal Scroll) -->
+            <!-- Category Pills -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -180,7 +186,6 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
-                    <!-- Mượn lại Spinner thay bằng các nút bấm tuỳ chọn lọc ở code java -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="36dp"
@@ -266,6 +271,7 @@
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
+                        android:contentDescription="Tune"
                         android:src="@drawable/ic_tune"
                         app:tint="@color/secondary_green" />
 
@@ -301,6 +307,25 @@
                 android:gravity="center"
                 android:text="Không tìm thấy sách nào."
                 android:textColor="@color/text_hint"
+                android:visibility="gone" />
+
+            <!-- Hidden Spinners for compatibility -->
+            <Spinner
+                android:id="@+id/spinnerCategory"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/spinnerCondition"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone" />
+
+            <Spinner
+                android:id="@+id/spinnerSort"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
                 android:visibility="gone" />
 
             <!-- Pagination Controls -->
@@ -390,6 +415,7 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    android:contentDescription="Trang chủ"
                     android:src="@drawable/ic_home"
                     app:tint="@color/primary" />
                 <TextView
@@ -410,6 +436,7 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    android:contentDescription="Search"
                     android:src="@drawable/ic_search"
                     app:tint="@color/on_surface_variant" />
                 <TextView
@@ -434,6 +461,7 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    android:contentDescription="Swap"
                     android:src="@drawable/ic_swap_horiz"
                     app:tint="@color/on_surface_variant" />
                 <TextView
@@ -454,6 +482,7 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    android:contentDescription="Profile"
                     android:src="@drawable/ic_person"
                     app:tint="@color/on_surface_variant" />
                 <TextView
@@ -472,6 +501,7 @@
             android:layout_height="64dp"
             android:layout_centerHorizontal="true"
             android:background="@drawable/bg_fab_add"
+            android:contentDescription="Add Book"
             android:elevation="10dp"
             android:padding="16dp"
             android:src="@drawable/ic_add"
