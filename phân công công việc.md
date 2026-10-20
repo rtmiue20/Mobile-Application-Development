@@ -8,13 +8,13 @@
 | Người | Mảng phụ trách | Chức năng (mã FR) |
 |---|---|---|
 | **Leader** | BA, kiến trúc, dữ liệu, deploy, review | FR14 + khung `data/`, Security Rules, admin layout |
-| **Thành viên 2** | Người dùng, hồ sơ, bảo mật tài khoản | FR01, FR02, FR03, FR15 |
-| **Thành viên 3** | Sách và tìm kiếm (lõi app) | FR04, FR05, FR06, FR07 |
-| **Thành viên 4** | Tương tác, offline, thông báo | FR08, FR09, FR10, FR11, FR12, FR13 |
+| **Khang** | Người dùng, hồ sơ, bảo mật tài khoản | FR01, FR02, FR03, FR15 |
+| **Phúc** | Sách và tìm kiếm (lõi app) | FR04, FR05, FR06, FR07 |
+| **Vương** | Tương tác, offline, thông báo | FR08, FR09, FR10, FR11, FR12, FR13 |
 
 ## Tổng quan theo tuần (ai làm gì)
 
-| Tuần | Leader | Thành viên 2 | Thành viên 3 | Thành viên 4 |
+| Tuần | Leader | Khang | Phúc | Vương |
 |---|---|---|---|---|
 | 1 | BA, ERD, repo, board, khung MVVM, kết nối Firebase | Cài môi trường, FR01 đăng ký/đăng nhập Email, FR02 Google Sign-In | Cài môi trường, view tĩnh Trang chủ/Chi tiết/Đăng bài | Cài môi trường, view tĩnh Yêu cầu/Thông báo, nghiên cứu Room + FCM |
 | 2 | Repository chung, Security Rules bản đầu, hỗ trợ tích hợp | FR03 hồ sơ cá nhân | FR04 Trang chủ, FR05 Tìm kiếm, FR06 Đăng/sửa/xóa bài, FR07 Chi tiết | FR08 Bình luận, FR09 Yêu thích |
