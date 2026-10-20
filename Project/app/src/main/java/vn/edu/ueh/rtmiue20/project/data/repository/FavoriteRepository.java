@@ -1,5 +1,7 @@
 package vn.edu.ueh.rtmiue20.project.data.repository;
 
+import android.app.Application;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
@@ -15,7 +17,16 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.QuerySnapshot;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import vn.edu.ueh.rtmiue20.project.data.local.BookRoomDatabase;
+import vn.edu.ueh.rtmiue20.project.data.local.FavoriteDao;
+import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.data.model.Favorite;
 
 public class FavoriteRepository {
@@ -24,20 +35,23 @@ public class FavoriteRepository {
 
     private final FirebaseFirestore db;
     private final FirebaseAuth auth;
+    private final FavoriteDao favoriteDao;
     private ListenerRegistration favoriteRegistration;
+    private ListenerRegistration listRegistration;
+
+    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     private final MutableLiveData<Boolean> isFavoritedLiveData = new MutableLiveData<Boolean>();
     private final MutableLiveData<String> errorLiveData = new MutableLiveData<String>();
-
-    // Chong bam lien tuc trong luc request truoc chua xong
     private boolean isToggling = false;
 
-    public FavoriteRepository() {
+    // CẦN CÓ APPLICATION ĐỂ GỌI ROOM
+    public FavoriteRepository(Application application) {
         db = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
+        favoriteDao = BookRoomDatabase.getDatabase(application).favoriteDao();
     }
 
-    // Document id = {userId}_{bookId} de dam bao moi user chi yeu thich mot sach mot lan
     private String buildFavoriteId(String userId, String bookId) {
         return userId + "_" + bookId;
     }
@@ -46,10 +60,59 @@ public class FavoriteRepository {
         return db.collection(COLLECTION_FAVORITES).document(buildFavoriteId(userId, bookId));
     }
 
-    // Kiem tra realtime user hien tai da yeu thich sach nay chua
+    // --- LOGIC OFFLINE ROOM ---
+
+    public LiveData<List<Book>> getFavoritedBooksOffline() {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user != null) {
+            return favoriteDao.getFavoritedBooksByUser(user.getUid());
+        }
+        return new MutableLiveData<List<Book>>();
+    }
+
+    public void startSyncFavorites() {
+        final FirebaseUser user = auth.getCurrentUser();
+        if (user == null) return;
+        if (listRegistration != null) return;
+
+        listRegistration = db.collection(COLLECTION_FAVORITES)
+                .whereEqualTo("userId", user.getUid())
+                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
+                        if (error != null || value == null) return;
+
+                        final List<Favorite> list = new ArrayList<>();
+                        for (DocumentSnapshot doc : value.getDocuments()) {
+                            Favorite fav = doc.toObject(Favorite.class);
+                            if (fav != null) {
+                                fav.setFavoriteId(doc.getId());
+                                list.add(fav);
+                            }
+                        }
+
+                        executorService.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                favoriteDao.deleteAllByUser(user.getUid());
+                                favoriteDao.insertAll(list);
+                            }
+                        });
+                    }
+                });
+    }
+
+    public void stopSyncFavorites() {
+        if (listRegistration != null) {
+            listRegistration.remove();
+            listRegistration = null;
+        }
+    }
+
+    // --- LOGIC ONLINE FIRESTORE ---
+
     public LiveData<Boolean> checkIsFavorited(String bookId) {
         removeListener();
-
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
             isFavoritedLiveData.setValue(false);
@@ -59,10 +122,9 @@ public class FavoriteRepository {
         favoriteRegistration = getFavoriteRef(user.getUid(), bookId)
                 .addSnapshotListener(new EventListener<DocumentSnapshot>() {
                     @Override
-                    public void onEvent(@Nullable DocumentSnapshot snapshot,
-                                        @Nullable FirebaseFirestoreException error) {
+                    public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException error) {
                         if (error != null) {
-                            errorLiveData.setValue("Không thể tải trạng thái yêu thích: " + error.getMessage());
+                            errorLiveData.setValue("Không thể tải trạng thái yêu thích");
                             return;
                         }
                         boolean exists = snapshot != null && snapshot.exists();
@@ -73,17 +135,14 @@ public class FavoriteRepository {
         return isFavoritedLiveData;
     }
 
-    // Chua yeu thich thi them, da yeu thich thi xoa
     public void toggleFavorite(final String bookId) {
         final FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
-            errorLiveData.setValue("Bạn cần đăng nhập để lưu sách yêu thích");
+            errorLiveData.setValue("Bạn cần đăng nhập để lưu sách");
             return;
         }
 
-        if (isToggling) {
-            return;
-        }
+        if (isToggling) return;
         isToggling = true;
 
         final String userId = user.getUid();
@@ -94,28 +153,35 @@ public class FavoriteRepository {
             @Override
             public void onSuccess(DocumentSnapshot snapshot) {
                 if (snapshot.exists()) {
-                    favoriteRef.delete()
-                            .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    favoriteRef.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            executorService.execute(new Runnable() {
                                 @Override
-                                public void onSuccess(Void unused) {
-                                    isToggling = false;
+                                public void run() {
+                                    favoriteDao.deleteById(favoriteId);
                                 }
-                            })
-                            .addOnFailureListener(createFailureListener("Bỏ yêu thích thất bại: "));
+                            });
+                            isToggling = false;
+                        }
+                    }).addOnFailureListener(createFailureListener("Bỏ yêu thích thất bại: "));
                 } else {
-                    Favorite favorite = new Favorite(
-                            favoriteId, userId, bookId, System.currentTimeMillis());
-                    favoriteRef.set(favorite)
-                            .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    final Favorite favorite = new Favorite(favoriteId, userId, bookId, System.currentTimeMillis());
+                    favoriteRef.set(favorite).addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            executorService.execute(new Runnable() {
                                 @Override
-                                public void onSuccess(Void unused) {
-                                    isToggling = false;
+                                public void run() {
+                                    favoriteDao.insert(favorite);
                                 }
-                            })
-                            .addOnFailureListener(createFailureListener("Lưu yêu thích thất bại: "));
+                            });
+                            isToggling = false;
+                        }
+                    }).addOnFailureListener(createFailureListener("Lưu yêu thích thất bại: "));
                 }
             }
-        }).addOnFailureListener(createFailureListener("Không thể kiểm tra trạng thái: "));
+        }).addOnFailureListener(createFailureListener("Lỗi kiểm tra trạng thái: "));
     }
 
     private OnFailureListener createFailureListener(final String prefix) {
@@ -128,13 +194,8 @@ public class FavoriteRepository {
         };
     }
 
-    public LiveData<String> getError() {
-        return errorLiveData;
-    }
-
-    public void resetError() {
-        errorLiveData.setValue(null);
-    }
+    public LiveData<String> getError() { return errorLiveData; }
+    public void resetError() { errorLiveData.setValue(null); }
 
     public void removeListener() {
         if (favoriteRegistration != null) {

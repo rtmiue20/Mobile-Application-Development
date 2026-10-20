@@ -1,5 +1,10 @@
 package vn.edu.ueh.rtmiue20.project.ui.book;
 
+import android.content.Context;
+import android.content.DialogInterface;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -10,6 +15,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.OnApplyWindowInsetsListener;
@@ -24,14 +30,16 @@ import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import java.util.List;
+
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.data.model.Comment;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.BookRepository;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
-import vn.edu.ueh.rtmiue20.project.ui.home.BookViewModel;
 import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
+import vn.edu.ueh.rtmiue20.project.ui.home.BookViewModel;
 
 public class BookDetailActivity extends AppCompatActivity {
 
@@ -61,13 +69,24 @@ public class BookDetailActivity extends AppCompatActivity {
     private ImageView btnFavorite;
     private FavoriteViewModel favoriteViewModel;
 
+    // Biến cho FR12 (Offline Banner)
+    private TextView tvOfflineBanner;
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
+
+    // Biến cho FR10 (Yêu cầu nhận sách)
+    private LinearLayout btnRequestBook;
+    private vn.edu.ueh.rtmiue20.project.ui.request.RequestViewModel requestViewModel;
+    private String currentBookTitle = "Sách không tên";
+    private String currentOwnerId = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_book_detail);
 
-        // Thiết lập giao diện tràn viền (KHÔNG DÙNG LAMBDA)
+        // Thiết lập giao diện tràn viền
         View mainView = findViewById(android.R.id.content);
         ViewCompat.setOnApplyWindowInsetsListener(mainView, new OnApplyWindowInsetsListener() {
             @Override
@@ -83,15 +102,14 @@ public class BookDetailActivity extends AppCompatActivity {
             bookId = "mock_book_test_123";
         }
 
-        // Khởi tạo Views
+        // Khởi tạo Views chung
         initViews();
 
-        // Khởi tạo ViewModels & Repositories
         bookViewModel = new ViewModelProvider(this).get(BookViewModel.class);
         userRepository = UserRepository.getInstance();
 
         // Ánh xạ View cho Bình luận (FR08)
-        rvComments = findViewById(R.id.rv_comments);
+        rvComments = findViewById(R.id.rvComments);
         etComment = findViewById(R.id.et_comment);
         btnSendComment = findViewById(R.id.btn_send_comment);
         commentViewModel = new ViewModelProvider(this).get(CommentViewModel.class);
@@ -100,17 +118,55 @@ public class BookDetailActivity extends AppCompatActivity {
         btnFavorite = findViewById(R.id.btn_favorite);
         favoriteViewModel = new ViewModelProvider(this).get(FavoriteViewModel.class);
 
-        // Gọi các hàm khởi tạo của FR08
+        // Ánh xạ View cho Yêu cầu nhận sách (FR10)
+        btnRequestBook = findViewById(R.id.btn_request_book);
+        requestViewModel = new ViewModelProvider(this).get(vn.edu.ueh.rtmiue20.project.ui.request.RequestViewModel.class);
+
+        // Gọi các hàm khởi tạo
         initRecyclerView();
         observeViewModel();
         setupListeners();
-
-        // Gọi các hàm khởi tạo của FR09
         observeFavorite();
         setupFavoriteListener();
-
-        // Tải dữ liệu sách
         loadBookData();
+
+        // --- BẮT SỰ KIỆN MẠNG CHO FR12 ---
+        tvOfflineBanner = findViewById(R.id.tvOfflineBanner);
+        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        if (tvOfflineBanner != null) {
+            tvOfflineBanner.setVisibility(isOnline() ? View.GONE : View.VISIBLE);
+        }
+
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(@NonNull Network network) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (tvOfflineBanner != null) {
+                            tvOfflineBanner.setVisibility(View.GONE);
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onLost(@NonNull Network network) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (tvOfflineBanner != null) {
+                            tvOfflineBanner.setVisibility(View.VISIBLE);
+                        }
+                    }
+                });
+            }
+        };
+
+        if (connectivityManager != null) {
+            connectivityManager.registerDefaultNetworkCallback(networkCallback);
+        }
     }
 
     private void initViews() {
@@ -127,21 +183,33 @@ public class BookDetailActivity extends AppCompatActivity {
         btnEdit = findViewById(R.id.btnEdit);
         btnDelete = findViewById(R.id.btnDelete);
 
-        btnBack.setOnClickListener(v -> finish());
-    }
-
-    private void loadBookData() {
-        bookViewModel.getBook(bookId).observe(this, book -> {
-            if (book != null) {
-                bindBookData(book);
-            } else {
-                Toast.makeText(this, "Không tìm thấy thông tin sách", Toast.LENGTH_SHORT).show();
+        btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
                 finish();
             }
         });
     }
 
+    private void loadBookData() {
+        bookViewModel.getBook(bookId).observe(this, new Observer<Book>() {
+            @Override
+            public void onChanged(Book book) {
+                if (book != null) {
+                    bindBookData(book);
+                } else {
+                    Toast.makeText(BookDetailActivity.this, "Không tìm thấy thông tin sách", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            }
+        });
+    }
+
     private void bindBookData(Book book) {
+        // Lưu dữ liệu tạm cho FR10
+        currentBookTitle = book.getTitle() != null ? book.getTitle() : "Sách không tên";
+        currentOwnerId = book.getOwnerId() != null ? book.getOwnerId() : "";
+
         tvTitle.setText(book.getTitle() != null ? book.getTitle() : "Chưa cập nhật");
         tvAuthor.setText(book.getAuthor() != null ? book.getAuthor() : "Chưa cập nhật");
         tvCategory.setText((book.getCategory() != null && !book.getCategory().isEmpty()) ? book.getCategory() : "Khác");
@@ -175,21 +243,27 @@ public class BookDetailActivity extends AppCompatActivity {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null && currentUser.getUid().equals(book.getOwnerId())) {
             layoutOwnerActions.setVisibility(View.VISIBLE);
-            btnDelete.setOnClickListener(v -> {
-                bookViewModel.deleteBook(book.getId(), new BookRepository.ActionCallback() {
-                    @Override
-                    public void onSuccess() {
-                        Toast.makeText(BookDetailActivity.this, "Đã xóa sách", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                    @Override
-                    public void onError(String errorMessage) {
-                        Toast.makeText(BookDetailActivity.this, "Xóa lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
-                    }
-                });
+            btnDelete.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    bookViewModel.deleteBook(book.getId(), new BookRepository.ActionCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Toast.makeText(BookDetailActivity.this, "Đã xóa sách", Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+                        @Override
+                        public void onError(String errorMessage) {
+                            Toast.makeText(BookDetailActivity.this, "Xóa lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
             });
-            btnEdit.setOnClickListener(v -> {
-                Toast.makeText(this, "Chức năng Sửa sẽ được cập nhật", Toast.LENGTH_SHORT).show();
+            btnEdit.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Toast.makeText(BookDetailActivity.this, "Chức năng Sửa sẽ được cập nhật", Toast.LENGTH_SHORT).show();
+                }
             });
         } else {
             layoutOwnerActions.setVisibility(View.GONE);
@@ -217,23 +291,24 @@ public class BookDetailActivity extends AppCompatActivity {
         rvComments.setNestedScrollingEnabled(false);
     }
 
-    // 1. Dialog lựa chọn Sửa hoặc Xóa khi người dùng nhấn giữ bình luận của mình
-    private void showCommentActionDialog(Comment comment) {
+    private void showCommentActionDialog(final Comment comment) {
         String[] options = {"Chỉnh sửa bình luận", "Xóa bình luận"};
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Tùy chọn bình luận")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        showEditCommentDialog(comment);
-                    } else if (which == 1) {
-                        confirmDeleteComment(comment);
+                .setItems(options, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (which == 0) {
+                            showEditCommentDialog(comment);
+                        } else if (which == 1) {
+                            confirmDeleteComment(comment);
+                        }
                     }
                 })
                 .show();
     }
 
-    // 2. Dialog nhập nội dung mới (Update - U)
-    private void showEditCommentDialog(Comment comment) {
+    private void showEditCommentDialog(final Comment comment) {
         final EditText input = new EditText(this);
         input.setText(comment.getContent());
         if (comment.getContent() != null) {
@@ -243,23 +318,28 @@ public class BookDetailActivity extends AppCompatActivity {
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Chỉnh sửa bình luận")
                 .setView(input)
-                .setPositiveButton("Lưu", (dialog, which) -> {
-                    String newText = input.getText().toString().trim();
-                    if (!newText.isEmpty() && !newText.equals(comment.getContent())) {
-                        commentViewModel.updateComment(bookId, comment.getCommentId(), newText);
+                .setPositiveButton("Lưu", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String newText = input.getText().toString().trim();
+                        if (!newText.isEmpty() && !newText.equals(comment.getContent())) {
+                            commentViewModel.updateComment(bookId, comment.getCommentId(), newText);
+                        }
                     }
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
 
-    // 3. Dialog xác nhận xóa bình luận (Delete - D)
-    private void confirmDeleteComment(Comment comment) {
+    private void confirmDeleteComment(final Comment comment) {
         new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Xóa bình luận")
                 .setMessage("Bạn có chắc chắn muốn xóa bình luận này?")
-                .setPositiveButton("Xóa", (dialog, which) -> {
-                    commentViewModel.deleteComment(bookId, comment.getCommentId());
+                .setPositiveButton("Xóa", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        commentViewModel.deleteComment(bookId, comment.getCommentId());
+                    }
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
@@ -268,37 +348,52 @@ public class BookDetailActivity extends AppCompatActivity {
     private void observeViewModel() {
         if (bookId == null) return;
 
-        commentViewModel.getComments(bookId).observe(this, comments -> {
-            commentAdapter.setComments(comments);
-        });
-
-        commentViewModel.getAddSuccess().observe(this, success -> {
-            if (success != null && success) {
-                etComment.setText("");
-                btnSendComment.setEnabled(true);
-                commentViewModel.resetStatus();
+        commentViewModel.getComments(bookId).observe(this, new Observer<List<Comment>>() {
+            @Override
+            public void onChanged(List<Comment> comments) {
+                commentAdapter.setComments(comments);
             }
         });
 
-        commentViewModel.getUpdateSuccess().observe(this, success -> {
-            if (success != null && success) {
-                Toast.makeText(this, "Đã cập nhật bình luận!", Toast.LENGTH_SHORT).show();
-                commentViewModel.resetStatus();
+        commentViewModel.getAddSuccess().observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean success) {
+                if (success != null && success) {
+                    etComment.setText("");
+                    btnSendComment.setEnabled(true);
+                    commentViewModel.resetStatus();
+                }
             }
         });
 
-        commentViewModel.getDeleteSuccess().observe(this, success -> {
-            if (success != null && success) {
-                Toast.makeText(this, "Đã xóa bình luận!", Toast.LENGTH_SHORT).show();
-                commentViewModel.resetStatus();
+        commentViewModel.getUpdateSuccess().observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean success) {
+                if (success != null && success) {
+                    Toast.makeText(BookDetailActivity.this, "Đã cập nhật bình luận!", Toast.LENGTH_SHORT).show();
+                    commentViewModel.resetStatus();
+                }
             }
         });
 
-        commentViewModel.getError().observe(this, message -> {
-            if (message != null) {
-                btnSendComment.setEnabled(true);
-                Toast.makeText(BookDetailActivity.this, message, Toast.LENGTH_SHORT).show();
-                commentViewModel.resetStatus();
+        commentViewModel.getDeleteSuccess().observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean success) {
+                if (success != null && success) {
+                    Toast.makeText(BookDetailActivity.this, "Đã xóa bình luận!", Toast.LENGTH_SHORT).show();
+                    commentViewModel.resetStatus();
+                }
+            }
+        });
+
+        commentViewModel.getError().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String message) {
+                if (message != null) {
+                    btnSendComment.setEnabled(true);
+                    Toast.makeText(BookDetailActivity.this, message, Toast.LENGTH_SHORT).show();
+                    commentViewModel.resetStatus();
+                }
             }
         });
     }
@@ -341,6 +436,73 @@ public class BookDetailActivity extends AppCompatActivity {
                 commentViewModel.addComment(bookId, comment);
             }
         });
+
+        // ==========================================
+        // LẮNG NGHE YÊU CẦU SÁCH (FR10)
+        // ==========================================
+        requestViewModel.getActionSuccess().observe(this, new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean success) {
+                if (success != null && success) {
+                    Toast.makeText(BookDetailActivity.this, "Đã gửi yêu cầu nhận sách thành công!", Toast.LENGTH_LONG).show();
+                    requestViewModel.resetStatus();
+                }
+            }
+        });
+
+        requestViewModel.getError().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String message) {
+                if (message != null) {
+                    Toast.makeText(BookDetailActivity.this, message, Toast.LENGTH_LONG).show();
+                    requestViewModel.resetStatus();
+                }
+            }
+        });
+
+        if (btnRequestBook != null) {
+            btnRequestBook.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                    if (user == null) {
+                        Toast.makeText(BookDetailActivity.this, "Cần đăng nhập!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    if (currentOwnerId.equals(user.getUid())) {
+                        Toast.makeText(BookDetailActivity.this, "Bạn không thể xin sách của chính mình!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    String userName = user.getDisplayName() != null ? user.getDisplayName() : user.getEmail();
+                    String userAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
+
+                    String coverUrl = bookViewModel.getBook(bookId).getValue() != null ? bookViewModel.getBook(bookId).getValue().getImageUrl() : "";
+                    String message = "Mình rất muốn đọc cuốn này dịp cuối tuần, mình có thể qua lấy trực tiếp được ạ!";
+
+                    String ownerNameText = tvOwnerName.getText().toString();
+
+                    vn.edu.ueh.rtmiue20.project.data.model.Request newRequest = new vn.edu.ueh.rtmiue20.project.data.model.Request(
+                            null,
+                            bookId,
+                            currentBookTitle,
+                            coverUrl,
+                            user.getUid(),
+                            userName,
+                            userAvatar,
+                            currentOwnerId,
+                            ownerNameText,
+                            message,
+                            vn.edu.ueh.rtmiue20.project.data.model.Request.STATUS_PENDING,
+                            System.currentTimeMillis()
+                    );
+
+                    Toast.makeText(BookDetailActivity.this, "Đang gửi yêu cầu...", Toast.LENGTH_SHORT).show();
+                    requestViewModel.sendRequest(newRequest);
+                }
+            });
+        } // KẾT THÚC LOGIC FR10
     }
 
     // ==========================================
@@ -384,5 +546,24 @@ public class BookDetailActivity extends AppCompatActivity {
                 favoriteViewModel.toggleFavorite(bookId);
             }
         });
+    }
+
+    private boolean isOnline() {
+        if (connectivityManager == null) return false;
+        Network network = connectivityManager.getActiveNetwork();
+        if (network == null) {
+            return false;
+        }
+        NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(network);
+        return capabilities != null
+                && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (connectivityManager != null && networkCallback != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        }
     }
 }

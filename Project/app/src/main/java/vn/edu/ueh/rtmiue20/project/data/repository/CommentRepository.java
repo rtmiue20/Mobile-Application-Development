@@ -1,12 +1,20 @@
 package vn.edu.ueh.rtmiue20.project.data.repository;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import vn.edu.ueh.rtmiue20.project.data.model.Comment;
 
@@ -41,23 +49,26 @@ public class CommentRepository {
                 .document(bookId)
                 .collection(COLLECTION_COMMENTS)
                 .orderBy("createdAt", Query.Direction.ASCENDING)
-                .addSnapshotListener((value, error) -> {
-                    if (error != null) {
-                        errorLiveData.setValue("Không thể tải bình luận: " + error.getMessage());
-                        return;
-                    }
+                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
+                        if (error != null) {
+                            errorLiveData.setValue("Không thể tải bình luận: " + error.getMessage());
+                            return;
+                        }
 
-                    List<Comment> list = new ArrayList<>();
-                    if (value != null) {
-                        for (DocumentSnapshot doc : value.getDocuments()) {
-                            Comment comment = doc.toObject(Comment.class);
-                            if (comment != null) {
-                                comment.setCommentId(doc.getId());
-                                list.add(comment);
+                        List<Comment> list = new ArrayList<>();
+                        if (value != null) {
+                            for (DocumentSnapshot doc : value.getDocuments()) {
+                                Comment comment = doc.toObject(Comment.class);
+                                if (comment != null) {
+                                    comment.setCommentId(doc.getId());
+                                    list.add(comment);
+                                }
                             }
                         }
+                        commentsLiveData.setValue(list);
                     }
-                    commentsLiveData.setValue(list);
                 });
 
         return commentsLiveData;
@@ -69,11 +80,21 @@ public class CommentRepository {
                 .document(bookId)
                 .collection(COLLECTION_COMMENTS)
                 .add(comment)
-                .addOnSuccessListener(documentReference -> addSuccessLiveData.setValue(true))
-                .addOnFailureListener(e -> errorLiveData.setValue("Gửi bình luận thất bại: " + e.getMessage()));
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        addSuccessLiveData.setValue(true);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        errorLiveData.setValue("Gửi bình luận thất bại: " + e.getMessage());
+                    }
+                });
     }
 
-    // 3. UPDATE: Chỉnh sửa bình luận (Thêm mới U)
+    // 3. UPDATE: Chỉnh sửa bình luận
     public void updateComment(String bookId, String commentId, String newContent) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("content", newContent);
@@ -84,19 +105,39 @@ public class CommentRepository {
                 .collection(COLLECTION_COMMENTS)
                 .document(commentId)
                 .update(updates)
-                .addOnSuccessListener(unused -> updateSuccessLiveData.setValue(true))
-                .addOnFailureListener(e -> errorLiveData.setValue("Sửa bình luận thất bại: " + e.getMessage()));
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        updateSuccessLiveData.setValue(true);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        errorLiveData.setValue("Sửa bình luận thất bại: " + e.getMessage());
+                    }
+                });
     }
 
-    // 4. DELETE: Xóa bình luận (Thêm mới D)
+    // 4. DELETE: Xóa bình luận
     public void deleteComment(String bookId, String commentId) {
         db.collection(COLLECTION_BOOKS)
                 .document(bookId)
                 .collection(COLLECTION_COMMENTS)
                 .document(commentId)
                 .delete()
-                .addOnSuccessListener(unused -> deleteSuccessLiveData.setValue(true))
-                .addOnFailureListener(e -> errorLiveData.setValue("Xóa bình luận thất bại: " + e.getMessage()));
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        deleteSuccessLiveData.setValue(true);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        errorLiveData.setValue("Xóa bình luận thất bại: " + e.getMessage());
+                    }
+                });
     }
 
     public LiveData<Boolean> getAddSuccess() { return addSuccessLiveData; }
