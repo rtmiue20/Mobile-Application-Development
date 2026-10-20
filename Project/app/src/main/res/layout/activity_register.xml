@@ -307,10 +307,13 @@
                 <!-- Agree Terms CheckBox -->
                 <CheckBox
                     android:id="@+id/cbTerms"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="20dp"
-                    android:buttonTint="@color/secondary_green"
+                    android:button="@drawable/selector_checkbox"
+                    android:buttonTint="@null"
+                    app:buttonTint="@null"
+                    android:paddingStart="8dp"
                     android:text="@string/agree_terms"
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />

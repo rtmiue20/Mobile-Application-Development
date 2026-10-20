@@ -4,14 +4,19 @@ import android.content.Intent;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseUser;
+
+import vn.edu.ueh.rtmiue20.project.data.model.User;
+import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
+import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
+import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
+import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
+import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
+
 public class MainActivity extends AppCompatActivity {
 
-    // ==========================================
-    // DEV MODE: Đổi giá trị này thành true nếu muốn bypass màn hình Login, 
-    // đi thẳng vào HomeActivity (Trang chủ) để thiết kế giao diện bên trong app.
-    // Khi chuẩn bị phát hành hoặc đã cấu hình xong Firebase, hãy đổi lại thành false.
-    // ==========================================
-    private static final boolean IS_DEV_MODE = true;
+    // Set IS_DEV_MODE to false to use Firebase Auth & Role-based navigation
+    private static final boolean IS_DEV_MODE = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,15 +29,34 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Chế độ thực tế (Có Firebase)
         AuthRepository authRepository = AuthRepository.getInstance();
         if (authRepository.isLoggedIn()) {
-            // Nếu đã đăng nhập, chuyển sang màn hình Trang chủ
-            startActivity(new Intent(this, HomeActivity.class));
+            FirebaseUser firebaseUser = authRepository.getCurrentUser();
+            if (firebaseUser != null) {
+                UserRepository.getInstance().getUserProfile(firebaseUser.getUid(), new UserRepository.UserCallback() {
+                    @Override
+                    public void onSuccess(User userProfile) {
+                        if ("admin".equalsIgnoreCase(userProfile.getRole())) {
+                            startActivity(new Intent(MainActivity.this, AdminDashboardActivity.class));
+                        } else {
+                            startActivity(new Intent(MainActivity.this, HomeActivity.class));
+                        }
+                        finish();
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        startActivity(new Intent(MainActivity.this, HomeActivity.class));
+                        finish();
+                    }
+                });
+            } else {
+                startActivity(new Intent(this, HomeActivity.class));
+                finish();
+            }
         } else {
-            // Nếu chưa đăng nhập, chuyển sang màn hình Đăng nhập
             startActivity(new Intent(this, LogInActivity.class));
+            finish();
         }
-        finish();
     }
 }

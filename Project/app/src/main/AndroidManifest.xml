@@ -15,7 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Project">
         <activity
-            android:name=".LogInActivity"
+            android:name=".ui.auth.LogInActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -29,27 +29,35 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".CreatePostActivity"
+            android:name=".ui.admin.AdminDashboardActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".HomeActivity"
+            android:name=".ui.book.BookDetailActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".RegisterActivity"
+            android:name=".ui.book.CreatePostActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".ForgotPasswordActivity"
+            android:name=".ui.home.HomeActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".ProfileActivity"
+            android:name=".ui.auth.RegisterActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".EditProfileActivity"
+            android:name=".ui.auth.ForgotPasswordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.profile.ProfileActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.profile.EditProfileActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
     </application>
