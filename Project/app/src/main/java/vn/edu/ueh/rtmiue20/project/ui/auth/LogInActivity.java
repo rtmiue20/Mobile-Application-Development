@@ -37,7 +37,10 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseUser;
 
 import vn.edu.ueh.rtmiue20.project.R;
+import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
+import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
+import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
 
 public class LogInActivity extends AppCompatActivity {
@@ -77,7 +80,7 @@ public class LogInActivity extends AppCompatActivity {
 
         // Check if user is already logged in
         if (authRepository.isLoggedIn()) {
-            navigateToProfile();
+            navigateBasedOnRole();
             return;
         }
 
@@ -92,7 +95,7 @@ public class LogInActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (authRepository.isLoggedIn()) {
-            navigateToProfile();
+            navigateBasedOnRole();
             return;
         }
         loadSavedCredentials();
@@ -230,7 +233,7 @@ public class LogInActivity extends AppCompatActivity {
             public void onSuccess(FirebaseUser user) {
                 saveRememberMe(identifier);
                 Toast.makeText(LogInActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-                navigateToProfile();
+                navigateBasedOnRole();
             }
 
             @Override
@@ -247,7 +250,7 @@ public class LogInActivity extends AppCompatActivity {
             @Override
             public void onSuccess(FirebaseUser user) {
                 Toast.makeText(LogInActivity.this, "Đăng nhập Google thành công!", Toast.LENGTH_SHORT).show();
-                navigateToProfile();
+                navigateBasedOnRole();
             }
 
             @Override
@@ -271,9 +274,29 @@ public class LogInActivity extends AppCompatActivity {
         editor.apply();
     }
 
-    private void navigateToProfile() {
-        Intent intent = new Intent(LogInActivity.this, HomeActivity.class);
-        startActivity(intent);
-        finish();
+    private void navigateBasedOnRole() {
+        FirebaseUser user = authRepository.getCurrentUser();
+        if (user != null) {
+            UserRepository.getInstance().getUserProfile(user.getUid(), new UserRepository.UserCallback() {
+                @Override
+                public void onSuccess(User userProfile) {
+                    if ("admin".equalsIgnoreCase(userProfile.getRole())) {
+                        startActivity(new Intent(LogInActivity.this, AdminDashboardActivity.class));
+                    } else {
+                        startActivity(new Intent(LogInActivity.this, HomeActivity.class));
+                    }
+                    finish();
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    startActivity(new Intent(LogInActivity.this, HomeActivity.class));
+                    finish();
+                }
+            });
+        } else {
+            startActivity(new Intent(LogInActivity.this, HomeActivity.class));
+            finish();
+        }
     }
 }
