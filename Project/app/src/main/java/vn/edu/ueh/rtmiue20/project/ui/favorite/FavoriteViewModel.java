@@ -1,19 +1,30 @@
 package vn.edu.ueh.rtmiue20.project.ui.favorite;
 
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.ViewModel;
+import android.app.Application;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+
+import java.util.List;
+
+import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.data.repository.FavoriteRepository;
 
-public class FavoriteViewModel extends ViewModel {
+public class FavoriteViewModel extends AndroidViewModel {
 
     private final FavoriteRepository repository;
     private LiveData<Boolean> isFavorited;
     private String currentBookId;
 
-    // Constructor khong tham so de dung duoc ViewModelProvider mac dinh
-    public FavoriteViewModel() {
-        repository = new FavoriteRepository();
+    public FavoriteViewModel(@NonNull Application application) {
+        super(application);
+        repository = new FavoriteRepository(application);
+        repository.startSyncFavorites();
+    }
+
+    public LiveData<List<Book>> getFavoritedBooksOffline() {
+        return repository.getFavoritedBooksOffline();
     }
 
     public LiveData<Boolean> getIsFavorited(String bookId) {
@@ -40,5 +51,6 @@ public class FavoriteViewModel extends ViewModel {
     protected void onCleared() {
         super.onCleared();
         repository.removeListener();
+        repository.stopSyncFavorites();
     }
 }

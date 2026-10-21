@@ -2,8 +2,14 @@ package vn.edu.ueh.rtmiue20.project.data.model;
 
 import java.util.HashMap;
 import java.util.Map;
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
 
+@Entity(tableName = "user_table")
 public class User {
+    @PrimaryKey
+    @NonNull
     private String uid;
     private String fullName;
     private String email;
