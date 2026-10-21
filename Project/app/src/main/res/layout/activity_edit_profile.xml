@@ -118,7 +118,7 @@
                         android:layout_height="18dp"
                         android:layout_gravity="center"
                         android:contentDescription="Camera"
-                        android:src="@drawable/ic_camera"
+                        android:src="@drawable/ic_send"
                         app:tint="#FFFFFF" />
                 </com.google.android.material.card.MaterialCardView>
             </RelativeLayout>
@@ -143,7 +143,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="✏️ Thay đổi ảnh"
+                        android:text="Thay đổi ảnh"
                         android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -161,7 +161,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🗑️ Xóa ảnh"
+                        android:text="Xóa ảnh"
                         android:textColor="@color/red_danger"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -220,7 +220,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="14dp"
-                    android:text="🪪 Thông tin tài khoản"
+                    android:text=" Thông tin tài khoản"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
