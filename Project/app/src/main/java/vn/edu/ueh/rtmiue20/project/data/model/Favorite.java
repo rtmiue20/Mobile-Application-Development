@@ -1,52 +1,39 @@
 package vn.edu.ueh.rtmiue20.project.data.model;
 
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "favorite_table")
 public class Favorite {
 
-    private String favoriteId;
+    @PrimaryKey
+    @NonNull
+    private String favoriteId = "";
     private String userId;
     private String bookId;
     private Long timestamp;
 
-    // Constructor rong bat buoc cho Firebase Firestore
     public Favorite() {
     }
 
-    public Favorite(String favoriteId, String userId, String bookId, Long timestamp) {
+    public Favorite(@NonNull String favoriteId, String userId, String bookId, Long timestamp) {
         this.favoriteId = favoriteId;
         this.userId = userId;
         this.bookId = bookId;
         this.timestamp = timestamp;
     }
 
-    public String getFavoriteId() {
-        return favoriteId;
-    }
+    @NonNull
+    public String getFavoriteId() { return favoriteId; }
+    public void setFavoriteId(@NonNull String favoriteId) { this.favoriteId = favoriteId; }
 
-    public void setFavoriteId(String favoriteId) {
-        this.favoriteId = favoriteId;
-    }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-    public String getUserId() {
-        return userId;
-    }
+    public String getBookId() { return bookId; }
+    public void setBookId(String bookId) { this.bookId = bookId; }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public String getBookId() {
-        return bookId;
-    }
-
-    public void setBookId(String bookId) {
-        this.bookId = bookId;
-    }
-
-    public Long getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(Long timestamp) {
-        this.timestamp = timestamp;
-    }
+    public Long getTimestamp() { return timestamp; }
+    public void setTimestamp(Long timestamp) { this.timestamp = timestamp; }
 }

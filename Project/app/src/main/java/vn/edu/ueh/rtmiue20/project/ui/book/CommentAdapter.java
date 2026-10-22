@@ -47,17 +47,17 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
 
     @Override
     public void onBindViewHolder(@NonNull CommentViewHolder holder, int position) {
-        Comment comment = comments.get(position);
+        final Comment comment = comments.get(position);
 
         holder.tvUserName.setText(comment.getUserName());
         holder.tvContent.setText(comment.getContent());
 
         Long createdAt = comment.getCreatedAt();
         if (createdAt != null) {
-            CharSequence relativeTime = DateUtils.getRelativeTimeSpanString(
+            CharSequence relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
                     createdAt,
                     System.currentTimeMillis(),
-                    DateUtils.MINUTE_IN_MILLIS);
+                    android.text.format.DateUtils.MINUTE_IN_MILLIS);
             if (comment.getUpdatedAt() != null) {
                 holder.tvTime.setText(relativeTime + " (đã chỉnh sửa)");
             } else {
@@ -67,17 +67,18 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
             holder.tvTime.setText("");
         }
 
-        // Kiểm tra quyền: Người dùng hiện tại có phải chủ nhân bình luận không
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        boolean isOwner = currentUser != null && currentUser.getUid().equals(comment.getUserId());
+        final boolean isOwner = currentUser != null && currentUser.getUid().equals(comment.getUserId());
 
-        // Nhấn giữ hoặc nhấn vào bình luận của mình để hiện tùy chọn Sửa / Xóa
-        holder.itemView.setOnLongClickListener(v -> {
-            if (isOwner && actionListener != null) {
-                actionListener.onEdit(comment); // Kích hoạt dialog lựa chọn
-                return true;
+        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if (isOwner && actionListener != null) {
+                    actionListener.onEdit(comment);
+                    return true;
+                }
+                return false;
             }
-            return false;
         });
     }
 

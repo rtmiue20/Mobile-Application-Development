@@ -71,4 +71,7 @@
     <string name="msg_comment_empty">Vui lòng nhập nội dung bình luận</string>
     <string name="msg_comment_need_login">Bạn cần đăng nhập để bình luận</string>
     <string name="cd_favorite">Lưu sách yêu thích</string>
+
+    <!-- Strings for Comment Feature (FR012) -->
+    <string name="offline_banner_message">Đang xem ngoại tuyến. Dữ liệu có thể không phải mới nhất.</string>
 </resources>
