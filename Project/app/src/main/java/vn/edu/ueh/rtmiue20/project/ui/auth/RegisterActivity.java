@@ -12,6 +12,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Patterns;
+import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -71,11 +72,14 @@ public class RegisterActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_register);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainRegister), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        View mainView = findViewById(R.id.mainRegister);
+        if (mainView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
 
         authRepository = AuthRepository.getInstance();
 
@@ -115,9 +119,17 @@ public class RegisterActivity extends AppCompatActivity {
                             GoogleSignInAccount account = task.getResult(ApiException.class);
                             if (account != null && account.getIdToken() != null) {
                                 performGoogleAuth(account.getIdToken());
+                            } else {
+                                Toast.makeText(this, "Không thể lấy thông tin xác thực từ Google.", Toast.LENGTH_SHORT).show();
                             }
                         } catch (ApiException e) {
-                            Toast.makeText(this, "Đăng ký Google thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            String msg;
+                            if (e.getStatusCode() == 10 || e.getStatusCode() == 12500) {
+                                msg = "Đăng ký Google thất bại: Chưa cấu hình SHA-1 / Google Web Client ID trong Firebase Console.";
+                            } else {
+                                msg = "Đăng ký Google thất bại (" + e.getStatusCode() + "): " + (e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Lỗi xác thực Google.");
+                            }
+                            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                         }
                     }
                 }

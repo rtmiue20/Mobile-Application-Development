@@ -70,19 +70,19 @@ public class LogInActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_login);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainLogin), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        View mainView = findViewById(R.id.mainLogin);
+        if (mainView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
 
         authRepository = AuthRepository.getInstance();
 
-        // Check if user is already logged in
-        if (authRepository.isLoggedIn()) {
-            navigateBasedOnRole();
-            return;
-        }
+        // Đăng xuất session khi khởi động app để khi reset app luôn ở màn Login/Register
+        authRepository.logout();
 
         initViews();
         setupGoogleSignIn();
@@ -94,10 +94,6 @@ public class LogInActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (authRepository.isLoggedIn()) {
-            navigateBasedOnRole();
-            return;
-        }
         loadSavedCredentials();
     }
 
@@ -130,9 +126,17 @@ public class LogInActivity extends AppCompatActivity {
                             GoogleSignInAccount account = task.getResult(ApiException.class);
                             if (account != null && account.getIdToken() != null) {
                                 performGoogleAuth(account.getIdToken());
+                            } else {
+                                Toast.makeText(this, "Không thể lấy thông tin xác thực từ Google.", Toast.LENGTH_SHORT).show();
                             }
                         } catch (ApiException e) {
-                            Toast.makeText(this, "Đăng nhập Google thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            String msg;
+                            if (e.getStatusCode() == 10 || e.getStatusCode() == 12500) {
+                                msg = "Đăng nhập Google thất bại: Chưa cấu hình SHA-1 / Google Web Client ID trong Firebase Console.";
+                            } else {
+                                msg = "Đăng nhập Google thất bại (" + e.getStatusCode() + "): " + (e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Lỗi xác thực Google.");
+                            }
+                            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                         }
                     }
                 }
