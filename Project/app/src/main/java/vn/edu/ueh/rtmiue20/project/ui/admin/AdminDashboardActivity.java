@@ -49,8 +49,15 @@ public class AdminDashboardActivity extends AppCompatActivity {
             });
         }
 
+        View ivAdminAvatar = findViewById(R.id.ivAdminAvatar);
+        if (ivAdminAvatar != null) {
+            ivAdminAvatar.setOnClickListener(v -> {
+                startActivity(new Intent(AdminDashboardActivity.this, AdminProfileActivity.class));
+            });
+        }
+
         vn.edu.ueh.rtmiue20.project.util.ViewPressEffectHelper.applyPressEffect(
-                btnLogout, btnBack, cardTotalMembers, btnManageMembers
+                btnLogout, btnBack, cardTotalMembers, btnManageMembers, ivAdminAvatar
         );
     }
 }

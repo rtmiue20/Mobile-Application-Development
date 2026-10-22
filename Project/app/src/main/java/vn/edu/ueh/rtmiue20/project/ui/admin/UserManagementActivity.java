@@ -1,6 +1,7 @@
 package vn.edu.ueh.rtmiue20.project.ui.admin;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
@@ -49,7 +50,7 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
     private ListenerRegistration usersListener;
 
     private ScrollView scrollViewUserManagement;
-    private ImageView btnBack, btnRefreshUsers, btnHeaderSort, btnClearUserSearch;
+    private ImageView btnBack, btnRefreshUsers, btnHeaderSort, btnClearUserSearch, ivAdminAvatar;
     private TextView tvTotalUsersCount, tvActiveUsersCount, tvLockedUsersCount;
     private EditText etSearchUser;
 
@@ -97,6 +98,7 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
         btnBack = findViewById(R.id.btnBack);
         btnHeaderSort = findViewById(R.id.btnHeaderSort);
         btnRefreshUsers = findViewById(R.id.btnRefreshUsers);
+        ivAdminAvatar = findViewById(R.id.ivAdminAvatar);
 
         tvTotalUsersCount = findViewById(R.id.tvTotalUsersCount);
         tvActiveUsersCount = findViewById(R.id.tvActiveUsersCount);
@@ -132,6 +134,10 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
 
     private void setupListeners() {
         btnBack.setOnClickListener(v -> finish());
+
+        if (ivAdminAvatar != null) {
+            ivAdminAvatar.setOnClickListener(v -> startActivity(new Intent(UserManagementActivity.this, AdminProfileActivity.class)));
+        }
 
         btnRefreshUsers.setOnClickListener(v -> {
             RotateAnimation rotate = new RotateAnimation(0, 360,
@@ -190,7 +196,7 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
 
     private void setupPressEffects() {
         ViewPressEffectHelper.applyPressEffect(
-                btnBack, btnRefreshUsers, btnHeaderSort, btnClearUserSearch,
+                btnBack, btnRefreshUsers, btnHeaderSort, btnClearUserSearch, ivAdminAvatar,
                 chipFilterAll, chipFilterMembers, chipFilterAdmins, chipFilterLocked,
                 btnSortUsers, btnPrevPage, btnNextPage
         );
