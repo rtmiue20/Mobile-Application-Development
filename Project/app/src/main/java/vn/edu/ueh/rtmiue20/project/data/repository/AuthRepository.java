@@ -59,7 +59,15 @@ public class AuthRepository {
                         callback.onError("Không thể lấy thông tin đăng nhập.");
                     }
                 })
-                .addOnFailureListener(e -> callback.onError(e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Đăng nhập thất bại."));
+                .addOnFailureListener(e -> {
+                    String msg = e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Đăng nhập thất bại.";
+                    if (msg.contains("password is invalid") || msg.contains("INVALID_LOGIN_CREDENTIALS") || msg.contains("credential is incorrect")) {
+                        msg = "Email hoặc Mật khẩu không chính xác. Vui lòng kiểm tra lại.";
+                    } else if (msg.contains("no user record")) {
+                        msg = "Tài khoản này chưa tồn tại trong hệ thống. Vui lòng đăng ký tài khoản mới.";
+                    }
+                    callback.onError(msg);
+                });
     }
 
     public void registerWithEmail(String email, String password, String fullName, AuthCallback callback) {
@@ -67,28 +75,46 @@ public class AuthRepository {
                 .addOnSuccessListener(authResult -> {
                     FirebaseUser firebaseUser = authResult.getUser();
                     if (firebaseUser != null) {
-                        User newUser = new User(
-                                firebaseUser.getUid(),
-                                fullName,
-                                email,
-                                "",
-                                "",
-                                "",
-                                "user",
-                                "active",
-                                System.currentTimeMillis()
-                        );
+                        // Cập nhật displayName vào Firebase Authentication để hiển thị trên console và UI
+                        com.google.firebase.auth.UserProfileChangeRequest profileUpdates =
+                                new com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                                        .setDisplayName(fullName)
+                                        .build();
 
-                        firestore.collection("users")
-                                .document(firebaseUser.getUid())
-                                .set(newUser.toMap())
-                                .addOnSuccessListener(unused -> callback.onSuccess(firebaseUser))
-                                .addOnFailureListener(e -> callback.onError("Tạo tài khoản thành công nhưng không thể lưu thông tin: " + e.getLocalizedMessage()));
+                        firebaseUser.updateProfile(profileUpdates).addOnCompleteListener(profileTask -> {
+                            User newUser = new User(
+                                    firebaseUser.getUid(),
+                                    fullName,
+                                    email,
+                                    "",
+                                    "",
+                                    "",
+                                    "user",
+                                    "active",
+                                    System.currentTimeMillis()
+                            );
+
+                            firestore.collection("users")
+                                    .document(firebaseUser.getUid())
+                                    .set(newUser.toMap())
+                                    .addOnSuccessListener(unused -> callback.onSuccess(firebaseUser))
+                                    .addOnFailureListener(e -> {
+                                        android.util.Log.w("AuthRepository", "Firestore document creation failed (check security rules): " + e.getMessage());
+                                        // Vẫn hoàn tất đăng ký vì tài khoản Auth và displayName đã được lưu thành công trên Firebase Auth
+                                        callback.onSuccess(firebaseUser);
+                                    });
+                        });
                     } else {
                         callback.onError("Đăng ký thất bại.");
                     }
                 })
-                .addOnFailureListener(e -> callback.onError(e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Đăng ký thất bại."));
+                .addOnFailureListener(e -> {
+                    String msg = e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Đăng ký thất bại.";
+                    if (msg.contains("The email address is already in use")) {
+                        msg = "Email này đã được đăng ký tài khoản trước đó. Vui lòng đăng nhập.";
+                    }
+                    callback.onError(msg);
+                });
     }
 
     public void loginWithGoogle(String idToken, AuthCallback callback) {
@@ -152,6 +178,23 @@ public class AuthRepository {
                             callback.onError("Tài khoản của bạn đã bị khóa bởi Quản trị viên.");
                             return;
                         }
+                    } else {
+                        // Tự động đồng bộ tạo document người dùng nếu trước đó Firestore bị lỗi/chưa có
+                        String name = firebaseUser.getDisplayName() != null && !firebaseUser.getDisplayName().isEmpty()
+                                ? firebaseUser.getDisplayName()
+                                : (firebaseUser.getEmail() != null ? firebaseUser.getEmail().split("@")[0] : "Thành viên BookShare");
+                        User newUser = new User(
+                                firebaseUser.getUid(),
+                                name,
+                                firebaseUser.getEmail() != null ? firebaseUser.getEmail() : "",
+                                firebaseUser.getPhotoUrl() != null ? firebaseUser.getPhotoUrl().toString() : "",
+                                "",
+                                "",
+                                "user",
+                                "active",
+                                System.currentTimeMillis()
+                        );
+                        firestore.collection("users").document(firebaseUser.getUid()).set(newUser.toMap());
                     }
                     callback.onSuccess(firebaseUser);
                 })

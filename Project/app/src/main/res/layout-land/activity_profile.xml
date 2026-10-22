@@ -151,7 +151,7 @@
                         android:id="@+id/tvProfileFullName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Nguyễn Hà Linh"
+                        android:text=""
                         android:textColor="@color/text_primary"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -161,7 +161,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="halinh.nguyen@email.com • Cầu Giấy, Hà Nội"
+                        android:text=""
                         android:textColor="@color/text_secondary"
                         android:textSize="11sp" />
 

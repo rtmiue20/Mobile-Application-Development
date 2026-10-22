@@ -9,9 +9,14 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.DocumentSnapshot;
+
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class UserRepository {
@@ -22,6 +27,11 @@ public class UserRepository {
 
     public interface UserCallback {
         void onSuccess(User user);
+        void onError(String errorMessage);
+    }
+
+    public interface UsersListCallback {
+        void onSuccess(List<User> userList);
         void onError(String errorMessage);
     }
 
@@ -71,17 +81,16 @@ public class UserRepository {
         updates.put("phoneNumber", phoneNumber);
         updates.put("bio", bio);
 
-        firestore.collection("users").document(uid).update(updates)
-                .addOnSuccessListener(unused -> {
-                    FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-                    if (firebaseUser != null) {
-                        UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
-                                .setDisplayName(fullName)
-                                .build();
-                        firebaseUser.updateProfile(profileUpdates);
-                    }
-                    callback.onSuccess();
-                })
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser != null) {
+            UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
+                    .setDisplayName(fullName)
+                    .build();
+            firebaseUser.updateProfile(profileUpdates);
+        }
+
+        firestore.collection("users").document(uid).set(updates, com.google.firebase.firestore.SetOptions.merge())
+                .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(e -> callback.onError("Cập nhật thông tin thất bại: " + e.getLocalizedMessage()));
     }
 
@@ -117,5 +126,49 @@ public class UserRepository {
                         callback.onError(errorMsg);
                     }
                 });
+    }
+
+    /**
+     * Lắng nghe danh sách tất cả người dùng realtime từ Firestore collection "users"
+     */
+    public ListenerRegistration getAllUsersRealtime(UsersListCallback callback) {
+        return firestore.collection("users")
+                .addSnapshotListener((snapshots, error) -> {
+                    if (error != null) {
+                        callback.onError("Lỗi realtime Firestore: " + error.getLocalizedMessage());
+                        return;
+                    }
+
+                    if (snapshots != null) {
+                        List<User> list = new ArrayList<>();
+                        for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                            User user = doc.toObject(User.class);
+                            if (user != null) {
+                                user.setUid(doc.getId());
+                                list.add(user);
+                            }
+                        }
+                        callback.onSuccess(list);
+                    }
+                });
+    }
+
+    /**
+     * Cập nhật trạng thái người dùng (active / locked) và lý do kỷ luật
+     */
+    public void updateUserStatus(String uid, String newStatus, String lockReason, UpdateCallback callback) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", newStatus);
+        if ("locked".equals(newStatus)) {
+            updates.put("lockReason", lockReason != null ? lockReason : "Vi phạm quy định");
+            updates.put("lockedAt", System.currentTimeMillis());
+        } else {
+            updates.put("lockReason", null);
+            updates.put("unlockedAt", System.currentTimeMillis());
+        }
+
+        firestore.collection("users").document(uid).update(updates)
+                .addOnSuccessListener(unused -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onError("Cập nhật trạng thái người dùng thất bại: " + e.getLocalizedMessage()));
     }
 }

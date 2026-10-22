@@ -18,6 +18,7 @@ public class User {
     private String bio;
     private String role; // "user" or "admin"
     private String status; // "active" or "locked"
+    private String lockReason;
     private long createdAt;
 
     // Default constructor required for Firestore
@@ -100,6 +101,14 @@ public class User {
         this.status = status;
     }
 
+    public String getLockReason() {
+        return lockReason;
+    }
+
+    public void setLockReason(String lockReason) {
+        this.lockReason = lockReason;
+    }
+
     public long getCreatedAt() {
         return createdAt;
     }
@@ -118,6 +127,7 @@ public class User {
         map.put("bio", bio);
         map.put("role", role);
         map.put("status", status);
+        map.put("lockReason", lockReason);
         map.put("createdAt", createdAt);
         return map;
     }

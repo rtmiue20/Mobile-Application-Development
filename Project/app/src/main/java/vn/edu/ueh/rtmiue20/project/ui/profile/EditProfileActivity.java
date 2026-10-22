@@ -99,6 +99,15 @@ public class EditProfileActivity extends AppCompatActivity {
             tvEditEmail.setText(currentUser.getEmail());
         }
 
+        String initialName = currentUser.getDisplayName();
+        if (initialName == null || initialName.trim().isEmpty()) {
+            android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+            initialName = prefs.getString("user_fullname", "");
+        }
+        if (etEditFullName != null && initialName != null && !initialName.trim().isEmpty()) {
+            etEditFullName.setText(initialName);
+        }
+
         userRepository.getUserProfile(currentUser.getUid(), new UserRepository.UserCallback() {
             @Override
             public void onSuccess(User user) {
@@ -147,6 +156,8 @@ public class EditProfileActivity extends AppCompatActivity {
         userRepository.updateUserProfile(currentUser.getUid(), fullName, phone, bio, new UserRepository.UpdateCallback() {
             @Override
             public void onSuccess() {
+                android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+                prefs.edit().putString("user_fullname", fullName).apply();
                 Toast.makeText(EditProfileActivity.this, "Cập nhật hồ sơ thành công!", Toast.LENGTH_SHORT).show();
                 finish();
             }

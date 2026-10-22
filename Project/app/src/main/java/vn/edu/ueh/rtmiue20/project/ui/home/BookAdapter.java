@@ -92,6 +92,7 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookHolder> {
         }
 
         h.itemView.setOnClickListener(v -> listener.onClick(b));
+        vn.edu.ueh.rtmiue20.project.util.ViewPressEffectHelper.applyPressEffect(h.itemView, h.btnFavorite);
         
         // Handle favorite toggle (visual only for now)
         h.btnFavorite.setOnClickListener(v -> {

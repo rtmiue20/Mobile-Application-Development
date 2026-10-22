@@ -224,7 +224,10 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onSuccess(FirebaseUser user) {
                 SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                prefs.edit().putString(KEY_IDENTIFIER, email).apply();
+                prefs.edit()
+                        .putString(KEY_IDENTIFIER, email)
+                        .putString("user_fullname", fullName)
+                        .apply();
 
                 Toast.makeText(RegisterActivity.this, "Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show();
 
@@ -237,7 +240,15 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onError(String errorMessage) {
                 btnRegisterAccount.setEnabled(true);
-                Toast.makeText(RegisterActivity.this, "Lỗi đăng ký: " + errorMessage, Toast.LENGTH_LONG).show();
+                new androidx.appcompat.app.AlertDialog.Builder(RegisterActivity.this)
+                        .setTitle("Thông báo đăng ký")
+                        .setMessage(errorMessage)
+                        .setPositiveButton(errorMessage != null && errorMessage.contains("đã được đăng ký") ? "Đăng nhập ngay" : "Đã hiểu", (dialog, which) -> {
+                            if (errorMessage != null && errorMessage.contains("đã được đăng ký")) {
+                                finish();
+                            }
+                        })
+                        .show();
             }
         });
     }

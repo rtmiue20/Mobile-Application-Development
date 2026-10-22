@@ -277,9 +277,17 @@ public class LogInActivity extends AppCompatActivity {
     private void navigateBasedOnRole() {
         FirebaseUser user = authRepository.getCurrentUser();
         if (user != null) {
+            if (user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty()) {
+                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                prefs.edit().putString("user_fullname", user.getDisplayName()).apply();
+            }
             UserRepository.getInstance().getUserProfile(user.getUid(), new UserRepository.UserCallback() {
                 @Override
                 public void onSuccess(User userProfile) {
+                    if (userProfile != null && userProfile.getFullName() != null && !userProfile.getFullName().trim().isEmpty()) {
+                        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                        prefs.edit().putString("user_fullname", userProfile.getFullName()).apply();
+                    }
                     if ("admin".equalsIgnoreCase(userProfile.getRole())) {
                         startActivity(new Intent(LogInActivity.this, AdminDashboardActivity.class));
                     } else {
