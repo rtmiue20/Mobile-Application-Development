@@ -43,6 +43,9 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation(libs.play.services.auth)
 
+    // THÊM THƯ VIỆN BẮT THÔNG BÁO FCM Ở ĐÂY:
+    implementation("com.google.firebase:firebase-messaging")
+
     // Image Loading
     implementation(libs.glide)
 
@@ -52,10 +55,7 @@ dependencies {
 
     implementation("androidx.room:room-runtime:2.6.1")
     annotationProcessor("androidx.room:room-compiler:2.6.1")
-}
 
-if (tasks.findByName("prepareKotlinBuildScriptModel") == null) {
-    tasks.register("prepareKotlinBuildScriptModel") {
-        description = "Placeholder task for IDE Kotlin build script model sync"
-    }
+    // Thêm thư viện OkHttp để lát nữa viết code gửi thông báo đi cho dễ
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }

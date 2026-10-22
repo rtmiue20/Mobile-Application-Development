@@ -24,23 +24,22 @@ public class RequestViewModel extends ViewModel {
         repository.sendRequest(request);
     }
 
-    public void acceptRequest(String requestId) {
-        repository.updateRequestStatus(requestId, Request.STATUS_ACCEPTED);
-    }
-
-    public void rejectRequest(String requestId) {
-        repository.updateRequestStatus(requestId, Request.STATUS_REJECTED);
+    // Đã đổi tên hàm thành updateRequestStatus
+    public void updateRequestStatus(String requestId, String newStatus) {
+        repository.updateRequestStatus(requestId, newStatus);
     }
 
     public LiveData<Boolean> getActionSuccess() {
         return repository.getActionSuccess();
     }
 
-    public LiveData<String> getActionError() {
+    // Đã đổi tên hàm thành getError()
+    public LiveData<String> getError() {
         return repository.getActionError();
     }
 
-    public void clearActionStatus() {
+    // Đã đổi tên hàm thành resetStatus()
+    public void resetStatus() {
         repository.clearActionStatus();
     }
 
