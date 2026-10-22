@@ -174,7 +174,27 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Cũ vừa" />
+
+                <RadioButton
+                    android:id="@+id/rbConditionOther"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Khác" />
+
             </RadioGroup>
+
+            <EditText
+                android:id="@+id/etConditionOther"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_input_field"
+                android:paddingHorizontal="16dp"
+                android:hint="Nhập tình trạng sách..."
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:visibility="gone" />
 
             <TextView
                 android:layout_width="wrap_content"

@@ -84,6 +84,36 @@ public class CommentRepository {
                     @Override
                     public void onSuccess(DocumentReference documentReference) {
                         addSuccessLiveData.setValue(true);
+
+                        // --- GỌI FCM: TÌM CHỦ SÁCH -> TÌM TOKEN -> BẮN THÔNG BÁO ---
+                        db.collection(COLLECTION_BOOKS).document(bookId).get()
+                                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                    @Override
+                                    public void onSuccess(DocumentSnapshot bookSnap) {
+                                        if (bookSnap.exists() && bookSnap.contains("ownerId")) {
+                                            String ownerId = bookSnap.getString("ownerId");
+                                            // Đảm bảo không tự gửi thông báo cho chính mình
+                                            if (ownerId != null && !ownerId.equals(comment.getUserId())) {
+                                                db.collection("users").document(ownerId).get()
+                                                        .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                                            @Override
+                                                            public void onSuccess(DocumentSnapshot userSnap) {
+                                                                if (userSnap.exists() && userSnap.contains("fcmToken")) {
+                                                                    String token = userSnap.getString("fcmToken");
+                                                                    if (token != null && !token.isEmpty()) {
+                                                                        vn.edu.ueh.rtmiue20.project.util.FCMSender.pushNotification(
+                                                                                token,
+                                                                                "Bình luận mới",
+                                                                                comment.getUserName() + " đã bình luận: " + comment.getContent()
+                                                                        );
+                                                                    }
+                                                                }
+                                                            }
+                                                        });
+                                            }
+                                        }
+                                    }
+                                });
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
