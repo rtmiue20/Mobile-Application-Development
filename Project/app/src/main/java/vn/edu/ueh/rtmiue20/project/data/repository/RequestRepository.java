@@ -48,6 +48,24 @@ public class RequestRepository {
                     @Override
                     public void onSuccess(Void unused) {
                         actionSuccess.setValue(true);
+
+                        // --- GỌI FCM: TÌM TOKEN CHỦ SÁCH VÀ BẮN THÔNG BÁO ---
+                        firestore.collection("users").document(request.getOwnerId()).get()
+                                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                    @Override
+                                    public void onSuccess(DocumentSnapshot documentSnapshot) {
+                                        if (documentSnapshot.exists() && documentSnapshot.contains("fcmToken")) {
+                                            String token = documentSnapshot.getString("fcmToken");
+                                            if (token != null && !token.isEmpty()) {
+                                                vn.edu.ueh.rtmiue20.project.util.FCMSender.pushNotification(
+                                                        token,
+                                                        "Yêu cầu nhận sách mới!",
+                                                        request.getRequesterName() + " muốn nhận cuốn " + request.getBookTitle() + " của bạn."
+                                                );
+                                            }
+                                        }
+                                    }
+                                });
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {

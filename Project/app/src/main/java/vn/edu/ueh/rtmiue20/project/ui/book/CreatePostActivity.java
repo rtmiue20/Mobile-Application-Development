@@ -3,6 +3,7 @@ package vn.edu.ueh.rtmiue20.project.ui.book;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -40,6 +41,7 @@ public class CreatePostActivity extends AppCompatActivity {
     private Uri selectedImageUri = null;
     private BookViewModel bookViewModel;
     private AuthRepository authRepository;
+    private EditText etConditionOther;
 
     private final ActivityResultLauncher<Intent> pickImageLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -86,6 +88,7 @@ public class CreatePostActivity extends AppCompatActivity {
         rgSharingType = findViewById(R.id.rgSharingType);
         etDescription = findViewById(R.id.etDescription);
         btnSubmit = findViewById(R.id.btnSubmit);
+        etConditionOther = findViewById(R.id.etConditionOther);
     }
 
     private void setupSpinner() {
@@ -104,6 +107,20 @@ public class CreatePostActivity extends AppCompatActivity {
             pickImageLauncher.launch(intent);
         });
 
+        // Lắng nghe sự kiện khi chọn "Khác" trong phần tình trạng sách
+        rgCondition.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                if (checkedId == R.id.rbConditionOther) {
+                    etConditionOther.setVisibility(View.VISIBLE);
+                    etConditionOther.requestFocus();
+                } else {
+                    etConditionOther.setVisibility(View.GONE);
+                    etConditionOther.setText(""); // Xóa chữ nếu người dùng đổi ý sang chọn Mới/Cũ
+                }
+            }
+        });
+
         btnSubmit.setOnClickListener(v -> submitPost());
     }
 
@@ -119,18 +136,27 @@ public class CreatePostActivity extends AppCompatActivity {
 
         String category = spinnerCategory.getSelectedItem().toString();
 
-        String condition = "Mới";
+        // Xử lý lấy dữ liệu tình trạng sách
+        String condition = "Mới 99%";
         int checkedCondId = rgCondition.getCheckedRadioButtonId();
-        if (checkedCondId == R.id.rbConditionGood) condition = "Tốt";
-        else if (checkedCondId == R.id.rbConditionOld) condition = "Cũ vừa";
-        else condition = "Mới 99%";
+        if (checkedCondId == R.id.rbConditionGood) {
+            condition = "Tốt";
+        } else if (checkedCondId == R.id.rbConditionOld) {
+            condition = "Cũ vừa";
+        } else if (checkedCondId == R.id.rbConditionOther) {
+            condition = etConditionOther.getText().toString().trim();
+            if (condition.isEmpty()) {
+                etConditionOther.setError("Vui lòng nhập tình trạng sách");
+                etConditionOther.requestFocus();
+                return;
+            }
+        }
 
         String sharingType = "Tặng miễn phí";
         int checkedShareId = rgSharingType.getCheckedRadioButtonId();
         if (checkedShareId == R.id.rbShareExchange) sharingType = "Đổi sách";
         else if (checkedShareId == R.id.rbShareFee) sharingType = "Phí tượng trưng";
 
-        // Append sharing type to description temporarily, or we could add a field later.
         String finalDesc = description + "\n\nHình thức: " + sharingType;
         String finalCondition = condition;
 
