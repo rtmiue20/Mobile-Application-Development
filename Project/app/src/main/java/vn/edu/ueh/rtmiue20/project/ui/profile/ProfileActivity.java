@@ -25,6 +25,7 @@ import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
 import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
+import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 
 public class ProfileActivity extends AppCompatActivity {
 
@@ -45,11 +46,14 @@ public class ProfileActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_profile);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainProfile), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        View mainView = findViewById(R.id.mainProfile);
+        if (mainView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
 
         authRepository = AuthRepository.getInstance();
         userRepository = UserRepository.getInstance();
@@ -148,7 +152,10 @@ public class ProfileActivity extends AppCompatActivity {
 
                 if (tvProfileRole != null) {
                     if ("admin".equalsIgnoreCase(user.getRole())) {
-                        tvProfileRole.setText("✔ Quản trị viên (Admin)");
+                        tvProfileRole.setText("✔ Quản trị viên (Admin) - Chạm để vào Dashboard");
+                        tvProfileRole.setOnClickListener(v -> 
+                            startActivity(new Intent(ProfileActivity.this, AdminDashboardActivity.class))
+                        );
                     } else {
                         tvProfileRole.setText("✔ Thành viên uy tín 5 sao");
                     }

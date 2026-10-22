@@ -11,7 +11,7 @@ import vn.edu.ueh.rtmiue20.project.data.model.Favorite;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 
 // Tăng version lên 3 và thêm Favorite.class
-@Database(entities = {Book.class, Favorite.class, User.class}, version = 4)
+@Database(entities = {Book.class, Favorite.class, User.class}, version = 5)
 public abstract class BookRoomDatabase extends RoomDatabase {
 
     public abstract BookDao bookDao();
