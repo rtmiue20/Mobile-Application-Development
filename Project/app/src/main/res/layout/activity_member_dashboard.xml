@@ -48,25 +48,33 @@
         </LinearLayout>
 
         <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:id="@+id/btnNotifications"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
             android:contentDescription="Thông báo"
+            android:focusable="true"
+            android:padding="6dp"
             android:src="@drawable/ic_notifications"
             app:tint="@color/text_primary" />
 
         <ImageView
             android:id="@+id/btnGoToProfile"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="16dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="12dp"
             android:background="@drawable/bg_fab_add"
+            android:clickable="true"
             android:contentDescription="Cá nhân"
-            android:padding="4dp"
+            android:focusable="true"
+            android:padding="6dp"
             android:src="@drawable/ic_person"
             app:tint="@color/white" />
     </LinearLayout>
 
     <ScrollView
+        android:id="@+id/mainScrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@+id/bottomNavContainer"
@@ -182,14 +190,18 @@
                 android:scrollbars="none">
 
                 <LinearLayout
+                    android:id="@+id/layoutCategoryPills"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
                     <TextView
+                        android:id="@+id/pillAll"
                         android:layout_width="wrap_content"
                         android:layout_height="36dp"
                         android:background="@drawable/bg_pill_active"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:paddingHorizontal="16dp"
                         android:text="✓ Tất cả"
@@ -198,10 +210,13 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/pillLiterature"
                         android:layout_width="wrap_content"
                         android:layout_height="36dp"
                         android:layout_marginStart="8dp"
                         android:background="@drawable/bg_pill_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:paddingHorizontal="16dp"
                         android:text="Văn học"
@@ -209,10 +224,13 @@
                         android:textSize="14sp" />
 
                     <TextView
+                        android:id="@+id/pillEconomics"
                         android:layout_width="wrap_content"
                         android:layout_height="36dp"
                         android:layout_marginStart="8dp"
                         android:background="@drawable/bg_pill_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:paddingHorizontal="16dp"
                         android:text="Kinh tế &amp; Kỹ năng"
@@ -220,13 +238,30 @@
                         android:textSize="14sp" />
 
                     <TextView
+                        android:id="@+id/pillTextbook"
                         android:layout_width="wrap_content"
                         android:layout_height="36dp"
                         android:layout_marginStart="8dp"
                         android:background="@drawable/bg_pill_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:paddingHorizontal="16dp"
                         android:text="Giáo trình"
+                        android:textColor="@color/on_surface_variant"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/pillOther"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_pill_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:paddingHorizontal="16dp"
+                        android:text="Khác"
                         android:textColor="@color/on_surface_variant"
                         android:textSize="14sp" />
                 </LinearLayout>
@@ -248,6 +283,7 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvBookCountBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
@@ -256,17 +292,22 @@
                     android:background="@drawable/bg_tag_secondary"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="2dp"
-                    android:text="142 cuốn"
+                    android:text="0 cuốn"
                     android:textColor="@color/on_secondary_container"
                     android:textSize="10sp" />
 
                 <LinearLayout
+                    android:id="@+id/btnFilter"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="32dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="8dp">
 
                     <ImageView
                         android:layout_width="16dp"
@@ -407,9 +448,13 @@
             android:weightSum="5">
 
             <LinearLayout
+                android:id="@+id/btnNavHome"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center"
                 android:orientation="vertical">
                 <ImageView
@@ -428,9 +473,13 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/btnNavSearch"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center"
                 android:orientation="vertical">
                 <ImageView
@@ -453,9 +502,13 @@
                 android:layout_weight="1" />
 
             <LinearLayout
+                android:id="@+id/btnNavRequests"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center"
                 android:orientation="vertical">
                 <ImageView
@@ -477,6 +530,9 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center"
                 android:orientation="vertical">
                 <ImageView
@@ -501,8 +557,10 @@
             android:layout_height="64dp"
             android:layout_centerHorizontal="true"
             android:background="@drawable/bg_fab_add"
+            android:clickable="true"
             android:contentDescription="Add Book"
             android:elevation="10dp"
+            android:focusable="true"
             android:padding="16dp"
             android:src="@drawable/ic_add"
             app:tint="@color/white" />

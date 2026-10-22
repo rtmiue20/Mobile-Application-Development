@@ -23,6 +23,7 @@ import vn.edu.ueh.rtmiue20.project.MainActivity;
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
+import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
 
 public class ProfileActivity extends AppCompatActivity {
@@ -118,11 +119,31 @@ public class ProfileActivity extends AppCompatActivity {
             tvProfileEmail.setText(currentUser.getEmail());
         }
 
+        // Ưu tiên hiển thị tức thì họ tên từ Firebase Auth hoặc SharedPreferences cache
+        String immediateName = currentUser.getDisplayName();
+        if (immediateName == null || immediateName.trim().isEmpty()) {
+            android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+            immediateName = prefs.getString("user_fullname", "");
+        }
+        if (immediateName == null || immediateName.trim().isEmpty()) {
+            if (currentUser.getEmail() != null) {
+                immediateName = currentUser.getEmail().split("@")[0];
+            }
+        }
+        if (tvProfileFullName != null && immediateName != null && !immediateName.trim().isEmpty()) {
+            tvProfileFullName.setText(immediateName);
+        }
+
+        // Tải realtime / chi tiết từ Firestore
         userRepository.getUserProfile(currentUser.getUid(), new UserRepository.UserCallback() {
             @Override
             public void onSuccess(User user) {
                 if (tvProfileFullName != null) {
-                    tvProfileFullName.setText(user.getFullName() != null && !user.getFullName().isEmpty() ? user.getFullName() : "Nguyễn Hà Linh");
+                    if (user.getFullName() != null && !user.getFullName().trim().isEmpty()) {
+                        tvProfileFullName.setText(user.getFullName());
+                    } else if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().trim().isEmpty()) {
+                        tvProfileFullName.setText(currentUser.getDisplayName());
+                    }
                 }
 
                 if (tvProfileRole != null) {
@@ -152,8 +173,10 @@ public class ProfileActivity extends AppCompatActivity {
 
             @Override
             public void onError(String errorMessage) {
-                if (tvProfileFullName != null && currentUser.getDisplayName() != null && !currentUser.getDisplayName().isEmpty()) {
-                    tvProfileFullName.setText(currentUser.getDisplayName());
+                if (tvProfileFullName != null) {
+                    if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().trim().isEmpty()) {
+                        tvProfileFullName.setText(currentUser.getDisplayName());
+                    }
                 }
             }
         });
@@ -185,13 +208,15 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void handleLogout() {
+        android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        prefs.edit().remove("user_fullname").apply();
         authRepository.logout();
         Toast.makeText(this, "Đã đăng xuất khỏi BookShare.", Toast.LENGTH_SHORT).show();
         navigateToLogin();
     }
 
     private void navigateToLogin() {
-        Intent intent = new Intent(ProfileActivity.this, MainActivity.class);
+        Intent intent = new Intent(ProfileActivity.this, LogInActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

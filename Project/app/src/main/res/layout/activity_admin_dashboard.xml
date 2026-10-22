@@ -207,10 +207,13 @@
 
                 <!-- Metric 1: Thành viên -->
                 <LinearLayout
+                    android:id="@+id/cardTotalMembers"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:background="@drawable/bg_login_card"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:orientation="vertical"
                     android:padding="14dp">
 
@@ -471,10 +474,13 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/btnManageMembers"
                         android:layout_width="wrap_content"
                         android:layout_height="38dp"
                         android:layout_marginStart="8dp"
                         android:background="@drawable/bg_pill_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:paddingHorizontal="14dp"
                         android:text="Quản lý thành viên"
