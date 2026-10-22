@@ -37,6 +37,10 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".ui.admin.UserManagementActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".ui.book.BookDetailActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />

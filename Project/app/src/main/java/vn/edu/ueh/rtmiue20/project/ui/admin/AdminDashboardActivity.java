@@ -29,5 +29,28 @@ public class AdminDashboardActivity extends AppCompatActivity {
                 finish();
             });
         }
+
+        View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
+        View cardTotalMembers = findViewById(R.id.cardTotalMembers);
+        if (cardTotalMembers != null) {
+            cardTotalMembers.setOnClickListener(v -> {
+                startActivity(new Intent(AdminDashboardActivity.this, UserManagementActivity.class));
+            });
+        }
+
+        View btnManageMembers = findViewById(R.id.btnManageMembers);
+        if (btnManageMembers != null) {
+            btnManageMembers.setOnClickListener(v -> {
+                startActivity(new Intent(AdminDashboardActivity.this, UserManagementActivity.class));
+            });
+        }
+
+        vn.edu.ueh.rtmiue20.project.util.ViewPressEffectHelper.applyPressEffect(
+                btnLogout, btnBack, cardTotalMembers, btnManageMembers
+        );
     }
 }
