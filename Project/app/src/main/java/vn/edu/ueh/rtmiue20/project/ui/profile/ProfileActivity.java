@@ -11,7 +11,6 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -19,15 +18,17 @@ import androidx.core.view.WindowInsetsCompat;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
 
-import vn.edu.ueh.rtmiue20.project.MainActivity;
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
-import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
 import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
+import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
+import vn.edu.ueh.rtmiue20.project.ui.base.BaseActivity;
+import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
 
-public class ProfileActivity extends AppCompatActivity {
+// Kế thừa BaseActivity thay vì AppCompatActivity
+public class ProfileActivity extends BaseActivity {
 
     private ImageView ivAvatar;
     private TextView tvProfileFullName;
@@ -36,9 +37,15 @@ public class ProfileActivity extends AppCompatActivity {
     private View btnEditProfile;
     private View btnLogoutProfile;
 
+    // Thêm 2 biến để điều hướng quay lại
+    private View btnBackProfile;
+    private View layoutBrandLogo;
+
     private AuthRepository authRepository;
     private UserRepository userRepository;
-    private ActivityResultLauncher<Intent> imagePickerLauncher;
+
+    // Đã thay đổi kiểu thành mảng String[]
+    private ActivityResultLauncher<String[]> imagePickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,21 +83,40 @@ public class ProfileActivity extends AppCompatActivity {
         tvProfileRole = findViewById(R.id.tvProfileRole);
         btnEditProfile = findViewById(R.id.btnEditProfile);
         btnLogoutProfile = findViewById(R.id.btnLogoutProfile);
+
+        // Ánh xạ nút Back và Logo
+        btnBackProfile = findViewById(R.id.btnBackProfile);
+        layoutBrandLogo = findViewById(R.id.layoutBrandLogo);
     }
 
     private void setupImagePickerLauncher() {
+        // Đổi thành OpenDocument
         imagePickerLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
-                        Uri imageUri = result.getData().getData();
-                        uploadAvatarImage(imageUri);
+                new ActivityResultContracts.OpenDocument(),
+                uri -> {
+                    if (uri != null) {
+                        uploadAvatarImage(uri);
                     }
                 }
         );
     }
 
     private void setupListeners() {
+        // Xử lý nút mũi tên quay lại thông minh (Kế thừa từ BaseActivity)
+        if (btnBackProfile != null) {
+            btnBackProfile.setOnClickListener(v -> handleSmartBack());
+        }
+
+        // Lối tắt bấm Logo BookShare để về Home
+        if (layoutBrandLogo != null) {
+            layoutBrandLogo.setOnClickListener(v -> {
+                Intent intent = new Intent(ProfileActivity.this, HomeActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                finish();
+            });
+        }
+
         if (btnEditProfile != null) {
             btnEditProfile.setOnClickListener(v -> {
                 Intent intent = new Intent(ProfileActivity.this, EditProfileActivity.class);
@@ -99,11 +125,8 @@ public class ProfileActivity extends AppCompatActivity {
         }
 
         if (ivAvatar != null) {
-            ivAvatar.setOnClickListener(v -> {
-                Intent intent = new Intent(Intent.ACTION_PICK);
-                intent.setType("image/*");
-                imagePickerLauncher.launch(intent);
-            });
+            // Khởi chạy với tham số mảng String
+            ivAvatar.setOnClickListener(v -> imagePickerLauncher.launch(new String[]{"image/*"}));
         }
 
         if (btnLogoutProfile != null) {
@@ -123,7 +146,6 @@ public class ProfileActivity extends AppCompatActivity {
             tvProfileEmail.setText(currentUser.getEmail());
         }
 
-        // Ưu tiên hiển thị tức thì họ tên từ Firebase Auth hoặc SharedPreferences cache
         String immediateName = currentUser.getDisplayName();
         if (immediateName == null || immediateName.trim().isEmpty()) {
             android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
@@ -138,7 +160,6 @@ public class ProfileActivity extends AppCompatActivity {
             tvProfileFullName.setText(immediateName);
         }
 
-        // Tải realtime / chi tiết từ Firestore
         userRepository.getUserProfile(currentUser.getUid(), new UserRepository.UserCallback() {
             @Override
             public void onSuccess(User user) {
@@ -153,8 +174,8 @@ public class ProfileActivity extends AppCompatActivity {
                 if (tvProfileRole != null) {
                     if ("admin".equalsIgnoreCase(user.getRole())) {
                         tvProfileRole.setText("✔ Quản trị viên (Admin) - Chạm để vào Dashboard");
-                        tvProfileRole.setOnClickListener(v -> 
-                            startActivity(new Intent(ProfileActivity.this, AdminDashboardActivity.class))
+                        tvProfileRole.setOnClickListener(v ->
+                                startActivity(new Intent(ProfileActivity.this, AdminDashboardActivity.class))
                         );
                     } else {
                         tvProfileRole.setText("✔ Thành viên uy tín 5 sao");
