@@ -1,6 +1,7 @@
 package vn.edu.ueh.rtmiue20.project.data.repository;
 
 import android.app.Application;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -35,6 +36,7 @@ public class FavoriteRepository {
 
     private final FirebaseFirestore db;
     private final FirebaseAuth auth;
+    private final BookRoomDatabase database;
     private final FavoriteDao favoriteDao;
     private ListenerRegistration favoriteRegistration;
     private ListenerRegistration listRegistration;
@@ -45,11 +47,11 @@ public class FavoriteRepository {
     private final MutableLiveData<String> errorLiveData = new MutableLiveData<String>();
     private boolean isToggling = false;
 
-    // CẦN CÓ APPLICATION ĐỂ GỌI ROOM
     public FavoriteRepository(Application application) {
         db = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
-        favoriteDao = BookRoomDatabase.getDatabase(application).favoriteDao();
+        database = BookRoomDatabase.getDatabase(application);
+        favoriteDao = database.favoriteDao();
     }
 
     private String buildFavoriteId(String userId, String bookId) {
@@ -59,8 +61,6 @@ public class FavoriteRepository {
     private DocumentReference getFavoriteRef(String userId, String bookId) {
         return db.collection(COLLECTION_FAVORITES).document(buildFavoriteId(userId, bookId));
     }
-
-    // --- LOGIC OFFLINE ROOM ---
 
     public LiveData<List<Book>> getFavoritedBooksOffline() {
         FirebaseUser user = auth.getCurrentUser();
@@ -84,18 +84,27 @@ public class FavoriteRepository {
 
                         final List<Favorite> list = new ArrayList<>();
                         for (DocumentSnapshot doc : value.getDocuments()) {
-                            Favorite fav = doc.toObject(Favorite.class);
-                            if (fav != null) {
-                                fav.setFavoriteId(doc.getId());
-                                list.add(fav);
+                            try {
+                                Favorite fav = doc.toObject(Favorite.class);
+                                if (fav != null) {
+                                    fav.setFavoriteId(doc.getId());
+                                    list.add(fav);
+                                }
+                            } catch (Exception e) {
+                                Log.e("FirebaseSync", "Lỗi parse Favorite: " + e.getMessage());
                             }
                         }
 
                         executorService.execute(new Runnable() {
                             @Override
                             public void run() {
-                                favoriteDao.deleteAllByUser(user.getUid());
-                                favoriteDao.insertAll(list);
+                                database.runInTransaction(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        favoriteDao.deleteAllByUser(user.getUid());
+                                        favoriteDao.insertAll(list);
+                                    }
+                                });
                             }
                         });
                     }
@@ -108,8 +117,6 @@ public class FavoriteRepository {
             listRegistration = null;
         }
     }
-
-    // --- LOGIC ONLINE FIRESTORE ---
 
     public LiveData<Boolean> checkIsFavorited(String bookId) {
         removeListener();

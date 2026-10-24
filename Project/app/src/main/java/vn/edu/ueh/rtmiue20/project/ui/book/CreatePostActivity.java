@@ -21,6 +21,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.card.MaterialCardView;
 
 import vn.edu.ueh.rtmiue20.project.R;
@@ -33,6 +34,7 @@ public class CreatePostActivity extends AppCompatActivity {
 
     private ImageView btnCancel, ivPreviewImage;
     private MaterialCardView cardAddImage;
+    private View layoutAddImagePlaceholder; // Thêm view quản lý khối chữ và icon
     private EditText etTitle, etAuthor, etDescription;
     private Spinner spinnerCategory;
     private RadioGroup rgCondition, rgSharingType;
@@ -43,16 +45,21 @@ public class CreatePostActivity extends AppCompatActivity {
     private AuthRepository authRepository;
     private EditText etConditionOther;
 
-    private final ActivityResultLauncher<Intent> pickImageLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    selectedImageUri = result.getData().getData();
-                    ivPreviewImage.setImageURI(selectedImageUri);
-                    ivPreviewImage.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
-                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                            android.view.ViewGroup.LayoutParams.MATCH_PARENT));
-                    ivPreviewImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
+    // Quản lý việc chọn ảnh và hiển thị preview
+    private final ActivityResultLauncher<String[]> pickImageLauncher = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(),
+            uri -> {
+                if (uri != null) {
+                    selectedImageUri = uri;
+
+                    // Ẩn giao diện chữ, hiện thẻ ImageView
+                    layoutAddImagePlaceholder.setVisibility(View.GONE);
+                    ivPreviewImage.setVisibility(View.VISIBLE);
+
+                    Glide.with(this)
+                            .load(uri)
+                            .centerCrop()
+                            .into(ivPreviewImage);
                 }
             }
     );
@@ -80,6 +87,7 @@ public class CreatePostActivity extends AppCompatActivity {
     private void initViews() {
         btnCancel = findViewById(R.id.btnCancel);
         cardAddImage = findViewById(R.id.cardAddImage);
+        layoutAddImagePlaceholder = findViewById(R.id.layoutAddImagePlaceholder);
         ivPreviewImage = findViewById(R.id.ivPreviewImage);
         etTitle = findViewById(R.id.etTitle);
         etAuthor = findViewById(R.id.etAuthor);
@@ -101,13 +109,8 @@ public class CreatePostActivity extends AppCompatActivity {
     private void setupListeners() {
         btnCancel.setOnClickListener(v -> finish());
 
-        cardAddImage.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_PICK);
-            intent.setType("image/*");
-            pickImageLauncher.launch(intent);
-        });
+        cardAddImage.setOnClickListener(v -> pickImageLauncher.launch(new String[]{"image/*"}));
 
-        // Lắng nghe sự kiện khi chọn "Khác" trong phần tình trạng sách
         rgCondition.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
@@ -116,7 +119,7 @@ public class CreatePostActivity extends AppCompatActivity {
                     etConditionOther.requestFocus();
                 } else {
                     etConditionOther.setVisibility(View.GONE);
-                    etConditionOther.setText(""); // Xóa chữ nếu người dùng đổi ý sang chọn Mới/Cũ
+                    etConditionOther.setText("");
                 }
             }
         });
@@ -136,7 +139,6 @@ public class CreatePostActivity extends AppCompatActivity {
 
         String category = spinnerCategory.getSelectedItem().toString();
 
-        // Xử lý lấy dữ liệu tình trạng sách
         String condition = "Mới 99%";
         int checkedCondId = rgCondition.getCheckedRadioButtonId();
         if (checkedCondId == R.id.rbConditionGood) {
