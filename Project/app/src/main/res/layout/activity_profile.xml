@@ -260,10 +260,11 @@
                         app:tint="@color/secondary_green" />
 
                     <TextView
+                        android:id="@+id/tvBooksGivenCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="14"
+                        android:text="0"
                         android:textColor="@color/primary_dark_green"
                         android:textSize="22sp"
                         android:textStyle="bold" />
@@ -303,10 +304,11 @@
                         app:tint="@color/secondary_green" />
 
                     <TextView
+                        android:id="@+id/tvBooksReceivedCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="6"
+                        android:text="0"
                         android:textColor="@color/primary_dark_green"
                         android:textSize="22sp"
                         android:textStyle="bold" />
@@ -346,10 +348,11 @@
                         app:tint="#D97706" />
 
                     <TextView
+                        android:id="@+id/tvRatingCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="4.9 (28)"
+                        android:text="0.0 (0)"
                         android:textColor="@color/primary_dark_green"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -451,6 +454,7 @@
 
                 <!-- Item 1: My Posts -->
                 <RelativeLayout
+                    android:id="@+id/layoutMyPosts"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="?attr/selectableItemBackground"
@@ -467,6 +471,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvMyPostsCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
@@ -474,7 +479,7 @@
                         android:background="@drawable/bg_badge_inner"
                         android:paddingHorizontal="10dp"
                         android:paddingVertical="3dp"
-                        android:text="3 đang hiển thị"
+                        android:text="0 đang hiển thị"
                         android:textColor="@color/secondary_green"
                         android:textSize="12sp" />
 
@@ -492,6 +497,7 @@
 
                 <!-- Item 2: Favorite Books -->
                 <RelativeLayout
+                    android:id="@+id/layoutFavoriteBooks"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="?attr/selectableItemBackground"
@@ -508,11 +514,12 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvFavoriteCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_centerVertical="true"
                         android:layout_toStartOf="@id/ivArrow2"
-                        android:text="12 cuốn"
+                        android:text="0 cuốn"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
 
@@ -530,6 +537,7 @@
 
                 <!-- Item 3: History & Requests -->
                 <RelativeLayout
+                    android:id="@+id/layoutHistoryRequests"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="?attr/selectableItemBackground"

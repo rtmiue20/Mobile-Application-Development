@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
     implementation(libs.play.services.auth)
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 
     // THÊM THƯ VIỆN BẮT THÔNG BÁO FCM Ở ĐÂY:
     implementation("com.google.firebase:firebase-messaging")

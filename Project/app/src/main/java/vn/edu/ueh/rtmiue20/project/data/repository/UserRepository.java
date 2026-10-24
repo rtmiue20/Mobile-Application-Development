@@ -75,16 +75,23 @@ public class UserRepository {
                 .addOnFailureListener(e -> callback.onError("Lỗi khi tải hồ sơ: " + e.getLocalizedMessage()));
     }
 
-    public void updateUserProfile(String uid, String fullName, String phoneNumber, String bio, UpdateCallback callback) {
+    public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, UpdateCallback callback) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("fullName", fullName);
+        updates.put("nickname", nickname);
         updates.put("phoneNumber", phoneNumber);
         updates.put("bio", bio);
+        updates.put("city", city);
+        updates.put("district", district);
+        updates.put("ward", ward);
+        updates.put("favoriteSpotName", favoriteSpotName);
+        updates.put("favoriteSpotAddress", favoriteSpotAddress);
 
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         if (firebaseUser != null) {
+            String displayVal = User.getDisplayNameFormatted(fullName, nickname);
             UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
-                    .setDisplayName(fullName)
+                    .setDisplayName(displayVal)
                     .build();
             firebaseUser.updateProfile(profileUpdates);
         }
@@ -92,6 +99,10 @@ public class UserRepository {
         firestore.collection("users").document(uid).set(updates, com.google.firebase.firestore.SetOptions.merge())
                 .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(e -> callback.onError("Cập nhật thông tin thất bại: " + e.getLocalizedMessage()));
+    }
+
+    public void updateUserProfile(String uid, String fullName, String phoneNumber, String bio, UpdateCallback callback) {
+        updateUserProfile(uid, fullName, "", phoneNumber, bio, "", "", "", "", "", callback);
     }
 
     public void uploadAvatar(String uid, Uri imageUri, UploadCallback callback) {

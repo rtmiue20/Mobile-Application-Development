@@ -37,11 +37,10 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseUser;
 
 import vn.edu.ueh.rtmiue20.project.R;
-import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
-import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
 import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
+import vn.edu.ueh.rtmiue20.project.ui.profile.EditProfileActivity;
 
 public class LogInActivity extends AppCompatActivity {
 
@@ -80,9 +79,6 @@ public class LogInActivity extends AppCompatActivity {
         }
 
         authRepository = AuthRepository.getInstance();
-
-        // Đăng xuất session khi khởi động app để khi reset app luôn ở màn Login/Register
-        authRepository.logout();
 
         initViews();
         setupGoogleSignIn();
@@ -237,7 +233,7 @@ public class LogInActivity extends AppCompatActivity {
             public void onSuccess(FirebaseUser user) {
                 saveRememberMe(identifier);
                 Toast.makeText(LogInActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-                navigateBasedOnRole();
+                navigateToEditProfile();
             }
 
             @Override
@@ -253,8 +249,9 @@ public class LogInActivity extends AppCompatActivity {
         authRepository.loginWithGoogle(idToken, new AuthRepository.AuthCallback() {
             @Override
             public void onSuccess(FirebaseUser user) {
+                saveRememberMe(user.getEmail() != null ? user.getEmail() : "");
                 Toast.makeText(LogInActivity.this, "Đăng nhập Google thành công!", Toast.LENGTH_SHORT).show();
-                navigateBasedOnRole();
+                navigateToEditProfile();
             }
 
             @Override
@@ -278,37 +275,18 @@ public class LogInActivity extends AppCompatActivity {
         editor.apply();
     }
 
-    private void navigateBasedOnRole() {
+    private void navigateToEditProfile() {
         FirebaseUser user = authRepository.getCurrentUser();
         if (user != null) {
             if (user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty()) {
                 SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                 prefs.edit().putString("user_fullname", user.getDisplayName()).apply();
             }
-            UserRepository.getInstance().getUserProfile(user.getUid(), new UserRepository.UserCallback() {
-                @Override
-                public void onSuccess(User userProfile) {
-                    if (userProfile != null && userProfile.getFullName() != null && !userProfile.getFullName().trim().isEmpty()) {
-                        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                        prefs.edit().putString("user_fullname", userProfile.getFullName()).apply();
-                    }
-                    if ("admin".equalsIgnoreCase(userProfile.getRole())) {
-                        startActivity(new Intent(LogInActivity.this, AdminDashboardActivity.class));
-                    } else {
-                        startActivity(new Intent(LogInActivity.this, HomeActivity.class));
-                    }
-                    finish();
-                }
-
-                @Override
-                public void onError(String errorMessage) {
-                    startActivity(new Intent(LogInActivity.this, HomeActivity.class));
-                    finish();
-                }
-            });
-        } else {
-            startActivity(new Intent(LogInActivity.this, HomeActivity.class));
-            finish();
         }
+        Intent intent = new Intent(LogInActivity.this, EditProfileActivity.class);
+        intent.putExtra("from_login", true);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }
