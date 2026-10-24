@@ -51,6 +51,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
 
+            <!-- ĐÃ CHỈNH SỬA KHUNG CHỨA ẢNH (Bọc FrameLayout, Tách riêng Placeholder và Preview) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardAddImage"
                 android:layout_width="match_parent"
@@ -61,28 +62,44 @@
                 app:strokeWidth="1dp"
                 app:strokeColor="#E5E7EB">
 
-                <LinearLayout
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:gravity="center">
+                    android:layout_height="match_parent">
 
+                    <!-- Lớp dưới: Giao diện chữ và icon mặc định -->
+                    <LinearLayout
+                        android:id="@+id/layoutAddImagePlaceholder"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@android:drawable/ic_menu_camera"
+                            app:tint="@color/primary_dark_green" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Thêm ảnh thực tế cuốn sách"
+                            android:textColor="@color/primary_dark_green"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Lớp trên: Ảnh thực tế khi được chọn (Phủ kín khung, không bị nhuộm màu) -->
                     <ImageView
                         android:id="@+id/ivPreviewImage"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:src="@android:drawable/ic_menu_camera"
-                        app:tint="@color/primary_dark_green" />
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Thêm ảnh thực tế cuốn sách"
-                        android:textColor="@color/primary_dark_green"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
+                </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
+            <!-- KẾT THÚC CHỈNH SỬA KHUNG CHỨA ẢNH -->
 
             <TextView
                 android:layout_width="wrap_content"

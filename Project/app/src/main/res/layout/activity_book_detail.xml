@@ -452,6 +452,36 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
+            <!-- OWNER ACTIONS (Mới thêm vào XML) -->
+            <LinearLayout
+                android:id="@+id/layoutOwnerActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <Button
+                    android:id="@+id/btnEdit"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="Sửa thông tin"
+                    android:textColor="@color/white"
+                    android:backgroundTint="@color/secondary_green" />
+
+                <Button
+                    android:id="@+id/btnDelete"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Xóa sách"
+                    android:textColor="@color/white"
+                    android:backgroundTint="#B71C1C" />
+            </LinearLayout>
+
             <!-- Q&A Section Title -->
             <RelativeLayout
                 android:layout_width="match_parent"
