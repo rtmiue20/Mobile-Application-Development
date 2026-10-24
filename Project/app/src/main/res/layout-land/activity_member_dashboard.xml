@@ -397,7 +397,7 @@
             android:layout_height="52dp"
             android:layout_marginTop="20dp"
             android:background="@drawable/bg_bottom_nav"
-            android:elevation="8dp"
+            android:elevation="0dp"
             android:gravity="center"
             android:orientation="horizontal"
             android:weightSum="5">
@@ -518,7 +518,7 @@
             android:background="@drawable/bg_fab_add"
             android:clickable="true"
             android:contentDescription="Add Book"
-            android:elevation="10dp"
+            android:elevation="0dp"
             android:focusable="true"
             android:padding="12dp"
             android:src="@drawable/ic_add"

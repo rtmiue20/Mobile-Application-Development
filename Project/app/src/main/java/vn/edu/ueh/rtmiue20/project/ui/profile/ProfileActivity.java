@@ -14,9 +14,12 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
@@ -25,9 +28,10 @@ import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
 import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
 import vn.edu.ueh.rtmiue20.project.ui.base.BaseActivity;
+import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
+import vn.edu.ueh.rtmiue20.project.ui.request.ManageRequestsActivity;
 
-// Kế thừa BaseActivity thay vì AppCompatActivity
 public class ProfileActivity extends BaseActivity {
 
     private ImageView ivAvatar;
@@ -37,14 +41,22 @@ public class ProfileActivity extends BaseActivity {
     private View btnEditProfile;
     private View btnLogoutProfile;
 
-    // Thêm 2 biến để điều hướng quay lại
+    private TextView tvBooksGivenCount;
+    private TextView tvBooksReceivedCount;
+    private TextView tvRatingCount;
+    private View layoutMyPosts;
+    private TextView tvMyPostsCount;
+    private View layoutFavoriteBooks;
+    private TextView tvFavoriteCount;
+    private View layoutHistoryRequests;
+
     private View btnBackProfile;
     private View layoutBrandLogo;
 
     private AuthRepository authRepository;
     private UserRepository userRepository;
+    private FavoriteViewModel favoriteViewModel;
 
-    // Đã thay đổi kiểu thành mảng String[]
     private ActivityResultLauncher<String[]> imagePickerLauncher;
 
     @Override
@@ -64,6 +76,7 @@ public class ProfileActivity extends BaseActivity {
 
         authRepository = AuthRepository.getInstance();
         userRepository = UserRepository.getInstance();
+        favoriteViewModel = new ViewModelProvider(this).get(FavoriteViewModel.class);
 
         initViews();
         setupImagePickerLauncher();
@@ -84,13 +97,20 @@ public class ProfileActivity extends BaseActivity {
         btnEditProfile = findViewById(R.id.btnEditProfile);
         btnLogoutProfile = findViewById(R.id.btnLogoutProfile);
 
-        // Ánh xạ nút Back và Logo
+        tvBooksGivenCount = findViewById(R.id.tvBooksGivenCount);
+        tvBooksReceivedCount = findViewById(R.id.tvBooksReceivedCount);
+        tvRatingCount = findViewById(R.id.tvRatingCount);
+        layoutMyPosts = findViewById(R.id.layoutMyPosts);
+        tvMyPostsCount = findViewById(R.id.tvMyPostsCount);
+        layoutFavoriteBooks = findViewById(R.id.layoutFavoriteBooks);
+        tvFavoriteCount = findViewById(R.id.tvFavoriteCount);
+        layoutHistoryRequests = findViewById(R.id.layoutHistoryRequests);
+
         btnBackProfile = findViewById(R.id.btnBackProfile);
         layoutBrandLogo = findViewById(R.id.layoutBrandLogo);
     }
 
     private void setupImagePickerLauncher() {
-        // Đổi thành OpenDocument
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(),
                 uri -> {
@@ -102,12 +122,10 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void setupListeners() {
-        // Xử lý nút mũi tên quay lại thông minh (Kế thừa từ BaseActivity)
         if (btnBackProfile != null) {
             btnBackProfile.setOnClickListener(v -> handleSmartBack());
         }
 
-        // Lối tắt bấm Logo BookShare để về Home
         if (layoutBrandLogo != null) {
             layoutBrandLogo.setOnClickListener(v -> {
                 Intent intent = new Intent(ProfileActivity.this, HomeActivity.class);
@@ -125,12 +143,30 @@ public class ProfileActivity extends BaseActivity {
         }
 
         if (ivAvatar != null) {
-            // Khởi chạy với tham số mảng String
             ivAvatar.setOnClickListener(v -> imagePickerLauncher.launch(new String[]{"image/*"}));
         }
 
         if (btnLogoutProfile != null) {
             btnLogoutProfile.setOnClickListener(v -> handleLogout());
+        }
+
+        // Kệ sách & giao dịch navigation listeners
+        if (layoutMyPosts != null) {
+            layoutMyPosts.setOnClickListener(v -> {
+                startActivity(new Intent(ProfileActivity.this, MyPostsActivity.class));
+            });
+        }
+
+        if (layoutFavoriteBooks != null) {
+            layoutFavoriteBooks.setOnClickListener(v -> {
+                startActivity(new Intent(ProfileActivity.this, FavoriteBooksActivity.class));
+            });
+        }
+
+        if (layoutHistoryRequests != null) {
+            layoutHistoryRequests.setOnClickListener(v -> {
+                startActivity(new Intent(ProfileActivity.this, ManageRequestsActivity.class));
+            });
         }
     }
 
@@ -141,6 +177,9 @@ public class ProfileActivity extends BaseActivity {
             navigateToLogin();
             return;
         }
+
+        String uid = currentUser.getUid();
+        loadUserStats(uid);
 
         if (tvProfileEmail != null && currentUser.getEmail() != null) {
             tvProfileEmail.setText(currentUser.getEmail());
@@ -160,12 +199,13 @@ public class ProfileActivity extends BaseActivity {
             tvProfileFullName.setText(immediateName);
         }
 
-        userRepository.getUserProfile(currentUser.getUid(), new UserRepository.UserCallback() {
+        userRepository.getUserProfile(uid, new UserRepository.UserCallback() {
             @Override
             public void onSuccess(User user) {
                 if (tvProfileFullName != null) {
-                    if (user.getFullName() != null && !user.getFullName().trim().isEmpty()) {
-                        tvProfileFullName.setText(user.getFullName());
+                    String formatted = User.getDisplayNameFormatted(user.getFullName(), user.getNickname());
+                    if (!formatted.isEmpty()) {
+                        tvProfileFullName.setText(formatted);
                     } else if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().trim().isEmpty()) {
                         tvProfileFullName.setText(currentUser.getDisplayName());
                     }
@@ -206,6 +246,53 @@ public class ProfileActivity extends BaseActivity {
                         tvProfileFullName.setText(currentUser.getDisplayName());
                     }
                 }
+            }
+        });
+    }
+
+    private void loadUserStats(String uid) {
+        // 1. Sách đã tặng / Bài đăng của tôi (Count books where ownerId == uid)
+        FirebaseFirestore.getInstance().collection("books")
+                .whereEqualTo("ownerId", uid)
+                .addSnapshotListener((value, error) -> {
+                    if (error == null && value != null) {
+                        int count = value.size();
+                        if (tvBooksGivenCount != null) {
+                            tvBooksGivenCount.setText(String.valueOf(count));
+                        }
+                        if (tvMyPostsCount != null) {
+                            tvMyPostsCount.setText(count + " đang hiển thị");
+                        }
+                    } else {
+                        if (tvBooksGivenCount != null) tvBooksGivenCount.setText("0");
+                        if (tvMyPostsCount != null) tvMyPostsCount.setText("0 đang hiển thị");
+                    }
+                });
+
+        // 2. Sách đã nhận (Count requests where requesterId == uid)
+        FirebaseFirestore.getInstance().collection("requests")
+                .whereEqualTo("requesterId", uid)
+                .addSnapshotListener((value, error) -> {
+                    if (error == null && value != null) {
+                        int count = value.size();
+                        if (tvBooksReceivedCount != null) {
+                            tvBooksReceivedCount.setText(String.valueOf(count));
+                        }
+                    } else {
+                        if (tvBooksReceivedCount != null) tvBooksReceivedCount.setText("0");
+                    }
+                });
+
+        // 3. Đánh giá (Default 0.0 (0) if none)
+        if (tvRatingCount != null) {
+            tvRatingCount.setText("0.0 (0)");
+        }
+
+        // 4. Sách yêu thích (Observe favorites count)
+        favoriteViewModel.getFavoritedBooksOffline().observe(this, books -> {
+            int count = (books != null) ? books.size() : 0;
+            if (tvFavoriteCount != null) {
+                tvFavoriteCount.setText(count + " cuốn");
             }
         });
     }

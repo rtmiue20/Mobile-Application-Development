@@ -30,17 +30,22 @@ public class MainActivity extends AppCompatActivity {
         }
 
         AuthRepository authRepository = AuthRepository.getInstance();
-        if (authRepository.isLoggedIn()) {
+        android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        boolean rememberMe = prefs.getBoolean("remember_me", false);
+
+        if (authRepository.isLoggedIn() && rememberMe) {
             FirebaseUser firebaseUser = authRepository.getCurrentUser();
             if (firebaseUser != null) {
                 UserRepository.getInstance().getUserProfile(firebaseUser.getUid(), new UserRepository.UserCallback() {
                     @Override
                     public void onSuccess(User userProfile) {
-                        if ("admin".equalsIgnoreCase(userProfile.getRole())) {
-                            startActivity(new Intent(MainActivity.this, AdminDashboardActivity.class));
+                        Intent intent;
+                        if (userProfile != null && "admin".equalsIgnoreCase(userProfile.getRole())) {
+                            intent = new Intent(MainActivity.this, AdminDashboardActivity.class);
                         } else {
-                            startActivity(new Intent(MainActivity.this, HomeActivity.class));
+                            intent = new Intent(MainActivity.this, HomeActivity.class);
                         }
+                        startActivity(intent);
                         finish();
                     }
 
@@ -55,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             }
         } else {
+            authRepository.logout();
             startActivity(new Intent(this, LogInActivity.class));
             finish();
         }
