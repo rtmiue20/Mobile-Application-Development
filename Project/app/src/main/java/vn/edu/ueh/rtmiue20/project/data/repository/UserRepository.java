@@ -75,7 +75,7 @@ public class UserRepository {
                 .addOnFailureListener(e -> callback.onError("Lỗi khi tải hồ sơ: " + e.getLocalizedMessage()));
     }
 
-    public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, UpdateCallback callback) {
+    public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, Double latitude, Double longitude, UpdateCallback callback) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("fullName", fullName);
         updates.put("nickname", nickname);
@@ -86,6 +86,8 @@ public class UserRepository {
         updates.put("ward", ward);
         updates.put("favoriteSpotName", favoriteSpotName);
         updates.put("favoriteSpotAddress", favoriteSpotAddress);
+        if (latitude != null) updates.put("latitude", latitude);
+        if (longitude != null) updates.put("longitude", longitude);
 
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         if (firebaseUser != null) {
@@ -99,6 +101,19 @@ public class UserRepository {
         firestore.collection("users").document(uid).set(updates, com.google.firebase.firestore.SetOptions.merge())
                 .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(e -> callback.onError("Cập nhật thông tin thất bại: " + e.getLocalizedMessage()));
+    }
+
+    public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, UpdateCallback callback) {
+        updateUserProfile(uid, fullName, nickname, phoneNumber, bio, city, district, ward, favoriteSpotName, favoriteSpotAddress, null, null, callback);
+    }
+
+    public void updateUserLocation(String uid, double latitude, double longitude, UpdateCallback callback) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("latitude", latitude);
+        updates.put("longitude", longitude);
+        firestore.collection("users").document(uid).set(updates, com.google.firebase.firestore.SetOptions.merge())
+                .addOnSuccessListener(unused -> { if (callback != null) callback.onSuccess(); })
+                .addOnFailureListener(e -> { if (callback != null) callback.onError(e.getLocalizedMessage()); });
     }
 
     public void updateUserProfile(String uid, String fullName, String phoneNumber, String bio, UpdateCallback callback) {

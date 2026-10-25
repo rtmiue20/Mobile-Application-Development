@@ -21,7 +21,10 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -33,6 +36,7 @@ import vn.edu.ueh.rtmiue20.project.data.model.Favorite;
 public class FavoriteRepository {
 
     private static final String COLLECTION_FAVORITES = "favorites";
+    private static volatile FavoriteRepository instance;
 
     private final FirebaseFirestore db;
     private final FirebaseAuth auth;
@@ -40,12 +44,24 @@ public class FavoriteRepository {
     private final FavoriteDao favoriteDao;
     private ListenerRegistration favoriteRegistration;
     private ListenerRegistration listRegistration;
+    private String currentListeningUserId = null;
 
     private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     private final MutableLiveData<Boolean> isFavoritedLiveData = new MutableLiveData<Boolean>();
     private final MutableLiveData<String> errorLiveData = new MutableLiveData<String>();
-    private boolean isToggling = false;
+    private final Set<String> togglingBookIds = Collections.synchronizedSet(new HashSet<>());
+
+    public static FavoriteRepository getInstance(Application application) {
+        if (instance == null) {
+            synchronized (FavoriteRepository.class) {
+                if (instance == null) {
+                    instance = new FavoriteRepository(application);
+                }
+            }
+        }
+        return instance;
+    }
 
     public FavoriteRepository(Application application) {
         db = FirebaseFirestore.getInstance();
@@ -70,10 +86,23 @@ public class FavoriteRepository {
         return new MutableLiveData<List<Book>>();
     }
 
+    public LiveData<List<String>> getFavoriteBookIds() {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user != null) {
+            return favoriteDao.getFavoriteBookIdsByUser(user.getUid());
+        }
+        return new MutableLiveData<List<String>>(new ArrayList<String>());
+    }
+
     public void startSyncFavorites() {
         final FirebaseUser user = auth.getCurrentUser();
         if (user == null) return;
-        if (listRegistration != null) return;
+        if (listRegistration != null && user.getUid().equals(currentListeningUserId)) return;
+        if (listRegistration != null) {
+            listRegistration.remove();
+            listRegistration = null;
+        }
+        currentListeningUserId = user.getUid();
 
         listRegistration = db.collection(COLLECTION_FAVORITES)
                 .whereEqualTo("userId", user.getUid())
@@ -89,6 +118,40 @@ public class FavoriteRepository {
                                 if (fav != null) {
                                     fav.setFavoriteId(doc.getId());
                                     list.add(fav);
+
+                                    // Đảm bảo sách có trong Room để INNER JOIN không bị miss
+                                    final String bId = fav.getBookId();
+                                    if (bId != null && !bId.isEmpty()) {
+                                        db.collection("books").document(bId).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                            @Override
+                                            public void onSuccess(DocumentSnapshot bDoc) {
+                                                if (bDoc != null && bDoc.exists()) {
+                                                    try {
+                                                        final Book b = bDoc.toObject(Book.class);
+                                                        if (b != null) {
+                                                            b.setId(bDoc.getId());
+                                                            if (bDoc.contains("viewCount")) {
+                                                                Long v = bDoc.getLong("viewCount");
+                                                                if (v != null) b.setViewCount(v);
+                                                            }
+                                                            if (bDoc.contains("favoriteCount")) {
+                                                                Long f = bDoc.getLong("favoriteCount");
+                                                                if (f != null) b.setFavoriteCount(f);
+                                                            }
+                                                            executorService.execute(new Runnable() {
+                                                                @Override
+                                                                public void run() {
+                                                                    database.bookDao().insert(b);
+                                                                }
+                                                            });
+                                                        }
+                                                    } catch (Exception ex) {
+                                                        Log.e("FirebaseSync", "Lỗi parse Book cho Favorite: " + ex.getMessage());
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    }
                                 }
                             } catch (Exception e) {
                                 Log.e("FirebaseSync", "Lỗi parse Favorite: " + e.getMessage());
@@ -116,6 +179,7 @@ public class FavoriteRepository {
             listRegistration.remove();
             listRegistration = null;
         }
+        currentListeningUserId = null;
     }
 
     public LiveData<Boolean> checkIsFavorited(String bookId) {
@@ -145,12 +209,14 @@ public class FavoriteRepository {
     public void toggleFavorite(final String bookId) {
         final FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
-            errorLiveData.setValue("Bạn cần đăng nhập để lưu sách");
+            errorLiveData.postValue("Bạn cần đăng nhập để lưu sách");
             return;
         }
 
-        if (isToggling) return;
-        isToggling = true;
+        if (bookId == null || bookId.trim().isEmpty()) return;
+
+        if (togglingBookIds.contains(bookId)) return;
+        togglingBookIds.add(bookId);
 
         final String userId = user.getUid();
         final String favoriteId = buildFavoriteId(userId, bookId);
@@ -163,40 +229,117 @@ public class FavoriteRepository {
                     favoriteRef.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
                         @Override
                         public void onSuccess(Void unused) {
+                            final DocumentReference bookRef = db.collection("books").document(bookId);
+                            bookRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                @Override
+                                public void onSuccess(DocumentSnapshot bSnap) {
+                                    long current = 0;
+                                    if (bSnap != null && bSnap.exists() && bSnap.contains("favoriteCount")) {
+                                        Long val = bSnap.getLong("favoriteCount");
+                                        if (val != null) current = Math.max(0, val);
+                                    }
+                                    java.util.Map<String, Object> map = new java.util.HashMap<>();
+                                    map.put("favoriteCount", Math.max(0, current - 1));
+                                    bookRef.set(map, com.google.firebase.firestore.SetOptions.merge());
+                                }
+                            });
                             executorService.execute(new Runnable() {
                                 @Override
                                 public void run() {
                                     favoriteDao.deleteById(favoriteId);
+                                    database.bookDao().decrementFavoriteCount(bookId);
                                 }
                             });
-                            isToggling = false;
+                            togglingBookIds.remove(bookId);
                         }
-                    }).addOnFailureListener(createFailureListener("Bỏ yêu thích thất bại: "));
+                    }).addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            togglingBookIds.remove(bookId);
+                            errorLiveData.postValue("Bỏ yêu thích thất bại: " + e.getMessage());
+                        }
+                    });
                 } else {
                     final Favorite favorite = new Favorite(favoriteId, userId, bookId, System.currentTimeMillis());
                     favoriteRef.set(favorite).addOnSuccessListener(new OnSuccessListener<Void>() {
                         @Override
                         public void onSuccess(Void unused) {
+                            final DocumentReference bookRef = db.collection("books").document(bookId);
+                            bookRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                @Override
+                                public void onSuccess(DocumentSnapshot bSnap) {
+                                    long current = 0;
+                                    if (bSnap != null && bSnap.exists() && bSnap.contains("favoriteCount")) {
+                                        Long val = bSnap.getLong("favoriteCount");
+                                        if (val != null) current = Math.max(0, val);
+                                    }
+                                    java.util.Map<String, Object> map = new java.util.HashMap<>();
+                                    map.put("favoriteCount", current + 1);
+                                    bookRef.set(map, com.google.firebase.firestore.SetOptions.merge());
+                                }
+                            });
                             executorService.execute(new Runnable() {
                                 @Override
                                 public void run() {
                                     favoriteDao.insert(favorite);
+                                    database.bookDao().incrementFavoriteCount(bookId);
                                 }
                             });
-                            isToggling = false;
+                            // Tải chi tiết sách để đảm bảo Room có dữ liệu
+                            db.collection("books").document(bookId).get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                @Override
+                                public void onSuccess(DocumentSnapshot bDoc) {
+                                    if (bDoc != null && bDoc.exists()) {
+                                        try {
+                                            final Book b = bDoc.toObject(Book.class);
+                                            if (b != null) {
+                                                b.setId(bDoc.getId());
+                                                if (bDoc.contains("viewCount")) {
+                                                    Long v = bDoc.getLong("viewCount");
+                                                    if (v != null) b.setViewCount(v);
+                                                }
+                                                if (bDoc.contains("favoriteCount")) {
+                                                    Long f = bDoc.getLong("favoriteCount");
+                                                    if (f != null) b.setFavoriteCount(f);
+                                                }
+                                                executorService.execute(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        database.bookDao().insert(b);
+                                                    }
+                                                });
+                                            }
+                                        } catch (Exception ex) {
+                                            Log.e("FavoriteSync", "Lỗi cache book: " + ex.getMessage());
+                                        }
+                                    }
+                                }
+                            });
+                            togglingBookIds.remove(bookId);
                         }
-                    }).addOnFailureListener(createFailureListener("Lưu yêu thích thất bại: "));
+                    }).addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            togglingBookIds.remove(bookId);
+                            errorLiveData.postValue("Lưu yêu thích thất bại: " + e.getMessage());
+                        }
+                    });
                 }
             }
-        }).addOnFailureListener(createFailureListener("Lỗi kiểm tra trạng thái: "));
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                togglingBookIds.remove(bookId);
+                errorLiveData.postValue("Lỗi kiểm tra trạng thái: " + e.getMessage());
+            }
+        });
     }
 
     private OnFailureListener createFailureListener(final String prefix) {
         return new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
-                isToggling = false;
-                errorLiveData.setValue(prefix + e.getMessage());
+                errorLiveData.postValue(prefix + e.getMessage());
             }
         };
     }

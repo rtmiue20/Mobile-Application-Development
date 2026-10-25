@@ -18,9 +18,12 @@ public class Book {
     private String category;
     private String condition;
     private String status = "available";
+    private int viewCount = 0;
+    private int favoriteCount = 0;
 
     public Book() {}   // Firestore bắt buộc có constructor rỗng (slide 90)
 
+    @androidx.room.Ignore
     public Book(@NonNull String id, String title, String author, String description, String imageUrl, String ownerId, long createdAt, String category, String condition, String status) {
         this.id = id;
         this.title = title;
@@ -64,4 +67,12 @@ public class Book {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public int getViewCount() { return Math.max(0, viewCount); }
+    public void setViewCount(int viewCount) { this.viewCount = Math.max(0, viewCount); }
+    public void setViewCount(long viewCount) { this.viewCount = (int) Math.max(0, viewCount); }
+
+    public int getFavoriteCount() { return Math.max(0, favoriteCount); }
+    public void setFavoriteCount(int favoriteCount) { this.favoriteCount = Math.max(0, favoriteCount); }
+    public void setFavoriteCount(long favoriteCount) { this.favoriteCount = (int) Math.max(0, favoriteCount); }
 }

@@ -241,6 +241,7 @@ public class RegisterActivity extends AppCompatActivity {
                         .putString("user_fullname", fullName)
                         .apply();
 
+                captureUserLocationIfPermitted(user.getUid());
                 Toast.makeText(RegisterActivity.this, "Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show();
 
                 Intent intent = new Intent(RegisterActivity.this, ProfileActivity.class);
@@ -270,6 +271,7 @@ public class RegisterActivity extends AppCompatActivity {
         authRepository.loginWithGoogle(idToken, new AuthRepository.AuthCallback() {
             @Override
             public void onSuccess(FirebaseUser user) {
+                captureUserLocationIfPermitted(user.getUid());
                 Toast.makeText(RegisterActivity.this, "Đăng ký Google thành công!", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(RegisterActivity.this, ProfileActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -282,5 +284,26 @@ public class RegisterActivity extends AppCompatActivity {
                 Toast.makeText(RegisterActivity.this, "Lỗi đăng ký Google: " + errorMessage, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void captureUserLocationIfPermitted(String uid) {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            try {
+                com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(this)
+                        .getCurrentLocation(com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+                        .addOnSuccessListener(loc -> {
+                            if (loc != null) {
+                                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                                prefs.edit()
+                                        .putFloat("user_lat", (float) loc.getLatitude())
+                                        .putFloat("user_lng", (float) loc.getLongitude())
+                                        .apply();
+                                vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.getInstance()
+                                        .updateUserLocation(uid, loc.getLatitude(), loc.getLongitude(), null);
+                            }
+                        });
+            } catch (SecurityException ignored) {}
+        }
     }
 }

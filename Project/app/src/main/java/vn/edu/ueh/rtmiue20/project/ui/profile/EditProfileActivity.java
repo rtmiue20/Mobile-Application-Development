@@ -84,6 +84,8 @@ public class EditProfileActivity extends AppCompatActivity {
     private UserRepository userRepository;
     private FusedLocationProviderClient fusedLocationClient;
     private ActivityResultLauncher<String[]> locationPermissionLauncher;
+    private Double currentLatitude = null;
+    private Double currentLongitude = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -328,6 +330,15 @@ public class EditProfileActivity extends AppCompatActivity {
                         }
                     }, 300);
                 }
+
+                if (user.getLatitude() != null && user.getLongitude() != null) {
+                    currentLatitude = user.getLatitude();
+                    currentLongitude = user.getLongitude();
+                    getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
+                            .putFloat("user_lat", currentLatitude.floatValue())
+                            .putFloat("user_lng", currentLongitude.floatValue())
+                            .apply();
+                }
             }
 
             @Override
@@ -420,12 +431,25 @@ public class EditProfileActivity extends AppCompatActivity {
                                 }, 300);
                             }
 
+                            currentLatitude = location.getLatitude();
+                            currentLongitude = location.getLongitude();
+                            getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
+                                    .putFloat("user_lat", (float) location.getLatitude())
+                                    .putFloat("user_lng", (float) location.getLongitude())
+                                    .apply();
+
                             Toast.makeText(this, "Đã lấy vị trí chính xác thành công!", Toast.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(this, "Không thể giải mã tọa độ vị trí.", Toast.LENGTH_SHORT).show();
                         }
                     } catch (IOException e) {
-                        Toast.makeText(this, "Lỗi Geocoder: " + e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+                        currentLatitude = location.getLatitude();
+                        currentLongitude = location.getLongitude();
+                        getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
+                                .putFloat("user_lat", (float) location.getLatitude())
+                                .putFloat("user_lng", (float) location.getLongitude())
+                                .apply();
+                        Toast.makeText(this, "Đã lấy tọa độ GPS thành công!", Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     Toast.makeText(this, "Không thể lấy vị trí hiện tại. Hãy bật GPS trên thiết bị.", Toast.LENGTH_LONG).show();
@@ -541,15 +565,33 @@ public class EditProfileActivity extends AppCompatActivity {
         if (btnSaveProfile != null) btnSaveProfile.setEnabled(false);
         if (btnSaveProfileMain != null) btnSaveProfileMain.setEnabled(false);
 
-        userRepository.updateUserProfile(currentUser.getUid(), fullName, nickname, phone, bio, city, district, ward, selectedFavoriteSpotName, selectedFavoriteSpotAddress, new UserRepository.UpdateCallback() {
+        if (currentLatitude == null || currentLongitude == null) {
+            String fullAddr = (ward.isEmpty() ? "" : ward + ", ") + (district.isEmpty() ? "" : district + ", ") + city;
+            if (!fullAddr.trim().isEmpty()) {
+                try {
+                    Geocoder geocoder = new Geocoder(this, new Locale("vi", "VN"));
+                    List<Address> list = geocoder.getFromLocationName(fullAddr, 1);
+                    if (list != null && !list.isEmpty()) {
+                        currentLatitude = list.get(0).getLatitude();
+                        currentLongitude = list.get(0).getLongitude();
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        userRepository.updateUserProfile(currentUser.getUid(), fullName, nickname, phone, bio, city, district, ward, selectedFavoriteSpotName, selectedFavoriteSpotAddress, currentLatitude, currentLongitude, new UserRepository.UpdateCallback() {
             @Override
             public void onSuccess() {
                 String displayNameFormatted = User.getDisplayNameFormatted(fullName, nickname);
                 android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
-                prefs.edit()
+                android.content.SharedPreferences.Editor editor = prefs.edit()
                         .putString("user_fullname", !displayNameFormatted.isEmpty() ? displayNameFormatted : fullName)
-                        .putString("user_nickname", nickname)
-                        .apply();
+                        .putString("user_nickname", nickname);
+                if (currentLatitude != null && currentLongitude != null) {
+                    editor.putFloat("user_lat", currentLatitude.floatValue());
+                    editor.putFloat("user_lng", currentLongitude.floatValue());
+                }
+                editor.apply();
 
                 Toast.makeText(EditProfileActivity.this, "Cập nhật hồ sơ thành công!", Toast.LENGTH_SHORT).show();
                 finishOrNavigate();

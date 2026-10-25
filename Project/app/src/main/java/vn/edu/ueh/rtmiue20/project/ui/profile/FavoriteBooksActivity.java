@@ -57,10 +57,19 @@ public class FavoriteBooksActivity extends AppCompatActivity {
         });
         rvFavoriteBooks.setAdapter(bookAdapter);
 
+        // Khởi động BookViewModel để đồng bộ sách về Room nếu chưa có
+        new ViewModelProvider(this).get(vn.edu.ueh.rtmiue20.project.ui.home.BookViewModel.class);
+
         favoriteViewModel = new ViewModelProvider(this).get(FavoriteViewModel.class);
         favoriteViewModel.getFavoritedBooksOffline().observe(this, books -> {
             if (books != null) {
                 bookAdapter.update(books);
+                java.util.Set<String> favIds = new java.util.HashSet<>();
+                for (vn.edu.ueh.rtmiue20.project.data.model.Book b : books) {
+                    if (b.getId() != null) favIds.add(b.getId());
+                }
+                bookAdapter.setFavoritedBookIds(favIds);
+
                 if (books.isEmpty()) {
                     tvEmpty.setVisibility(View.VISIBLE);
                 } else {
