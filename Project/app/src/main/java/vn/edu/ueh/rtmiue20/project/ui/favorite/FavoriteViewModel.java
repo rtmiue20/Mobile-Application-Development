@@ -19,12 +19,16 @@ public class FavoriteViewModel extends AndroidViewModel {
 
     public FavoriteViewModel(@NonNull Application application) {
         super(application);
-        repository = new FavoriteRepository(application);
+        repository = FavoriteRepository.getInstance(application);
         repository.startSyncFavorites();
     }
 
     public LiveData<List<Book>> getFavoritedBooksOffline() {
         return repository.getFavoritedBooksOffline();
+    }
+
+    public LiveData<List<String>> getFavoriteBookIds() {
+        return repository.getFavoriteBookIds();
     }
 
     public LiveData<Boolean> getIsFavorited(String bookId) {

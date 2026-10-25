@@ -10,8 +10,8 @@ import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.data.model.Favorite;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 
-// Tăng version lên 3 và thêm Favorite.class
-@Database(entities = {Book.class, Favorite.class, User.class}, version = 6)
+// Cập nhật version lên 8 hỗ trợ viewCount và favoriteCount của Book
+@Database(entities = {Book.class, Favorite.class, User.class}, version = 8)
 public abstract class BookRoomDatabase extends RoomDatabase {
 
     public abstract BookDao bookDao();

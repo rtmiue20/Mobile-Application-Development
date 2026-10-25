@@ -45,19 +45,75 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Favorite Button -->
-        <ImageView
-            android:id="@+id/btnFavorite"
-            android:layout_width="28dp"
+        <!-- Article Stats (Views & Favorites) -->
+        <LinearLayout
+            android:id="@+id/layoutArticleStats"
+            android:layout_width="wrap_content"
             android:layout_height="28dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
-            android:background="@drawable/bg_favorite_btn"
-            android:padding="6dp"
-            android:src="@drawable/ic_favorite_border"
-            app:tint="@color/outline"
+            android:background="@drawable/bg_article_stats_pill"
+            android:elevation="3dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="7dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent">
+
+            <!-- Views: eye icon + count -->
+            <ImageView
+                android:layout_width="13dp"
+                android:layout_height="13dp"
+                android:src="@drawable/ic_visibility"
+                app:tint="#6B7280" />
+
+            <TextView
+                android:id="@+id/tvViewCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:text="0"
+                android:textColor="#4B5563"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <!-- Vertical Divider -->
+            <View
+                android:layout_width="1dp"
+                android:layout_height="12dp"
+                android:layout_marginHorizontal="5dp"
+                android:background="#D1D5DB" />
+
+            <!-- Favorites: heart icon + count container -->
+            <LinearLayout
+                android:id="@+id/btnFavoriteContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="2dp"
+                android:paddingEnd="2dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/btnFavorite"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_favorite_border"
+                    app:tint="@color/outline" />
+
+                <TextView
+                    android:id="@+id/tvFavoriteCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="3dp"
+                    android:text="0"
+                    android:textColor="#4B5563"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
 
         <!-- Distance Tag -->
         <LinearLayout
