@@ -10,7 +10,7 @@ import vn.edu.ueh.rtmiue20.project.data.repository.RequestRepository;
 
 public class RequestViewModel extends ViewModel {
 
-    private final RequestRepository repository = new RequestRepository();
+    private final RequestRepository repository = RequestRepository.getInstance();
 
     public LiveData<List<Request>> getReceivedRequests(String ownerId) {
         return repository.getReceivedRequests(ownerId);
@@ -22,6 +22,10 @@ public class RequestViewModel extends ViewModel {
 
     public void sendRequest(Request request) {
         repository.sendRequest(request);
+    }
+
+    public void cancelRequest(String requestId) {
+        repository.cancelRequest(requestId);
     }
 
     // Đã đổi tên hàm thành updateRequestStatus

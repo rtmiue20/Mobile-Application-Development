@@ -163,6 +163,7 @@
             android:weightSum="5">
 
             <LinearLayout
+                android:id="@+id/btnNavHome"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -182,6 +183,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/btnNavSearch"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -206,6 +208,7 @@
                 android:layout_weight="1" />
 
             <LinearLayout
+                android:id="@+id/btnNavRequests"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -226,6 +229,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/btnNavProfile"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -246,6 +250,7 @@
         </LinearLayout>
 
         <ImageView
+            android:id="@+id/fabAddBook"
             android:layout_width="64dp"
             android:layout_height="64dp"
             android:layout_centerHorizontal="true"

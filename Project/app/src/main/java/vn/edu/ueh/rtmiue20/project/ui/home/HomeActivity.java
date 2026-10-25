@@ -31,6 +31,7 @@ import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.ui.book.BookDetailActivity;
 import vn.edu.ueh.rtmiue20.project.ui.book.CreatePostActivity;
+import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
 import vn.edu.ueh.rtmiue20.project.ui.profile.ProfileActivity;
 import vn.edu.ueh.rtmiue20.project.ui.request.ManageRequestsActivity;
 import vn.edu.ueh.rtmiue20.project.util.ViewPressEffectHelper;
@@ -94,8 +95,56 @@ public class HomeActivity extends AppCompatActivity {
             }
         });
 
+        FavoriteViewModel favoriteViewModel = new ViewModelProvider(this).get(FavoriteViewModel.class);
+        favoriteViewModel.getFavoriteBookIds().observe(this, ids -> {
+            if (bookAdapter != null && ids != null) {
+                bookAdapter.setFavoritedBookIds(ids);
+            }
+        });
+
         setupListeners();
         setupPressEffects();
+        updateUserDistanceToExchange();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateUserDistanceToExchange();
+    }
+
+    private void updateUserDistanceToExchange() {
+        android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        float lat = prefs.getFloat("user_lat", 0f);
+        float lng = prefs.getFloat("user_lng", 0f);
+
+        if (lat != 0f && lng != 0f) {
+            String dist = vn.edu.ueh.rtmiue20.project.util.LocationHelper.getDistanceToUEHCampusB(lat, lng);
+            if (bookAdapter != null) {
+                bookAdapter.setUserDistanceToExchange(dist);
+            }
+        } else {
+            com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null) {
+                vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.getInstance().getUserProfile(user.getUid(), new vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.UserCallback() {
+                    @Override
+                    public void onSuccess(vn.edu.ueh.rtmiue20.project.data.model.User userProfile) {
+                        if (userProfile != null && userProfile.getLatitude() != null && userProfile.getLongitude() != null) {
+                            float uLat = userProfile.getLatitude().floatValue();
+                            float uLng = userProfile.getLongitude().floatValue();
+                            prefs.edit().putFloat("user_lat", uLat).putFloat("user_lng", uLng).apply();
+                            String dist = vn.edu.ueh.rtmiue20.project.util.LocationHelper.getDistanceToUEHCampusB(uLat, uLng);
+                            if (bookAdapter != null) {
+                                bookAdapter.setUserDistanceToExchange(dist);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {}
+                });
+            }
+        }
     }
 
     private void initViews() {

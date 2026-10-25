@@ -51,21 +51,29 @@ public class BookRepository {
                 Log.e("FirebaseSync", "Lỗi Firebase: " + e.getMessage());
                 return;
             }
-            if (snap == null || snap.getMetadata().isFromCache()) return;
+            if (snap == null) return;
             List<Book> list = new ArrayList<>();
             for (DocumentSnapshot d : snap.getDocuments()) {
                 try {
                     Book b = d.toObject(Book.class);
-                    if (b != null) { b.setId(d.getId()); list.add(b); }
+                    if (b != null) {
+                        b.setId(d.getId());
+                        if (d.contains("viewCount")) {
+                            Long v = d.getLong("viewCount");
+                            if (v != null) b.setViewCount(v);
+                        }
+                        if (d.contains("favoriteCount")) {
+                            Long f = d.getLong("favoriteCount");
+                            if (f != null) b.setFavoriteCount(f);
+                        }
+                        list.add(b);
+                    }
                 } catch (Exception ex) {
                     Log.e("FirebaseSync", "Lỗi parse Book: " + ex.getMessage());
                 }
             }
             io.execute(() -> {
-                database.runInTransaction(() -> {
-                    dao.deleteAll();
-                    dao.insertAll(list);
-                });
+                dao.insertAll(list);
             });
         });
     }
@@ -78,6 +86,44 @@ public class BookRepository {
     public void delete(String id) {
         remote.document(id).delete();
         io.execute(() -> dao.deleteById(id));
+    }
+
+    public void incrementViewCount(String id) {
+        if (id == null || id.trim().isEmpty()) return;
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        map.put("viewCount", com.google.firebase.firestore.FieldValue.increment(1));
+        remote.document(id).set(map, com.google.firebase.firestore.SetOptions.merge());
+        io.execute(() -> dao.incrementViewCount(id));
+    }
+
+    public void incrementFavoriteCount(String id) {
+        if (id == null || id.trim().isEmpty()) return;
+        remote.document(id).get().addOnSuccessListener(snap -> {
+            long current = 0;
+            if (snap != null && snap.contains("favoriteCount")) {
+                Long val = snap.getLong("favoriteCount");
+                if (val != null) current = Math.max(0, val);
+            }
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("favoriteCount", current + 1);
+            remote.document(id).set(map, com.google.firebase.firestore.SetOptions.merge());
+        });
+        io.execute(() -> dao.incrementFavoriteCount(id));
+    }
+
+    public void decrementFavoriteCount(String id) {
+        if (id == null || id.trim().isEmpty()) return;
+        remote.document(id).get().addOnSuccessListener(snap -> {
+            long current = 0;
+            if (snap != null && snap.contains("favoriteCount")) {
+                Long val = snap.getLong("favoriteCount");
+                if (val != null) current = Math.max(0, val);
+            }
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("favoriteCount", Math.max(0, current - 1));
+            remote.document(id).set(map, com.google.firebase.firestore.SetOptions.merge());
+        });
+        io.execute(() -> dao.decrementFavoriteCount(id));
     }
 
     public interface UploadImageCallback {
