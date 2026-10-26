@@ -11,22 +11,28 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
-import vn.edu.ueh.rtmiue20.project.MainActivity;
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
-import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
+import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
+import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
+import vn.edu.ueh.rtmiue20.project.ui.base.BaseActivity;
+import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
+import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
+import vn.edu.ueh.rtmiue20.project.ui.request.ManageRequestsActivity;
 
-public class ProfileActivity extends AppCompatActivity {
+public class ProfileActivity extends BaseActivity {
 
     private ImageView ivAvatar;
     private TextView tvProfileFullName;
@@ -35,9 +41,23 @@ public class ProfileActivity extends AppCompatActivity {
     private View btnEditProfile;
     private View btnLogoutProfile;
 
+    private TextView tvBooksGivenCount;
+    private TextView tvBooksReceivedCount;
+    private TextView tvRatingCount;
+    private View layoutMyPosts;
+    private TextView tvMyPostsCount;
+    private View layoutFavoriteBooks;
+    private TextView tvFavoriteCount;
+    private View layoutHistoryRequests;
+
+    private View btnBackProfile;
+    private View layoutBrandLogo;
+
     private AuthRepository authRepository;
     private UserRepository userRepository;
-    private ActivityResultLauncher<Intent> imagePickerLauncher;
+    private FavoriteViewModel favoriteViewModel;
+
+    private ActivityResultLauncher<String[]> imagePickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,14 +65,18 @@ public class ProfileActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_profile);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainProfile), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        View mainView = findViewById(R.id.mainProfile);
+        if (mainView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
 
         authRepository = AuthRepository.getInstance();
         userRepository = UserRepository.getInstance();
+        favoriteViewModel = new ViewModelProvider(this).get(FavoriteViewModel.class);
 
         initViews();
         setupImagePickerLauncher();
@@ -72,21 +96,45 @@ public class ProfileActivity extends AppCompatActivity {
         tvProfileRole = findViewById(R.id.tvProfileRole);
         btnEditProfile = findViewById(R.id.btnEditProfile);
         btnLogoutProfile = findViewById(R.id.btnLogoutProfile);
+
+        tvBooksGivenCount = findViewById(R.id.tvBooksGivenCount);
+        tvBooksReceivedCount = findViewById(R.id.tvBooksReceivedCount);
+        tvRatingCount = findViewById(R.id.tvRatingCount);
+        layoutMyPosts = findViewById(R.id.layoutMyPosts);
+        tvMyPostsCount = findViewById(R.id.tvMyPostsCount);
+        layoutFavoriteBooks = findViewById(R.id.layoutFavoriteBooks);
+        tvFavoriteCount = findViewById(R.id.tvFavoriteCount);
+        layoutHistoryRequests = findViewById(R.id.layoutHistoryRequests);
+
+        btnBackProfile = findViewById(R.id.btnBackProfile);
+        layoutBrandLogo = findViewById(R.id.layoutBrandLogo);
     }
 
     private void setupImagePickerLauncher() {
         imagePickerLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null && result.getData().getData() != null) {
-                        Uri imageUri = result.getData().getData();
-                        uploadAvatarImage(imageUri);
+                new ActivityResultContracts.OpenDocument(),
+                uri -> {
+                    if (uri != null) {
+                        uploadAvatarImage(uri);
                     }
                 }
         );
     }
 
     private void setupListeners() {
+        if (btnBackProfile != null) {
+            btnBackProfile.setOnClickListener(v -> handleSmartBack());
+        }
+
+        if (layoutBrandLogo != null) {
+            layoutBrandLogo.setOnClickListener(v -> {
+                Intent intent = new Intent(ProfileActivity.this, HomeActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                finish();
+            });
+        }
+
         if (btnEditProfile != null) {
             btnEditProfile.setOnClickListener(v -> {
                 Intent intent = new Intent(ProfileActivity.this, EditProfileActivity.class);
@@ -95,15 +143,30 @@ public class ProfileActivity extends AppCompatActivity {
         }
 
         if (ivAvatar != null) {
-            ivAvatar.setOnClickListener(v -> {
-                Intent intent = new Intent(Intent.ACTION_PICK);
-                intent.setType("image/*");
-                imagePickerLauncher.launch(intent);
-            });
+            ivAvatar.setOnClickListener(v -> imagePickerLauncher.launch(new String[]{"image/*"}));
         }
 
         if (btnLogoutProfile != null) {
             btnLogoutProfile.setOnClickListener(v -> handleLogout());
+        }
+
+        // Kệ sách & giao dịch navigation listeners
+        if (layoutMyPosts != null) {
+            layoutMyPosts.setOnClickListener(v -> {
+                startActivity(new Intent(ProfileActivity.this, MyPostsActivity.class));
+            });
+        }
+
+        if (layoutFavoriteBooks != null) {
+            layoutFavoriteBooks.setOnClickListener(v -> {
+                startActivity(new Intent(ProfileActivity.this, FavoriteBooksActivity.class));
+            });
+        }
+
+        if (layoutHistoryRequests != null) {
+            layoutHistoryRequests.setOnClickListener(v -> {
+                startActivity(new Intent(ProfileActivity.this, ManageRequestsActivity.class));
+            });
         }
     }
 
@@ -115,11 +178,13 @@ public class ProfileActivity extends AppCompatActivity {
             return;
         }
 
+        String uid = currentUser.getUid();
+        loadUserStats(uid);
+
         if (tvProfileEmail != null && currentUser.getEmail() != null) {
             tvProfileEmail.setText(currentUser.getEmail());
         }
 
-        // Ưu tiên hiển thị tức thì họ tên từ Firebase Auth hoặc SharedPreferences cache
         String immediateName = currentUser.getDisplayName();
         if (immediateName == null || immediateName.trim().isEmpty()) {
             android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
@@ -134,13 +199,13 @@ public class ProfileActivity extends AppCompatActivity {
             tvProfileFullName.setText(immediateName);
         }
 
-        // Tải realtime / chi tiết từ Firestore
-        userRepository.getUserProfile(currentUser.getUid(), new UserRepository.UserCallback() {
+        userRepository.getUserProfile(uid, new UserRepository.UserCallback() {
             @Override
             public void onSuccess(User user) {
                 if (tvProfileFullName != null) {
-                    if (user.getFullName() != null && !user.getFullName().trim().isEmpty()) {
-                        tvProfileFullName.setText(user.getFullName());
+                    String formatted = User.getDisplayNameFormatted(user.getFullName(), user.getNickname());
+                    if (!formatted.isEmpty()) {
+                        tvProfileFullName.setText(formatted);
                     } else if (currentUser.getDisplayName() != null && !currentUser.getDisplayName().trim().isEmpty()) {
                         tvProfileFullName.setText(currentUser.getDisplayName());
                     }
@@ -148,7 +213,10 @@ public class ProfileActivity extends AppCompatActivity {
 
                 if (tvProfileRole != null) {
                     if ("admin".equalsIgnoreCase(user.getRole())) {
-                        tvProfileRole.setText("✔ Quản trị viên (Admin)");
+                        tvProfileRole.setText("✔ Quản trị viên (Admin) - Chạm để vào Dashboard");
+                        tvProfileRole.setOnClickListener(v ->
+                                startActivity(new Intent(ProfileActivity.this, AdminDashboardActivity.class))
+                        );
                     } else {
                         tvProfileRole.setText("✔ Thành viên uy tín 5 sao");
                     }
@@ -178,6 +246,53 @@ public class ProfileActivity extends AppCompatActivity {
                         tvProfileFullName.setText(currentUser.getDisplayName());
                     }
                 }
+            }
+        });
+    }
+
+    private void loadUserStats(String uid) {
+        // 1. Sách đã tặng / Bài đăng của tôi (Count books where ownerId == uid)
+        FirebaseFirestore.getInstance().collection("books")
+                .whereEqualTo("ownerId", uid)
+                .addSnapshotListener((value, error) -> {
+                    if (error == null && value != null) {
+                        int count = value.size();
+                        if (tvBooksGivenCount != null) {
+                            tvBooksGivenCount.setText(String.valueOf(count));
+                        }
+                        if (tvMyPostsCount != null) {
+                            tvMyPostsCount.setText(count + " đang hiển thị");
+                        }
+                    } else {
+                        if (tvBooksGivenCount != null) tvBooksGivenCount.setText("0");
+                        if (tvMyPostsCount != null) tvMyPostsCount.setText("0 đang hiển thị");
+                    }
+                });
+
+        // 2. Sách đã nhận (Count requests where requesterId == uid)
+        FirebaseFirestore.getInstance().collection("requests")
+                .whereEqualTo("requesterId", uid)
+                .addSnapshotListener((value, error) -> {
+                    if (error == null && value != null) {
+                        int count = value.size();
+                        if (tvBooksReceivedCount != null) {
+                            tvBooksReceivedCount.setText(String.valueOf(count));
+                        }
+                    } else {
+                        if (tvBooksReceivedCount != null) tvBooksReceivedCount.setText("0");
+                    }
+                });
+
+        // 3. Đánh giá (Default 0.0 (0) if none)
+        if (tvRatingCount != null) {
+            tvRatingCount.setText("0.0 (0)");
+        }
+
+        // 4. Sách yêu thích (Observe favorites count)
+        favoriteViewModel.getFavoritedBooksOffline().observe(this, books -> {
+            int count = (books != null) ? books.size() : 0;
+            if (tvFavoriteCount != null) {
+                tvFavoriteCount.setText(count + " cuốn");
             }
         });
     }

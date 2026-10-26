@@ -2,6 +2,7 @@ package vn.edu.ueh.rtmiue20.project.data.repository;
 
 import android.app.Application;
 import android.net.Uri;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 
@@ -24,6 +25,7 @@ import java.util.concurrent.Executors;
 
 public class BookRepository {
     private final BookDao dao;
+    private final BookRoomDatabase database;
     private final LiveData<List<Book>> allBooks;
     private final CollectionReference remote =
             FirebaseFirestore.getInstance().collection("books");
@@ -32,7 +34,8 @@ public class BookRepository {
     private static final ExecutorService io = Executors.newSingleThreadExecutor();
 
     public BookRepository(Application app) {
-        dao = BookRoomDatabase.getDatabase(app).bookDao();
+        database = BookRoomDatabase.getDatabase(app);
+        dao = database.bookDao();
         allBooks = dao.getAllBooks();
     }
 
@@ -44,18 +47,38 @@ public class BookRepository {
     public void startSync() {
         if (reg != null) return;
         reg = remote.addSnapshotListener((snap, e) -> {
-            if (snap == null || snap.getMetadata().isFromCache()) return;
+            if (e != null) {
+                Log.e("FirebaseSync", "Lỗi Firebase: " + e.getMessage());
+                return;
+            }
+            if (snap == null) return;
             List<Book> list = new ArrayList<>();
             for (DocumentSnapshot d : snap.getDocuments()) {
-                Book b = d.toObject(Book.class);
-                if (b != null) { b.setId(d.getId()); list.add(b); }
+                try {
+                    Book b = d.toObject(Book.class);
+                    if (b != null) {
+                        b.setId(d.getId());
+                        if (d.contains("viewCount")) {
+                            Long v = d.getLong("viewCount");
+                            if (v != null) b.setViewCount(v);
+                        }
+                        if (d.contains("favoriteCount")) {
+                            Long f = d.getLong("favoriteCount");
+                            if (f != null) b.setFavoriteCount(f);
+                        }
+                        list.add(b);
+                    }
+                } catch (Exception ex) {
+                    Log.e("FirebaseSync", "Lỗi parse Book: " + ex.getMessage());
+                }
             }
-            io.execute(() -> { dao.deleteAll(); dao.insertAll(list); });
+            io.execute(() -> {
+                dao.insertAll(list);
+            });
         });
     }
     public void stopSync() { if (reg != null) { reg.remove(); reg = null; } }
 
-    // Ghi: lên Firestore và lưu Room luôn để UI thấy ngay
     public void insert(Book b) {
         remote.document(b.getId()).set(b);
         io.execute(() -> dao.insert(b));
@@ -63,6 +86,44 @@ public class BookRepository {
     public void delete(String id) {
         remote.document(id).delete();
         io.execute(() -> dao.deleteById(id));
+    }
+
+    public void incrementViewCount(String id) {
+        if (id == null || id.trim().isEmpty()) return;
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        map.put("viewCount", com.google.firebase.firestore.FieldValue.increment(1));
+        remote.document(id).set(map, com.google.firebase.firestore.SetOptions.merge());
+        io.execute(() -> dao.incrementViewCount(id));
+    }
+
+    public void incrementFavoriteCount(String id) {
+        if (id == null || id.trim().isEmpty()) return;
+        remote.document(id).get().addOnSuccessListener(snap -> {
+            long current = 0;
+            if (snap != null && snap.contains("favoriteCount")) {
+                Long val = snap.getLong("favoriteCount");
+                if (val != null) current = Math.max(0, val);
+            }
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("favoriteCount", current + 1);
+            remote.document(id).set(map, com.google.firebase.firestore.SetOptions.merge());
+        });
+        io.execute(() -> dao.incrementFavoriteCount(id));
+    }
+
+    public void decrementFavoriteCount(String id) {
+        if (id == null || id.trim().isEmpty()) return;
+        remote.document(id).get().addOnSuccessListener(snap -> {
+            long current = 0;
+            if (snap != null && snap.contains("favoriteCount")) {
+                Long val = snap.getLong("favoriteCount");
+                if (val != null) current = Math.max(0, val);
+            }
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("favoriteCount", Math.max(0, current - 1));
+            remote.document(id).set(map, com.google.firebase.firestore.SetOptions.merge());
+        });
+        io.execute(() -> dao.decrementFavoriteCount(id));
     }
 
     public interface UploadImageCallback {

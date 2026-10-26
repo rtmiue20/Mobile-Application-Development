@@ -37,11 +37,10 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseUser;
 
 import vn.edu.ueh.rtmiue20.project.R;
-import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
-import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
 import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
+import vn.edu.ueh.rtmiue20.project.ui.profile.EditProfileActivity;
 
 public class LogInActivity extends AppCompatActivity {
 
@@ -70,19 +69,16 @@ public class LogInActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_login);
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainLogin), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        View mainView = findViewById(R.id.mainLogin);
+        if (mainView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
 
         authRepository = AuthRepository.getInstance();
-
-        // Check if user is already logged in
-        if (authRepository.isLoggedIn()) {
-            navigateBasedOnRole();
-            return;
-        }
 
         initViews();
         setupGoogleSignIn();
@@ -94,10 +90,6 @@ public class LogInActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (authRepository.isLoggedIn()) {
-            navigateBasedOnRole();
-            return;
-        }
         loadSavedCredentials();
     }
 
@@ -130,9 +122,17 @@ public class LogInActivity extends AppCompatActivity {
                             GoogleSignInAccount account = task.getResult(ApiException.class);
                             if (account != null && account.getIdToken() != null) {
                                 performGoogleAuth(account.getIdToken());
+                            } else {
+                                Toast.makeText(this, "Không thể lấy thông tin xác thực từ Google.", Toast.LENGTH_SHORT).show();
                             }
                         } catch (ApiException e) {
-                            Toast.makeText(this, "Đăng nhập Google thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            String msg;
+                            if (e.getStatusCode() == 10 || e.getStatusCode() == 12500) {
+                                msg = "Đăng nhập Google thất bại: Chưa cấu hình SHA-1 / Google Web Client ID trong Firebase Console.";
+                            } else {
+                                msg = "Đăng nhập Google thất bại (" + e.getStatusCode() + "): " + (e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Lỗi xác thực Google.");
+                            }
+                            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                         }
                     }
                 }
@@ -233,7 +233,7 @@ public class LogInActivity extends AppCompatActivity {
             public void onSuccess(FirebaseUser user) {
                 saveRememberMe(identifier);
                 Toast.makeText(LogInActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-                navigateBasedOnRole();
+                navigateToEditProfile();
             }
 
             @Override
@@ -249,8 +249,9 @@ public class LogInActivity extends AppCompatActivity {
         authRepository.loginWithGoogle(idToken, new AuthRepository.AuthCallback() {
             @Override
             public void onSuccess(FirebaseUser user) {
+                saveRememberMe(user.getEmail() != null ? user.getEmail() : "");
                 Toast.makeText(LogInActivity.this, "Đăng nhập Google thành công!", Toast.LENGTH_SHORT).show();
-                navigateBasedOnRole();
+                navigateToEditProfile();
             }
 
             @Override
@@ -274,37 +275,18 @@ public class LogInActivity extends AppCompatActivity {
         editor.apply();
     }
 
-    private void navigateBasedOnRole() {
+    private void navigateToEditProfile() {
         FirebaseUser user = authRepository.getCurrentUser();
         if (user != null) {
             if (user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty()) {
                 SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                 prefs.edit().putString("user_fullname", user.getDisplayName()).apply();
             }
-            UserRepository.getInstance().getUserProfile(user.getUid(), new UserRepository.UserCallback() {
-                @Override
-                public void onSuccess(User userProfile) {
-                    if (userProfile != null && userProfile.getFullName() != null && !userProfile.getFullName().trim().isEmpty()) {
-                        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                        prefs.edit().putString("user_fullname", userProfile.getFullName()).apply();
-                    }
-                    if ("admin".equalsIgnoreCase(userProfile.getRole())) {
-                        startActivity(new Intent(LogInActivity.this, AdminDashboardActivity.class));
-                    } else {
-                        startActivity(new Intent(LogInActivity.this, HomeActivity.class));
-                    }
-                    finish();
-                }
-
-                @Override
-                public void onError(String errorMessage) {
-                    startActivity(new Intent(LogInActivity.this, HomeActivity.class));
-                    finish();
-                }
-            });
-        } else {
-            startActivity(new Intent(LogInActivity.this, HomeActivity.class));
-            finish();
         }
+        Intent intent = new Intent(LogInActivity.this, EditProfileActivity.class);
+        intent.putExtra("from_login", true);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }

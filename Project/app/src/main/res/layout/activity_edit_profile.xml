@@ -41,17 +41,10 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_marginEnd="6dp"
-                    android:contentDescription="@string/app_name"
-                    android:src="@drawable/ic_bookshare_logo" />
-
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Chỉnh Sửa Hồ Sơ"
+                    android:text="Hồ Sơ Cá Nhân"
                     android:textColor="@color/primary_dark_green"
                     android:textSize="18sp"
                     android:textStyle="bold" />
@@ -168,6 +161,26 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- Profile Name & Email Display -->
+            <TextView
+                android:id="@+id/tvEditHeaderName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="2dp"
+                android:text="Test03"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvEditHeaderEmail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:text="test03@gmail.com"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
             <!-- User Honors & Recognition Pills -->
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -182,7 +195,7 @@
                     android:background="@drawable/bg_badge_inner"
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="4dp"
-                    android:text="⭐ Thành viên uy tín 5 sao"
+                    android:text="Thành viên"
                     android:textColor="@color/secondary_green"
                     android:textSize="11sp"
                     android:textStyle="bold" />
@@ -193,7 +206,7 @@
                     android:background="@drawable/bg_badge_inner"
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="4dp"
-                    android:text="🛡️ Đại sứ Lan tỏa Tri thức 2025"
+                    android:text="Đại sứ Lan tỏa Tri thức 2026"
                     android:textColor="@color/secondary_green"
                     android:textSize="11sp"
                     android:textStyle="bold" />
@@ -297,7 +310,7 @@
                         android:layout_height="match_parent"
                         android:autofillHints="username"
                         android:background="@null"
-                        android:hint="Ví dụ: Linh Mọt Sách"
+                        android:hint="Nhập nickname của bạn"
                         android:inputType="text"
                         android:paddingStart="10dp"
                         android:paddingEnd="10dp"
@@ -482,10 +495,25 @@
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
+                    <ImageView
+                        android:id="@+id/ivMapLocation"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_toStartOf="@id/tvRadiusLabel"
+                        android:layout_centerVertical="true"
+                        android:layout_marginEnd="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Lấy vị trí hiện tại"
+                        android:padding="4dp"
+                        android:src="@drawable/ic_domain"
+                        app:tint="@color/secondary_green" />
+
                     <TextView
+                        android:id="@+id/tvRadiusLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
                         android:text="Bán kính an toàn"
                         android:textColor="@color/text_hint"
                         android:textSize="11sp" />
@@ -552,40 +580,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="6dp"
-                    android:text="Phường &amp; Phạm vi nhận đổi"
+                    android:text="Địa điểm trao &amp; nhận"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <LinearLayout
+                <Spinner
+                    android:id="@+id/spWard"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_marginBottom="14dp"
-                    android:background="@drawable/bg_input_field"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="14dp">
-
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:contentDescription="Location"
-                        android:src="@drawable/ic_info"
-                        app:tint="@color/text_hint" />
-
-                    <EditText
-                        android:id="@+id/etWardRadius"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:autofillHints="postalAddress"
-                        android:background="@null"
-                        android:hint="Phường Dịch Vọng Hậu (Bán kính 2km)"
-                        android:inputType="textPostalAddress"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
-                </LinearLayout>
+                    android:background="@drawable/bg_input_field" />
 
                 <!-- Partner Coffee Spot -->
                 <RelativeLayout
@@ -613,8 +618,11 @@
                 </RelativeLayout>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardFavoriteSpot"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
                     app:cardBackgroundColor="@color/input_bg"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
@@ -642,6 +650,7 @@
                             android:orientation="vertical">
 
                             <TextView
+                                android:id="@+id/tvFavoriteSpotName"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="The Book Coffee - Cầu Giấy"
@@ -650,6 +659,7 @@
                                 android:textStyle="bold" />
 
                             <TextView
+                                android:id="@+id/tvFavoriteSpotAddress"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"

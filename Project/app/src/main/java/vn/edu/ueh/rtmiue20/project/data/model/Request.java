@@ -11,6 +11,7 @@ public class Request {
     private String bookId;
     private String bookTitle;
     private String bookImageUrl; // Mới: Ảnh bìa sách
+    private String bookAuthor;
     private String requesterId;
     private String requesterName;
     private String requesterAvatar; // Mới: Ảnh người xin
@@ -38,6 +39,9 @@ public class Request {
         this.status = status;
         this.timestamp = timestamp;
     }
+
+    public String getBookAuthor() { return bookAuthor; }
+    public void setBookAuthor(String bookAuthor) { this.bookAuthor = bookAuthor; }
 
     @Exclude
     public String getRequestId() { return requestId; }
