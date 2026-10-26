@@ -132,11 +132,11 @@ public class FavoriteRepository {
                                                             b.setId(bDoc.getId());
                                                             if (bDoc.contains("viewCount")) {
                                                                 Long v = bDoc.getLong("viewCount");
-                                                                if (v != null) b.setViewCount(v);
+                                                                if (v != null) b.setViewCount(v.intValue());
                                                             }
                                                             if (bDoc.contains("favoriteCount")) {
                                                                 Long f = bDoc.getLong("favoriteCount");
-                                                                if (f != null) b.setFavoriteCount(f);
+                                                                if (f != null) b.setFavoriteCount(f.intValue());
                                                             }
                                                             executorService.execute(new Runnable() {
                                                                 @Override
@@ -296,11 +296,11 @@ public class FavoriteRepository {
                                                 b.setId(bDoc.getId());
                                                 if (bDoc.contains("viewCount")) {
                                                     Long v = bDoc.getLong("viewCount");
-                                                    if (v != null) b.setViewCount(v);
+                                                    if (v != null) b.setViewCount(v.intValue());
                                                 }
                                                 if (bDoc.contains("favoriteCount")) {
                                                     Long f = bDoc.getLong("favoriteCount");
-                                                    if (f != null) b.setFavoriteCount(f);
+                                                    if (f != null) b.setFavoriteCount(f.intValue());
                                                 }
                                                 executorService.execute(new Runnable() {
                                                     @Override

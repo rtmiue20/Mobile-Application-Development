@@ -18,16 +18,20 @@
         android:paddingHorizontal="16dp">
 
         <ImageView
+            android:id="@+id/ivBrandLogoIcon"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:contentDescription="Logo"
             android:src="@drawable/ic_bookshare_logo" />
 
         <LinearLayout
+            android:id="@+id/layoutBrandLogo"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
             android:orientation="vertical">
 
             <TextView
@@ -435,12 +439,12 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:paddingHorizontal="16dp"
-        android:paddingBottom="16dp">
+        android:paddingVertical="10dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="64dp"
-            android:layout_marginTop="28dp"
+            android:layout_centerVertical="true"
             android:background="@drawable/bg_bottom_nav"
             android:elevation="0dp"
             android:gravity="center"
@@ -553,15 +557,15 @@
         <!-- Floating Action Button -->
         <ImageView
             android:id="@+id/fabAddBook"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:layout_centerHorizontal="true"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_centerInParent="true"
             android:background="@drawable/bg_fab_add"
             android:clickable="true"
             android:contentDescription="Add Book"
-            android:elevation="0dp"
+            android:elevation="2dp"
             android:focusable="true"
-            android:padding="16dp"
+            android:padding="13dp"
             android:src="@drawable/ic_add"
             app:tint="@color/white" />
     </RelativeLayout>

@@ -1,7 +1,6 @@
 package vn.edu.ueh.rtmiue20.project.ui.book;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -10,11 +9,13 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.OnApplyWindowInsetsListener;
@@ -29,8 +30,6 @@ import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
-
-import java.util.List;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Book;
@@ -48,11 +47,11 @@ public class BookDetailActivity extends AppCompatActivity {
     private UserRepository userRepository;
 
     // Ép kiểu View toàn bộ để dứt điểm lỗi ClassCastException với file XML
-    private View btnBack, btnRequestBook, btnSendComment, btnFavorite;
+    private View btnBack, layoutBrandLogo, btnRequestBook, btnSendComment, btnFavorite;
     private View layoutOwnerActions, btnEdit, btnDelete;
 
-    private ImageView ivBookCover, ivOwnerAvatar;
-    private TextView tvTitle, tvAuthor, tvCategory, tvCondition, tvDescription, tvOwnerName;
+    private ImageView ivBookCover, ivOwnerAvatar, ivOwnerAvatarSmall;
+    private TextView tvTitle, tvAuthor, tvCategory, tvCondition, tvSharingType, tvDetailViewCount, tvDescription, tvOwnerName;
 
     private RecyclerView rvComments;
     private EditText etComment;
@@ -89,7 +88,9 @@ public class BookDetailActivity extends AppCompatActivity {
 
         bookId = getIntent().getStringExtra("bookId");
         if (bookId == null || bookId.trim().isEmpty() || bookId.contains("/")) {
-            bookId = "mock_book_test_123";
+            Toast.makeText(this, "Không tìm thấy thông tin sách hợp lệ.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
         initViews();
@@ -157,8 +158,10 @@ public class BookDetailActivity extends AppCompatActivity {
     private void initViews() {
         ivBookCover = findViewById(R.id.ivBookCover);
         ivOwnerAvatar = findViewById(R.id.ivOwnerAvatar);
+        ivOwnerAvatarSmall = findViewById(R.id.ivOwnerAvatarSmall);
 
         btnBack = findViewById(R.id.btnBack);
+        layoutBrandLogo = findViewById(R.id.layoutBrandLogo);
         btnEdit = findViewById(R.id.btnEdit);
         btnDelete = findViewById(R.id.btnDelete);
         btnRequestBook = findViewById(R.id.btn_request_book);
@@ -170,6 +173,8 @@ public class BookDetailActivity extends AppCompatActivity {
         tvAuthor = findViewById(R.id.tvAuthor);
         tvCategory = findViewById(R.id.tvCategory);
         tvCondition = findViewById(R.id.tvCondition);
+        tvSharingType = findViewById(R.id.tvSharingType);
+        tvDetailViewCount = findViewById(R.id.tvDetailViewCount);
         tvDescription = findViewById(R.id.tvDescription);
         tvOwnerName = findViewById(R.id.tvOwnerName);
 
@@ -178,6 +183,14 @@ public class BookDetailActivity extends AppCompatActivity {
 
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> finish());
+        }
+        if (layoutBrandLogo != null) {
+            layoutBrandLogo.setOnClickListener(v -> {
+                Intent homeIntent = new Intent(BookDetailActivity.this, vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity.class);
+                homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(homeIntent);
+                finish();
+            });
         }
     }
 
@@ -196,7 +209,7 @@ public class BookDetailActivity extends AppCompatActivity {
     }
 
     private void fetchBookFromFirestore(String id) {
-        if (id == null || id.trim().isEmpty() || id.equals("mock_book_test_123")) return;
+        if (id == null || id.trim().isEmpty()) return;
         FirebaseFirestore.getInstance().collection("books").document(id).get()
                 .addOnSuccessListener(doc -> {
                     if (isFinishing() || isDestroyed()) return;
@@ -231,9 +244,32 @@ public class BookDetailActivity extends AppCompatActivity {
             if (tvCondition != null) tvCondition.setText((book.getCondition() != null && !book.getCondition().isEmpty()) ? book.getCondition() : "Mới");
             if (tvDescription != null) tvDescription.setText(book.getDescription() != null ? book.getDescription() : "Chưa có mô tả.");
 
+            if (tvSharingType != null) {
+                String desc = book.getDescription() != null ? book.getDescription() : "";
+                String status = book.getStatus() != null ? book.getStatus() : "available";
+                if ("exchanging".equalsIgnoreCase(status) || desc.contains("Trao đổi sách khác")) {
+                    tvSharingType.setText("Trao đổi sách");
+                } else if (desc.contains("Phí tượng trưng")) {
+                    tvSharingType.setText("Phí tượng trưng");
+                } else if ("gifted".equalsIgnoreCase(status)) {
+                    tvSharingType.setText("Đã trao tặng");
+                } else {
+                    tvSharingType.setText("Tặng miễn phí 0đ");
+                }
+            }
+
+            if (tvDetailViewCount != null) {
+                int views = Math.max(1, book.getViewCount());
+                tvDetailViewCount.setText(views + " lượt xem");
+            }
+
             if (ivBookCover != null) {
                 if (book.getImageUrl() != null && !book.getImageUrl().isEmpty()) {
-                    Glide.with(this).load(book.getImageUrl()).into(ivBookCover);
+                    Glide.with(this)
+                            .load(book.getImageUrl())
+                            .placeholder(R.drawable.ic_bookshare_logo)
+                            .error(R.drawable.ic_bookshare_logo)
+                            .into(ivBookCover);
                 } else {
                     ivBookCover.setImageResource(R.drawable.ic_bookshare_logo);
                 }
@@ -249,9 +285,9 @@ public class BookDetailActivity extends AppCompatActivity {
                         if (name == null || name.trim().isEmpty()) name = user.getEmail();
                         if (name == null || name.trim().isEmpty()) name = "Người đăng ẩn danh";
                         if (tvOwnerName != null) tvOwnerName.setText(name);
-                        if (ivOwnerAvatar != null && user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-                            Glide.with(BookDetailActivity.this).load(user.getAvatarUrl()).into(ivOwnerAvatar);
-                        }
+                        String ownerAvatarUrl = user.getAvatarUrl() != null ? user.getAvatarUrl() : "";
+                        vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(BookDetailActivity.this, ivOwnerAvatar, ownerAvatarUrl, true);
+                        vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(BookDetailActivity.this, ivOwnerAvatarSmall, ownerAvatarUrl, true);
                     }
                     @Override
                     public void onError(String errorMessage) {
@@ -267,21 +303,32 @@ public class BookDetailActivity extends AppCompatActivity {
 
                 if (btnDelete != null) {
                     btnDelete.setOnClickListener(v -> {
-                        bookViewModel.deleteBook(book.getId(), new BookRepository.ActionCallback() {
-                            @Override
-                            public void onSuccess() {
-                                Toast.makeText(BookDetailActivity.this, "Đã xóa sách", Toast.LENGTH_SHORT).show();
-                                finish();
-                            }
-                            @Override
-                            public void onError(String errorMessage) {
-                                Toast.makeText(BookDetailActivity.this, "Xóa lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                        new AlertDialog.Builder(BookDetailActivity.this)
+                                .setTitle("Xóa bài đăng sách")
+                                .setMessage("Bạn có chắc chắn muốn xóa cuốn sách \"" + currentBookTitle + "\" không?")
+                                .setPositiveButton("Xóa", (d, w) -> {
+                                    bookViewModel.deleteBook(book.getId(), new BookRepository.ActionCallback() {
+                                        @Override
+                                        public void onSuccess() {
+                                            Toast.makeText(BookDetailActivity.this, "Đã xóa sách", Toast.LENGTH_SHORT).show();
+                                            finish();
+                                        }
+                                        @Override
+                                        public void onError(String errorMessage) {
+                                            Toast.makeText(BookDetailActivity.this, "Xóa lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                })
+                                .setNegativeButton("Hủy", null)
+                                .show();
                     });
                 }
                 if (btnEdit != null) {
-                    btnEdit.setOnClickListener(v -> Toast.makeText(BookDetailActivity.this, "Chức năng Sửa sẽ được cập nhật", Toast.LENGTH_SHORT).show());
+                    btnEdit.setOnClickListener(v -> {
+                        Intent editIntent = new Intent(BookDetailActivity.this, CreatePostActivity.class);
+                        editIntent.putExtra("edit_book_id", book.getId());
+                        startActivity(editIntent);
+                    });
                 }
             } else {
                 if (layoutOwnerActions != null) layoutOwnerActions.setVisibility(View.GONE);
@@ -311,7 +358,7 @@ public class BookDetailActivity extends AppCompatActivity {
 
     private void showCommentActionDialog(final Comment comment) {
         String[] options = {"Chỉnh sửa bình luận", "Xóa bình luận"};
-        new androidx.appcompat.app.AlertDialog.Builder(this)
+        new AlertDialog.Builder(this)
                 .setTitle("Tùy chọn bình luận")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) showEditCommentDialog(comment);
@@ -325,7 +372,7 @@ public class BookDetailActivity extends AppCompatActivity {
         if (comment.getContent() != null) {
             input.setSelection(comment.getContent().length());
         }
-        new androidx.appcompat.app.AlertDialog.Builder(this)
+        new AlertDialog.Builder(this)
                 .setTitle("Chỉnh sửa bình luận")
                 .setView(input)
                 .setPositiveButton("Lưu", (dialog, which) -> {
@@ -339,7 +386,7 @@ public class BookDetailActivity extends AppCompatActivity {
     }
 
     private void confirmDeleteComment(final Comment comment) {
-        new androidx.appcompat.app.AlertDialog.Builder(this)
+        new AlertDialog.Builder(this)
                 .setTitle("Xóa bình luận")
                 .setMessage("Bạn có chắc chắn muốn xóa bình luận này?")
                 .setPositiveButton("Xóa", (dialog, which) -> commentViewModel.deleteComment(bookId, comment.getCommentId()))
@@ -431,24 +478,53 @@ public class BookDetailActivity extends AppCompatActivity {
                     Toast.makeText(BookDetailActivity.this, "Bạn không thể xin sách của chính mình!", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                String userName = user.getDisplayName() != null && !user.getDisplayName().isEmpty() ? user.getDisplayName() : user.getEmail();
-                String userAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
-                String coverUrl = !currentBookCover.isEmpty() ? currentBookCover :
-                        (bookViewModel.getBook(bookId).getValue() != null ? bookViewModel.getBook(bookId).getValue().getImageUrl() : "");
-                String ownerNameText = tvOwnerName != null ? tvOwnerName.getText().toString() : "Chủ sách";
-
-                vn.edu.ueh.rtmiue20.project.data.model.Request newRequest = new vn.edu.ueh.rtmiue20.project.data.model.Request(
-                        null, bookId, currentBookTitle, coverUrl, user.getUid(), userName, userAvatar,
-                        currentOwnerId, ownerNameText, "Mình rất muốn đọc cuốn này dịp cuối tuần!",
-                        vn.edu.ueh.rtmiue20.project.data.model.Request.STATUS_PENDING, System.currentTimeMillis()
-                );
-                if (currentBookAuthor != null && !currentBookAuthor.isEmpty()) {
-                    newRequest.setBookAuthor(currentBookAuthor);
-                }
-                Toast.makeText(BookDetailActivity.this, "Đang gửi yêu cầu trao đổi...", Toast.LENGTH_SHORT).show();
-                requestViewModel.sendRequest(newRequest);
+                showSendRequestDialog(user);
             });
         }
+    }
+
+    private void showSendRequestDialog(FirebaseUser user) {
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        container.setPadding(pad, pad / 2, pad, 0);
+
+        final EditText etRequestMsg = new EditText(this);
+        etRequestMsg.setHint("Nhập lời nhắn gửi chủ sách...");
+        etRequestMsg.setText("Chào bạn, mình rất muốn nhận cuốn sách \"" + currentBookTitle + "\" để đọc và học tập. Mình có thể hẹn nhận tại UEH Cơ sở B nhé!");
+        etRequestMsg.setSelection(etRequestMsg.getText().length());
+        etRequestMsg.setMinLines(2);
+        container.addView(etRequestMsg);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Yêu cầu nhận sách")
+                .setMessage("Gửi lời nhắn tới chủ sách để hẹn giao lưu tại điểm hẹn:")
+                .setView(container)
+                .setPositiveButton("Gửi yêu cầu", (dialog, which) -> {
+                    String msg = etRequestMsg.getText().toString().trim();
+                    if (msg.isEmpty()) {
+                        msg = "Xin chào, mình rất muốn nhận cuốn sách này!";
+                    }
+
+                    String userName = user.getDisplayName() != null && !user.getDisplayName().isEmpty() ? user.getDisplayName() : user.getEmail();
+                    String userAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
+                    String coverUrl = !currentBookCover.isEmpty() ? currentBookCover :
+                            (bookViewModel.getBook(bookId).getValue() != null ? bookViewModel.getBook(bookId).getValue().getImageUrl() : "");
+                    String ownerNameText = tvOwnerName != null ? tvOwnerName.getText().toString() : "Chủ sách";
+
+                    vn.edu.ueh.rtmiue20.project.data.model.Request newRequest = new vn.edu.ueh.rtmiue20.project.data.model.Request(
+                            null, bookId, currentBookTitle, coverUrl, user.getUid(), userName, userAvatar,
+                            currentOwnerId, ownerNameText, msg,
+                            vn.edu.ueh.rtmiue20.project.data.model.Request.STATUS_PENDING, System.currentTimeMillis()
+                    );
+                    if (currentBookAuthor != null && !currentBookAuthor.isEmpty()) {
+                        newRequest.setBookAuthor(currentBookAuthor);
+                    }
+                    Toast.makeText(BookDetailActivity.this, "Đang gửi yêu cầu trao đổi...", Toast.LENGTH_SHORT).show();
+                    requestViewModel.sendRequest(newRequest);
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 
     private void observeFavorite() {

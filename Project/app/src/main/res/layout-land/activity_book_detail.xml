@@ -23,14 +23,30 @@
             android:src="@android:drawable/ic_menu_revert"
             app:tint="@color/text_primary" />
 
-        <TextView
+        <LinearLayout
+            android:id="@+id/layoutBrandLogo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:text="Chi Tiết Sách"
-            android:textColor="@color/text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@drawable/ic_bookshare_logo" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Chi Tiết Sách"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <ImageView
             android:id="@+id/btn_favorite"
@@ -139,36 +155,6 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- OWNER ACTIONS (Cho chế độ xoay ngang) -->
-                <LinearLayout
-                    android:id="@+id/layoutOwnerActions"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal"
-                    android:visibility="gone">
-
-                    <Button
-                        android:id="@+id/btnEdit"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="Sửa thông tin"
-                        android:textColor="@color/white"
-                        android:backgroundTint="@color/secondary_green" />
-
-                    <Button
-                        android:id="@+id/btnDelete"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:text="Xóa sách"
-                        android:textColor="@color/white"
-                        android:backgroundTint="#B71C1C" />
-                </LinearLayout>
-
             </LinearLayout>
         </ScrollView>
 
@@ -210,6 +196,33 @@
                         android:textColor="#D97706"
                         android:textSize="12sp"
                         android:textStyle="bold"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="4dp"
+                        android:layout_marginEnd="8dp"/>
+
+                    <TextView
+                        android:id="@+id/tvSharingType"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_pill_inactive"
+                        android:backgroundTint="#FFDCBD"
+                        android:textColor="#623F18"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:text="Tặng miễn phí 0đ"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="4dp"
+                        android:layout_marginEnd="8dp"/>
+
+                    <TextView
+                        android:id="@+id/tvDetailViewCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_badge_inner"
+                        android:textColor="@color/on_surface_variant"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:text="0 lượt xem"
                         android:paddingHorizontal="8dp"
                         android:paddingVertical="4dp"/>
                 </LinearLayout>
@@ -284,7 +297,7 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <!-- Action Buttons for Owner -->
+                <!-- Action Buttons for Owner (duy nhất 1 khối trong layout-land) -->
                 <LinearLayout
                     android:id="@+id/layoutOwnerActions"
                     android:layout_width="match_parent"
@@ -298,7 +311,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Sửa bài"
+                        android:text="Sửa thông tin"
                         android:layout_marginEnd="8dp"
                         app:backgroundTint="@color/secondary_green"/>
 
@@ -307,7 +320,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Xóa bài"
+                        android:text="Xóa sách"
                         app:backgroundTint="#EF4444"/>
                 </LinearLayout>
 

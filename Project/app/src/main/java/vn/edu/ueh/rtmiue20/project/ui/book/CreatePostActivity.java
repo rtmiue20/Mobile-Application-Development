@@ -3,7 +3,6 @@ package vn.edu.ueh.rtmiue20.project.ui.book;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -46,21 +45,20 @@ import com.google.android.gms.location.Priority;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
 import vn.edu.ueh.rtmiue20.project.data.repository.BookRepository;
 import vn.edu.ueh.rtmiue20.project.ui.home.BookViewModel;
+import vn.edu.ueh.rtmiue20.project.util.LocationHelper;
 
 public class CreatePostActivity extends AppCompatActivity {
 
     private ImageView btnCancel, ivPreviewImage, ivMapLocation;
+    private TextView tvHeaderCreatePost;
     private MaterialCardView cardAddImage;
     private View layoutAddImagePlaceholder, layoutExchangeContainer, layoutFeeLocationContainer;
     private EditText etTitle, etAuthor, etDescription, etConditionOther;
@@ -77,8 +75,10 @@ public class CreatePostActivity extends AppCompatActivity {
     private FusedLocationProviderClient fusedLocationClient;
     private ActivityResultLauncher<String[]> locationPermissionLauncher;
 
-    private final Map<String, List<String>> cityToDistricts = new HashMap<>();
-    private final Map<String, List<String>> districtToWards = new HashMap<>();
+    // Chế độ chỉnh sửa sách đã đăng
+    private String editBookId = null;
+    private Book existingBook = null;
+    private boolean hasLoadedExistingBook = false;
 
     // Quản lý việc chọn ảnh và hiển thị preview
     private final ActivityResultLauncher<String[]> pickImageLauncher = registerForActivityResult(
@@ -115,16 +115,23 @@ public class CreatePostActivity extends AppCompatActivity {
         authRepository = AuthRepository.getInstance();
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
+        editBookId = getIntent().getStringExtra("edit_book_id");
+
         initViews();
         setupSpinner();
         setupCityDistrictWardSpinners();
         setupLocationPermissionLauncher();
         setupExchangeBookAutocomplete();
         setupListeners();
+
+        if (editBookId != null && !editBookId.trim().isEmpty()) {
+            loadBookForEditing(editBookId);
+        }
     }
 
     private void initViews() {
         btnCancel = findViewById(R.id.btnCancel);
+        tvHeaderCreatePost = findViewById(R.id.tvHeaderCreatePost);
         cardAddImage = findViewById(R.id.cardAddImage);
         layoutAddImagePlaceholder = findViewById(R.id.layoutAddImagePlaceholder);
         ivPreviewImage = findViewById(R.id.ivPreviewImage);
@@ -149,8 +156,73 @@ public class CreatePostActivity extends AppCompatActivity {
         spWard = findViewById(R.id.spWard);
     }
 
+    private void loadBookForEditing(String id) {
+        if (tvHeaderCreatePost != null) {
+            tvHeaderCreatePost.setText("Chỉnh sửa thông tin sách");
+        }
+        if (btnSubmit != null) {
+            btnSubmit.setText("Lưu cập nhật");
+        }
+
+        bookViewModel.getBook(id).observe(this, book -> {
+            if (book != null && !hasLoadedExistingBook) {
+                hasLoadedExistingBook = true;
+                existingBook = book;
+
+                if (book.getTitle() != null) etTitle.setText(book.getTitle());
+                if (book.getAuthor() != null) etAuthor.setText(book.getAuthor());
+
+                String desc = book.getDescription() != null ? book.getDescription() : "";
+                int splitIdx = desc.indexOf("\n\nHình thức:");
+                if (splitIdx >= 0) {
+                    etDescription.setText(desc.substring(0, splitIdx).trim());
+                } else {
+                    etDescription.setText(desc);
+                }
+
+                if (book.getImageUrl() != null && !book.getImageUrl().isEmpty()) {
+                    layoutAddImagePlaceholder.setVisibility(View.GONE);
+                    ivPreviewImage.setVisibility(View.VISIBLE);
+                    Glide.with(this)
+                            .load(book.getImageUrl())
+                            .centerCrop()
+                            .into(ivPreviewImage);
+                }
+
+                List<String> categories = LocationHelper.getBookCategories();
+                if (book.getCategory() != null) {
+                    int catIdx = categories.indexOf(book.getCategory());
+                    if (catIdx >= 0 && spinnerCategory != null) {
+                        spinnerCategory.setSelection(catIdx);
+                    }
+                }
+
+                String cond = book.getCondition() != null ? book.getCondition() : "Mới 99%";
+                if ("Mới 99%".equalsIgnoreCase(cond)) {
+                    rgCondition.check(R.id.rbConditionNew);
+                } else if ("Tốt".equalsIgnoreCase(cond)) {
+                    rgCondition.check(R.id.rbConditionGood);
+                } else if ("Cũ vừa".equalsIgnoreCase(cond)) {
+                    rgCondition.check(R.id.rbConditionOld);
+                } else {
+                    rgCondition.check(R.id.rbConditionOther);
+                    etConditionOther.setVisibility(View.VISIBLE);
+                    etConditionOther.setText(cond);
+                }
+
+                if ("exchanging".equalsIgnoreCase(book.getStatus()) || desc.contains("Trao đổi sách khác")) {
+                    rgSharingType.check(R.id.rbShareExchange);
+                } else if (desc.contains("Phí tượng trưng")) {
+                    rgSharingType.check(R.id.rbShareFee);
+                } else {
+                    rgSharingType.check(R.id.rbShareFree);
+                }
+            }
+        });
+    }
+
     private void setupSpinner() {
-        String[] categories = {"Giáo trình", "Văn học", "Kỹ năng", "Kinh tế", "Khác"};
+        List<String> categories = LocationHelper.getBookCategories();
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, categories);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCategory.setAdapter(adapter);
@@ -189,28 +261,7 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void setupCityDistrictWardSpinners() {
-        cityToDistricts.put("Hồ Chí Minh", Arrays.asList("Quận 1", "Quận 3", "Quận 5", "Quận 8", "Quận 10", "Bình Thạnh", "Tân Bình", "TP. Thủ Đức"));
-        cityToDistricts.put("Hà Nội", Arrays.asList("Quận Cầu Giấy", "Quận Đống Đa", "Quận Hoàn Kiếm", "Quận Ba Đình"));
-        cityToDistricts.put("Đà Nẵng", Arrays.asList("Quận Hải Châu", "Quận Thanh Khê", "Quận Sơn Trà"));
-        cityToDistricts.put("Cần Thơ", Arrays.asList("Quận Ninh Kiều", "Quận Bình Thủy", "Quận Cái Răng"));
-        cityToDistricts.put("Hải Phòng", Arrays.asList("Quận Hồng Bàng", "Quận Ngô Quyền", "Quận Lê Chân"));
-        cityToDistricts.put("Bình Dương", Arrays.asList("Thành phố Thủ Dầu Một", "Thành phố Dĩ An", "Thành phố Thuận An"));
-        cityToDistricts.put("Đồng Nai", Arrays.asList("Thành phố Biên Hòa", "Huyện Long Thành", "Huyện Nhơn Trạch"));
-
-        districtToWards.put("Quận 1", Arrays.asList("Phường Bến Nghé", "Phường Bến Thành", "Phường Cô Giang", "Phường Cầu Kho", "Phường Cầu Ông Lãnh", "Phường Đa Kao", "Phường Nguyễn Cư Trinh", "Phường Nguyễn Thái Bình", "Phường Phạm Ngũ Lão", "Phường Tân Định"));
-        districtToWards.put("Quận 3", Arrays.asList("Phường Võ Thị Sáu", "Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5", "Phường 9", "Phường 10", "Phường 11", "Phường 12", "Phường 13", "Phường 14"));
-        districtToWards.put("Quận 5", Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5", "Phường 6", "Phường 7", "Phường 8", "Phường 9", "Phường 10", "Phường 11", "Phường 12", "Phường 13", "Phường 14"));
-        districtToWards.put("Quận 8", Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5", "Phường 6", "Phường 7", "Phường 8", "Phường 9", "Phường 10", "Phường 11", "Phường 12", "Phường 13", "Phường 14", "Phường 15", "Phường 16"));
-        districtToWards.put("Quận 10", Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5", "Phường 6", "Phường 7", "Phường 8", "Phường 9", "Phường 10", "Phường 11", "Phường 12", "Phường 13", "Phường 14", "Phường 15"));
-        districtToWards.put("Bình Thạnh", Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 5", "Phường 6", "Phường 7", "Phường 11", "Phường 12", "Phường 13", "Phường 14", "Phường 15", "Phường 17", "Phường 19", "Phường 21", "Phường 22", "Phường 24", "Phường 25", "Phường 26", "Phường 27", "Phường 28"));
-        districtToWards.put("Tân Bình", Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5", "Phường 6", "Phường 7", "Phường 8", "Phường 9", "Phường 10", "Phường 11", "Phường 12", "Phường 13", "Phường 14", "Phường 15"));
-        districtToWards.put("TP. Thủ Đức", Arrays.asList("Phường An Khánh", "Phường An Lợi Đông", "Phường An Phú", "Phường Bình Chiểu", "Phường Bình Thọ", "Phường Bình Trưng Đông", "Phường Bình Trưng Tây", "Phường Cát Lái", "Phường Hiệp Bình Chánh", "Phường Hiệp Bình Phước", "Phường Hiệp Phú", "Phường Linh Chiểu", "Phường Linh Đông", "Phường Linh Tây", "Phường Linh Trung", "Phường Linh Xuân", "Phường Long Bình", "Phường Long Phước", "Phường Long Thạnh Mỹ", "Phường Long Trường", "Phường Phú Hữu", "Phường Phước Long A", "Phường Phước Long B", "Phường Phước Thạnh", "Phường Tam Bình", "Phường Tam Phú", "Phường Tăng Nhơn Phú A", "Phường Tăng Nhơn Phú B", "Phường Tân Phú", "Phường Thạnh Mỹ Lợi", "Phường Thảo Điền", "Phường Thủ Thiêm", "Phường Trường Thạnh", "Phường Trường Thọ"));
-        districtToWards.put("Quận Cầu Giấy", Arrays.asList("Phường Dịch Vọng", "Phường Dịch Vọng Hậu", "Phường Mai Dịch", "Phường Nghĩa Đô", "Phường Nghĩa Tân", "Phường Quan Hoa", "Phường Trung Hòa", "Phường Yên Hòa"));
-        districtToWards.put("Quận Đống Đa", Arrays.asList("Phường Cát Linh", "Phường Hàng Bột", "Phường Khâm Thiên", "Phường Khương Thượng", "Phường Kim Liên", "Phường Láng Hạ", "Phường Láng Thượng", "Phường Nam Đồng", "Phường Ngã Tư Sở", "Phường Ô Chợ Dừa", "Phường Phương Liên", "Phường Phương Mai", "Phường Quang Trung", "Phường Quốc Tử Giám", "Phường Thịnh Quang", "Phường Thổ Quan", "Phường Trung Liệt", "Phường Trung Phụng", "Phường Văn Chương", "Phường Văn Miếu"));
-        districtToWards.put("Quận Hoàn Kiếm", Arrays.asList("Phường Chương Dương", "Phường Cửa Đông", "Phường Cửa Nam", "Phường Đồng Xuân", "Phường Hàng Bạc", "Phường Hàng Bài", "Phường Hàng Bồ", "Phường Hàng Bông", "Phường Hàng Buồm", "Phường Hàng Đào", "Phường Hàng Gai", "Phường Hàng Mã", "Phường Hàng Trống", "Phường Lý Thái Tổ", "Phường Phan Chu Trinh", "Phường Phúc Tân", "Phường Tràng Tiền", "Phường Trần Hưng Đạo"));
-        districtToWards.put("Quận Ba Đình", Arrays.asList("Phường Cống Vị", "Phường Điện Biên", "Phường Đội Cấn", "Phường Giảng Võ", "Phường Kim Mã", "Phường Liễu Giai", "Phường Ngọc Hà", "Phường Ngọc Khánh", "Phường Nguyễn Trung Trực", "Phường Phúc Xá", "Phường Quán Thánh", "Phường Thành Công", "Phường Trúc Bạch", "Phường Vĩnh Phúc"));
-
-        List<String> cities = Arrays.asList("Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "Hải Phòng", "Bình Dương", "Đồng Nai");
+        List<String> cities = LocationHelper.getCities();
         ArrayAdapter<String> cityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, cities);
         cityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         if (spCity != null) spCity.setAdapter(cityAdapter);
@@ -230,10 +281,7 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void updateDistrictsForCity(String city, String targetDistrict) {
-        List<String> districts = cityToDistricts.get(city);
-        if (districts == null) {
-            districts = Arrays.asList("Quận trung tâm", "Huyện ngoại thành");
-        }
+        List<String> districts = LocationHelper.getDistrictsForCity(city);
         ArrayAdapter<String> districtAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, districts);
         districtAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         if (spDistrict != null) {
@@ -264,10 +312,7 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void updateWardsForDistrict(String district) {
-        List<String> wards = districtToWards.get(district);
-        if (wards == null) {
-            wards = Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5");
-        }
+        List<String> wards = LocationHelper.getWardsForDistrict(district);
         ArrayAdapter<String> wardAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, wards);
         wardAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         if (spWard != null) {
@@ -313,9 +358,11 @@ public class CreatePostActivity extends AppCompatActivity {
 
             fusedLocationClient.getCurrentLocation(request, null).addOnSuccessListener(this, location -> {
                 if (location != null) {
+                    double safeLat = LocationHelper.normalizeLatitude(location.getLatitude(), location.getLongitude());
+                    double safeLng = LocationHelper.normalizeLongitude(location.getLatitude(), location.getLongitude());
                     Geocoder geocoder = new Geocoder(this, new Locale("vi", "VN"));
                     try {
-                        List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                        List<Address> addresses = geocoder.getFromLocation(safeLat, safeLng, 1);
                         if (addresses != null && !addresses.isEmpty()) {
                             Address address = addresses.get(0);
                             String city = address.getAdminArea();
@@ -433,17 +480,21 @@ public class CreatePostActivity extends AppCompatActivity {
         }
 
         String sharingType = "Tặng miễn phí";
+        String bookStatus = "available";
         final String finalDesc;
         int checkedShareId = rgSharingType.getCheckedRadioButtonId();
 
         if (checkedShareId == R.id.rbShareExchange) {
-            String exTitle = etExchangeBookTitle.getText().toString().trim();
-            String exAuthor = etExchangeBookAuthor.getText().toString().trim();
-            if (exTitle.isEmpty() || exAuthor.isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập tên sách và tác giả muốn đổi", Toast.LENGTH_SHORT).show();
-                return;
+            String exTitle = etExchangeBookTitle != null ? etExchangeBookTitle.getText().toString().trim() : "";
+            String exAuthor = etExchangeBookAuthor != null ? etExchangeBookAuthor.getText().toString().trim() : "";
+            if (exTitle.isEmpty()) {
+                exTitle = "Sách cùng thể loại";
+            }
+            if (exAuthor.isEmpty()) {
+                exAuthor = "Tùy chọn";
             }
             sharingType = "Trao đổi sách khác";
+            bookStatus = "exchanging";
             finalDesc = description + "\n\nHình thức: " + sharingType + "\n- Sách muốn đổi: " + exTitle + " (Tác giả: " + exAuthor + ")";
         } else if (checkedShareId == R.id.rbShareFee) {
             String priceStr = etPrice.getText().toString().trim();
@@ -456,45 +507,57 @@ public class CreatePostActivity extends AppCompatActivity {
             String district = spDistrict != null && spDistrict.getSelectedItem() != null ? spDistrict.getSelectedItem().toString() : "";
             String ward = spWard != null && spWard.getSelectedItem() != null ? spWard.getSelectedItem().toString() : "";
             sharingType = "Phí tượng trưng / Giá rẻ";
+            bookStatus = "available";
             finalDesc = description + "\n\nHình thức: " + sharingType + "\n- Giá: " + priceStr + " VNĐ\n- Vị trí: " + ward + ", " + district + ", " + city;
         } else {
             finalDesc = description + "\n\nHình thức: " + sharingType;
         }
 
         String finalCondition = condition;
+        String finalStatus = bookStatus;
 
         btnSubmit.setEnabled(false);
-        btnSubmit.setText("Đang đăng...");
+        btnSubmit.setText(editBookId != null ? "Đang lưu..." : "Đang đăng...");
 
         if (selectedImageUri != null) {
             bookViewModel.uploadBookImage(selectedImageUri, new BookRepository.UploadImageCallback() {
                 @Override
                 public void onSuccess(String imageUrl) {
-                    saveBookToDb(title, author, category, finalCondition, finalDesc, imageUrl);
+                    saveBookToDb(title, author, category, finalCondition, finalDesc, imageUrl, finalStatus);
                 }
 
                 @Override
                 public void onError(String errorMessage) {
                     Toast.makeText(CreatePostActivity.this, "Lỗi tải ảnh: " + errorMessage, Toast.LENGTH_SHORT).show();
                     btnSubmit.setEnabled(true);
-                    btnSubmit.setText("Tiếp tục & Xem trước");
+                    btnSubmit.setText(editBookId != null ? "Lưu cập nhật" : "Tiếp tục & Xem trước");
                 }
             });
         } else {
-            saveBookToDb(title, author, category, finalCondition, finalDesc, "");
+            String existingImg = (existingBook != null && existingBook.getImageUrl() != null) ? existingBook.getImageUrl() : "";
+            saveBookToDb(title, author, category, finalCondition, finalDesc, existingImg, finalStatus);
         }
     }
 
-    private void saveBookToDb(String title, String author, String category, String condition, String description, String imageUrl) {
+    private void saveBookToDb(String title, String author, String category, String condition, String description, String imageUrl, String status) {
         String ownerId = authRepository.getCurrentUserId();
         if (ownerId == null) ownerId = "anonymous";
 
-        Book book = new Book("", title, author, description, imageUrl, ownerId, System.currentTimeMillis(), category, condition, "available");
+        String idToSave = (editBookId != null && !editBookId.trim().isEmpty()) ? editBookId : "";
+        long createdAtToSave = (existingBook != null && existingBook.getCreatedAt() > 0) ? existingBook.getCreatedAt() : System.currentTimeMillis();
+
+        Book book = new Book(idToSave, title, author, description, imageUrl, ownerId, createdAtToSave, category, condition, status);
+        if (existingBook != null) {
+            book.setViewCount(existingBook.getViewCount());
+            book.setFavoriteCount(existingBook.getFavoriteCount());
+        }
 
         bookViewModel.saveBook(book, new BookRepository.ActionCallback() {
             @Override
             public void onSuccess() {
-                Toast.makeText(CreatePostActivity.this, "Đăng sách thành công!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(CreatePostActivity.this,
+                        editBookId != null ? "Cập nhật thông tin sách thành công!" : "Đăng sách thành công!",
+                        Toast.LENGTH_SHORT).show();
                 finish();
             }
 
@@ -502,7 +565,7 @@ public class CreatePostActivity extends AppCompatActivity {
             public void onError(String errorMessage) {
                 Toast.makeText(CreatePostActivity.this, "Lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
                 btnSubmit.setEnabled(true);
-                btnSubmit.setText("Tiếp tục & Xem trước");
+                btnSubmit.setText(editBookId != null ? "Lưu cập nhật" : "Tiếp tục & Xem trước");
             }
         });
     }
