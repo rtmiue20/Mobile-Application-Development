@@ -11,6 +11,7 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -22,6 +23,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import vn.edu.ueh.rtmiue20.project.R;
+import vn.edu.ueh.rtmiue20.project.data.model.Request;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
@@ -29,17 +31,22 @@ import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
 import vn.edu.ueh.rtmiue20.project.ui.base.BaseActivity;
 import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
+import vn.edu.ueh.rtmiue20.project.ui.home.BookViewModel;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
 import vn.edu.ueh.rtmiue20.project.ui.request.ManageRequestsActivity;
+import vn.edu.ueh.rtmiue20.project.util.LocationHelper;
 
 public class ProfileActivity extends BaseActivity {
 
     private ImageView ivAvatar;
+    private ImageView ivHeaderAvatar;
     private TextView tvProfileFullName;
     private TextView tvProfileEmail;
     private TextView tvProfileRole;
     private View btnEditProfile;
     private View btnLogoutProfile;
+    private View btnAppSettings;
+    private View btnHelpCenter;
 
     private TextView tvBooksGivenCount;
     private TextView tvBooksReceivedCount;
@@ -56,6 +63,10 @@ public class ProfileActivity extends BaseActivity {
     private AuthRepository authRepository;
     private UserRepository userRepository;
     private FavoriteViewModel favoriteViewModel;
+    private BookViewModel bookViewModel;
+
+    private int booksGivenVal = 0;
+    private int booksReceivedVal = 0;
 
     private ActivityResultLauncher<String[]> imagePickerLauncher;
 
@@ -77,6 +88,7 @@ public class ProfileActivity extends BaseActivity {
         authRepository = AuthRepository.getInstance();
         userRepository = UserRepository.getInstance();
         favoriteViewModel = new ViewModelProvider(this).get(FavoriteViewModel.class);
+        bookViewModel = new ViewModelProvider(this).get(BookViewModel.class);
 
         initViews();
         setupImagePickerLauncher();
@@ -91,11 +103,14 @@ public class ProfileActivity extends BaseActivity {
 
     private void initViews() {
         ivAvatar = findViewById(R.id.ivAvatar);
+        ivHeaderAvatar = findViewById(R.id.ivHeaderAvatar);
         tvProfileFullName = findViewById(R.id.tvProfileFullName);
         tvProfileEmail = findViewById(R.id.tvProfileEmail);
         tvProfileRole = findViewById(R.id.tvProfileRole);
         btnEditProfile = findViewById(R.id.btnEditProfile);
         btnLogoutProfile = findViewById(R.id.btnLogoutProfile);
+        btnAppSettings = findViewById(R.id.btnAppSettings);
+        btnHelpCenter = findViewById(R.id.btnHelpCenter);
 
         tvBooksGivenCount = findViewById(R.id.tvBooksGivenCount);
         tvBooksReceivedCount = findViewById(R.id.tvBooksReceivedCount);
@@ -168,6 +183,32 @@ public class ProfileActivity extends BaseActivity {
                 startActivity(new Intent(ProfileActivity.this, ManageRequestsActivity.class));
             });
         }
+
+        if (btnAppSettings != null) {
+            btnAppSettings.setOnClickListener(v -> {
+                new AlertDialog.Builder(this)
+                        .setTitle("Cài đặt ứng dụng")
+                        .setMessage("• Đồng bộ ngoại tuyến (Room SQLite): Đang bật\n" +
+                                "• Thông báo đẩy (Firebase Cloud Messaging): Đang bật\n" +
+                                "• Điểm hẹn mặc định: UEH Cơ sở B (" + LocationHelper.UEH_CAMPUS_B_ADDRESS + ")\n" +
+                                "• Phiên bản: BookShare v2.4.1")
+                        .setPositiveButton("Đóng", null)
+                        .show();
+            });
+        }
+
+        if (btnHelpCenter != null) {
+            btnHelpCenter.setOnClickListener(v -> {
+                new AlertDialog.Builder(this)
+                        .setTitle("Trung tâm trợ giúp & Điều khoản")
+                        .setMessage("Chào mừng bạn đến với cộng đồng BookShare UEH!\n\n" +
+                                "1. Tinh thần chia sẻ: Tặng miễn phí hoặc trao đổi sách văn minh, tôn trọng tác quyền.\n" +
+                                "2. Điểm hẹn an toàn: Khuyến khích giao nhận trực tiếp tại khuôn viên UEH Cơ sở B (279 Nguyễn Tri Phương, Q.10).\n" +
+                                "3. Giữ gìn sách: Hãy trân trọng cuốn sách nhận được và tiếp tục lan tỏa cho bạn đọc tiếp theo.")
+                        .setPositiveButton("Đã hiểu", null)
+                        .show();
+            });
+        }
     }
 
     private void loadUserProfile() {
@@ -222,21 +263,12 @@ public class ProfileActivity extends BaseActivity {
                     }
                 }
 
-                if (ivAvatar != null) {
-                    if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-                        Glide.with(ProfileActivity.this)
-                                .load(user.getAvatarUrl())
-                                .placeholder(R.drawable.ic_person)
-                                .error(R.drawable.ic_person)
-                                .into(ivAvatar);
-                    } else if (currentUser.getPhotoUrl() != null) {
-                        Glide.with(ProfileActivity.this)
-                                .load(currentUser.getPhotoUrl())
-                                .placeholder(R.drawable.ic_person)
-                                .error(R.drawable.ic_person)
-                                .into(ivAvatar);
-                    }
-                }
+                String avatarToLoad = user.getAvatarUrl() != null ? user.getAvatarUrl() : "";
+                getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
+                        .putString("user_avatar_url", avatarToLoad)
+                        .apply();
+                vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(ProfileActivity.this, ivAvatar, avatarToLoad, false);
+                vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(ProfileActivity.this, ivHeaderAvatar, avatarToLoad, false);
             }
 
             @Override
@@ -251,50 +283,59 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void loadUserStats(String uid) {
-        // 1. Sách đã tặng / Bài đăng của tôi (Count books where ownerId == uid)
-        FirebaseFirestore.getInstance().collection("books")
-                .whereEqualTo("ownerId", uid)
-                .addSnapshotListener((value, error) -> {
-                    if (error == null && value != null) {
-                        int count = value.size();
-                        if (tvBooksGivenCount != null) {
-                            tvBooksGivenCount.setText(String.valueOf(count));
-                        }
-                        if (tvMyPostsCount != null) {
-                            tvMyPostsCount.setText(count + " đang hiển thị");
-                        }
-                    } else {
-                        if (tvBooksGivenCount != null) tvBooksGivenCount.setText("0");
-                        if (tvMyPostsCount != null) tvMyPostsCount.setText("0 đang hiển thị");
-                    }
-                });
+        // 1. Sách đã tặng / Bài đăng của tôi (Observe từ Room SQLite để hỗ trợ cả Offline + Online)
+        bookViewModel.getBooksByOwner(uid).observe(this, books -> {
+            int count = (books != null) ? books.size() : 0;
+            booksGivenVal = count;
+            if (tvBooksGivenCount != null) {
+                tvBooksGivenCount.setText(String.valueOf(count));
+            }
+            if (tvMyPostsCount != null) {
+                tvMyPostsCount.setText(count + " đang hiển thị");
+            }
+            updateReputationDisplay();
+        });
 
         // 2. Sách đã nhận (Count requests where requesterId == uid)
         FirebaseFirestore.getInstance().collection("requests")
                 .whereEqualTo("requesterId", uid)
                 .addSnapshotListener((value, error) -> {
                     if (error == null && value != null) {
-                        int count = value.size();
-                        if (tvBooksReceivedCount != null) {
-                            tvBooksReceivedCount.setText(String.valueOf(count));
+                        int acceptedCount = 0;
+                        for (DocumentSnapshot doc : value.getDocuments()) {
+                            String st = doc.getString("status");
+                            if (Request.STATUS_ACCEPTED.equalsIgnoreCase(st)) {
+                                acceptedCount++;
+                            }
                         }
-                    } else {
-                        if (tvBooksReceivedCount != null) tvBooksReceivedCount.setText("0");
+                        int displayCount = acceptedCount > 0 ? acceptedCount : value.size();
+                        booksReceivedVal = displayCount;
+                        if (tvBooksReceivedCount != null) {
+                            tvBooksReceivedCount.setText(String.valueOf(displayCount));
+                        }
+                        updateReputationDisplay();
                     }
                 });
 
-        // 3. Đánh giá (Default 0.0 (0) if none)
-        if (tvRatingCount != null) {
-            tvRatingCount.setText("0.0 (0)");
-        }
-
-        // 4. Sách yêu thích (Observe favorites count)
+        // 3. Sách yêu thích (Observe favorites count từ Room SQLite)
         favoriteViewModel.getFavoritedBooksOffline().observe(this, books -> {
             int count = (books != null) ? books.size() : 0;
             if (tvFavoriteCount != null) {
                 tvFavoriteCount.setText(count + " cuốn");
             }
         });
+
+        updateReputationDisplay();
+    }
+
+    private void updateReputationDisplay() {
+        if (tvRatingCount == null) return;
+        int totalActivities = booksGivenVal + booksReceivedVal;
+        if (totalActivities > 0) {
+            tvRatingCount.setText("5.0 (" + totalActivities + ")");
+        } else {
+            tvRatingCount.setText("5.0 ★");
+        }
     }
 
     private void uploadAvatarImage(Uri imageUri) {
@@ -303,16 +344,15 @@ public class ProfileActivity extends BaseActivity {
 
         Toast.makeText(this, "Đang tải ảnh đại diện lên...", Toast.LENGTH_SHORT).show();
 
-        userRepository.uploadAvatar(currentUser.getUid(), imageUri, new UserRepository.UploadCallback() {
+        userRepository.uploadAvatar(this, currentUser.getUid(), imageUri, new UserRepository.UploadCallback() {
             @Override
             public void onSuccess(String avatarUrl) {
                 Toast.makeText(ProfileActivity.this, "Cập nhật ảnh đại diện thành công!", Toast.LENGTH_SHORT).show();
-                if (ivAvatar != null) {
-                    Glide.with(ProfileActivity.this)
-                            .load(avatarUrl)
-                            .placeholder(R.drawable.ic_person)
-                            .into(ivAvatar);
-                }
+                getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
+                        .putString("user_avatar_url", avatarUrl != null ? avatarUrl : "")
+                        .apply();
+                vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(ProfileActivity.this, ivAvatar, avatarUrl, false);
+                vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(ProfileActivity.this, ivHeaderAvatar, avatarUrl, false);
             }
 
             @Override
@@ -324,7 +364,7 @@ public class ProfileActivity extends BaseActivity {
 
     private void handleLogout() {
         android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
-        prefs.edit().remove("user_fullname").apply();
+        prefs.edit().remove("user_fullname").remove("user_avatar_url").apply();
         authRepository.logout();
         Toast.makeText(this, "Đã đăng xuất khỏi BookShare.", Toast.LENGTH_SHORT).show();
         navigateToLogin();

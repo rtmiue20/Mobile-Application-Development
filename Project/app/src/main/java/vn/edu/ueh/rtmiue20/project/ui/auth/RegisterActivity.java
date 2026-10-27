@@ -39,7 +39,7 @@ import com.google.firebase.auth.FirebaseUser;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
-import vn.edu.ueh.rtmiue20.project.ui.profile.ProfileActivity;
+import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
 
 import java.util.Objects;
 
@@ -244,7 +244,7 @@ public class RegisterActivity extends AppCompatActivity {
                 captureUserLocationIfPermitted(user.getUid());
                 Toast.makeText(RegisterActivity.this, "Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show();
 
-                Intent intent = new Intent(RegisterActivity.this, ProfileActivity.class);
+                Intent intent = new Intent(RegisterActivity.this, HomeActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
@@ -273,7 +273,7 @@ public class RegisterActivity extends AppCompatActivity {
             public void onSuccess(FirebaseUser user) {
                 captureUserLocationIfPermitted(user.getUid());
                 Toast.makeText(RegisterActivity.this, "Đăng ký Google thành công!", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(RegisterActivity.this, ProfileActivity.class);
+                Intent intent = new Intent(RegisterActivity.this, HomeActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();

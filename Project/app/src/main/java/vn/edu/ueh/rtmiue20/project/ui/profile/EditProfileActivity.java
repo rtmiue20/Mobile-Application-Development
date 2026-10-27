@@ -37,11 +37,8 @@ import com.google.firebase.auth.FirebaseUser;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
@@ -49,10 +46,15 @@ import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
 import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
+import vn.edu.ueh.rtmiue20.project.util.LocationHelper;
 
 public class EditProfileActivity extends AppCompatActivity {
 
     private ImageView btnBackEditProfile;
+    private ImageView ivEditAvatar;
+    private View btnCameraAvatar;
+    private View btnChangeAvatar;
+    private View btnRemoveAvatar;
     private View btnSaveProfile;
     private View btnSaveProfileMain;
     private View btnCancelEditProfile;
@@ -77,13 +79,11 @@ public class EditProfileActivity extends AppCompatActivity {
     private String selectedFavoriteSpotName = "";
     private String selectedFavoriteSpotAddress = "";
 
-    private final Map<String, List<String>> cityToDistricts = new HashMap<>();
-    private final Map<String, List<String>> districtToWards = new HashMap<>();
-
     private AuthRepository authRepository;
     private UserRepository userRepository;
     private FusedLocationProviderClient fusedLocationClient;
     private ActivityResultLauncher<String[]> locationPermissionLauncher;
+    private ActivityResultLauncher<String[]> avatarPickerLauncher;
     private Double currentLatitude = null;
     private Double currentLongitude = null;
 
@@ -106,6 +106,7 @@ public class EditProfileActivity extends AppCompatActivity {
         initViews();
         setupSpinners();
         setupLocationPermissionLauncher();
+        setupAvatarPickerLauncher();
         setupBioCounter();
         loadExistingData();
         setupListeners();
@@ -113,6 +114,10 @@ public class EditProfileActivity extends AppCompatActivity {
 
     private void initViews() {
         btnBackEditProfile = findViewById(R.id.btnBackEditProfile);
+        ivEditAvatar = findViewById(R.id.ivEditAvatar);
+        btnCameraAvatar = findViewById(R.id.btnCameraAvatar);
+        btnChangeAvatar = findViewById(R.id.btnChangeAvatar);
+        btnRemoveAvatar = findViewById(R.id.btnRemoveAvatar);
         btnSaveProfile = findViewById(R.id.btnSaveProfile);
         btnSaveProfileMain = findViewById(R.id.btnSaveProfileMain);
         btnCancelEditProfile = findViewById(R.id.btnCancelEditProfile);
@@ -136,28 +141,7 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void setupSpinners() {
-        cityToDistricts.put("Hồ Chí Minh", Arrays.asList("Quận 1", "Quận 3", "Quận 5", "Quận 8", "Quận 10", "Bình Thạnh", "Tân Bình", "TP. Thủ Đức"));
-        cityToDistricts.put("Hà Nội", Arrays.asList("Quận Cầu Giấy", "Quận Đống Đa", "Quận Hoàn Kiếm", "Quận Ba Đình"));
-        cityToDistricts.put("Đà Nẵng", Arrays.asList("Quận Hải Châu", "Quận Thanh Khê", "Quận Sơn Trà"));
-        cityToDistricts.put("Cần Thơ", Arrays.asList("Quận Ninh Kiều", "Quận Bình Thủy", "Quận Cái Răng"));
-        cityToDistricts.put("Hải Phòng", Arrays.asList("Quận Hồng Bàng", "Quận Ngô Quyền", "Quận Lê Chân"));
-        cityToDistricts.put("Bình Dương", Arrays.asList("Thành phố Thủ Dầu Một", "Thành phố Dĩ An", "Thành phố Thuận An"));
-        cityToDistricts.put("Đồng Nai", Arrays.asList("Thành phố Biên Hòa", "Huyện Long Thành", "Huyện Nhơn Trạch"));
-
-        districtToWards.put("Quận 1", Arrays.asList("Phường Bến Nghé", "Phường Bến Thành", "Phường Cô Giang", "Phường Cầu Kho", "Phường Cầu Ông Lãnh", "Phường Đa Kao", "Phường Nguyễn Cư Trinh", "Phường Nguyễn Thái Bình", "Phường Phạm Ngũ Lão", "Phường Tân Định"));
-        districtToWards.put("Quận 3", Arrays.asList("Phường Võ Thị Sáu", "Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5", "Phường 9", "Phường 10", "Phường 11", "Phường 12", "Phường 13", "Phường 14"));
-        districtToWards.put("Quận 5", Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5", "Phường 6", "Phường 7", "Phường 8", "Phường 9", "Phường 10", "Phường 11", "Phường 12", "Phường 13", "Phường 14"));
-        districtToWards.put("Quận 8", Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5", "Phường 6", "Phường 7", "Phường 8", "Phường 9", "Phường 10", "Phường 11", "Phường 12", "Phường 13", "Phường 14", "Phường 15", "Phường 16"));
-        districtToWards.put("Quận 10", Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5", "Phường 6", "Phường 7", "Phường 8", "Phường 9", "Phường 10", "Phường 11", "Phường 12", "Phường 13", "Phường 14", "Phường 15"));
-        districtToWards.put("Bình Thạnh", Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 5", "Phường 6", "Phường 7", "Phường 11", "Phường 12", "Phường 13", "Phường 14", "Phường 15", "Phường 17", "Phường 19", "Phường 21", "Phường 22", "Phường 24", "Phường 25", "Phường 26", "Phường 27", "Phường 28"));
-        districtToWards.put("Tân Bình", Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5", "Phường 6", "Phường 7", "Phường 8", "Phường 9", "Phường 10", "Phường 11", "Phường 12", "Phường 13", "Phường 14", "Phường 15"));
-        districtToWards.put("TP. Thủ Đức", Arrays.asList("Phường An Khánh", "Phường An Lợi Đông", "Phường An Phú", "Phường Bình Chiểu", "Phường Bình Thọ", "Phường Bình Trưng Đông", "Phường Bình Trưng Tây", "Phường Cát Lái", "Phường Hiệp Bình Chánh", "Phường Hiệp Bình Phước", "Phường Hiệp Phú", "Phường Linh Chiểu", "Phường Linh Đông", "Phường Linh Tây", "Phường Linh Trung", "Phường Linh Xuân", "Phường Long Bình", "Phường Long Phước", "Phường Long Thạnh Mỹ", "Phường Long Trường", "Phường Phú Hữu", "Phường Phước Long A", "Phường Phước Long B", "Phường Phước Thạnh", "Phường Tam Bình", "Phường Tam Phú", "Phường Tăng Nhơn Phú A", "Phường Tăng Nhơn Phú B", "Phường Tân Phú", "Phường Thạnh Mỹ Lợi", "Phường Thảo Điền", "Phường Thủ Thiêm", "Phường Trường Thạnh", "Phường Trường Thọ"));
-        districtToWards.put("Quận Cầu Giấy", Arrays.asList("Phường Dịch Vọng", "Phường Dịch Vọng Hậu", "Phường Mai Dịch", "Phường Nghĩa Đô", "Phường Nghĩa Tân", "Phường Quan Hoa", "Phường Trung Hòa", "Phường Yên Hòa"));
-        districtToWards.put("Quận Đống Đa", Arrays.asList("Phường Cát Linh", "Phường Hàng Bột", "Phường Khâm Thiên", "Phường Khương Thượng", "Phường Kim Liên", "Phường Láng Hạ", "Phường Láng Thượng", "Phường Nam Đồng", "Phường Ngã Tư Sở", "Phường Ô Chợ Dừa", "Phường Phương Liên", "Phường Phương Mai", "Phường Quang Trung", "Phường Quốc Tử Giám", "Phường Thịnh Quang", "Phường Thổ Quan", "Phường Trung Liệt", "Phường Trung Phụng", "Phường Văn Chương", "Phường Văn Miếu"));
-        districtToWards.put("Quận Hoàn Kiếm", Arrays.asList("Phường Chương Dương", "Phường Cửa Đông", "Phường Cửa Nam", "Phường Đồng Xuân", "Phường Hàng Bạc", "Phường Hàng Bài", "Phường Hàng Bồ", "Phường Hàng Bông", "Phường Hàng Buồm", "Phường Hàng Đào", "Phường Hàng Gai", "Phường Hàng Mã", "Phường Hàng Trống", "Phường Lý Thái Tổ", "Phường Phan Chu Trinh", "Phường Phúc Tân", "Phường Tràng Tiền", "Phường Trần Hưng Đạo"));
-        districtToWards.put("Quận Ba Đình", Arrays.asList("Phường Cống Vị", "Phường Điện Biên", "Phường Đội Cấn", "Phường Giảng Võ", "Phường Kim Mã", "Phường Liễu Giai", "Phường Ngọc Hà", "Phường Ngọc Khánh", "Phường Nguyễn Trung Trực", "Phường Phúc Xá", "Phường Quán Thánh", "Phường Thành Công", "Phường Trúc Bạch", "Phường Vĩnh Phúc"));
-
-        List<String> cities = Arrays.asList("Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "Hải Phòng", "Bình Dương", "Đồng Nai");
+        List<String> cities = LocationHelper.getCities();
         ArrayAdapter<String> cityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, cities);
         cityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         if (spCity != null) spCity.setAdapter(cityAdapter);
@@ -177,10 +161,7 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void updateDistrictsForCity(String city, String targetDistrict) {
-        List<String> districts = cityToDistricts.get(city);
-        if (districts == null) {
-            districts = Arrays.asList("Quận trung tâm", "Huyện ngoại thành");
-        }
+        List<String> districts = LocationHelper.getDistrictsForCity(city);
         ArrayAdapter<String> districtAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, districts);
         districtAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         if (spDistrict != null) {
@@ -211,10 +192,7 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void updateWardsForDistrict(String district, String targetWard) {
-        List<String> wards = districtToWards.get(district);
-        if (wards == null) {
-            wards = Arrays.asList("Phường 1", "Phường 2", "Phường 3", "Phường 4", "Phường 5");
-        }
+        List<String> wards = LocationHelper.getWardsForDistrict(district);
         ArrayAdapter<String> wardAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, wards);
         wardAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         if (spWard != null) {
@@ -243,6 +221,60 @@ public class EditProfileActivity extends AppCompatActivity {
                     }
                 }
         );
+    }
+
+    private void setupAvatarPickerLauncher() {
+        avatarPickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.OpenDocument(),
+                uri -> {
+                    if (uri != null) {
+                        uploadNewAvatar(uri);
+                    }
+                }
+        );
+    }
+
+    private void uploadNewAvatar(android.net.Uri imageUri) {
+        FirebaseUser currentUser = authRepository.getCurrentUser();
+        if (currentUser == null) return;
+
+        Toast.makeText(this, "Đang cập nhật ảnh đại diện...", Toast.LENGTH_SHORT).show();
+        userRepository.uploadAvatar(this, currentUser.getUid(), imageUri, new UserRepository.UploadCallback() {
+            @Override
+            public void onSuccess(String avatarUrl) {
+                getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
+                        .putString("user_avatar_url", avatarUrl != null ? avatarUrl : "")
+                        .apply();
+                vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(EditProfileActivity.this, ivEditAvatar, avatarUrl, false);
+                Toast.makeText(EditProfileActivity.this, "Cập nhật ảnh đại diện thành công!", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                Toast.makeText(EditProfileActivity.this, "Lỗi tải ảnh: " + errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void handleRemoveAvatar() {
+        FirebaseUser currentUser = authRepository.getCurrentUser();
+        if (currentUser == null) return;
+
+        userRepository.removeAvatar(currentUser.getUid(), new UserRepository.UpdateCallback() {
+            @Override
+            public void onSuccess() {
+                getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
+                        .putString("user_avatar_url", "")
+                        .apply();
+                vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(EditProfileActivity.this, ivEditAvatar, "", false);
+                Toast.makeText(EditProfileActivity.this, "Đã xóa ảnh đại diện và khôi phục mặc định!", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                Toast.makeText(EditProfileActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupBioCounter() {
@@ -311,6 +343,12 @@ public class EditProfileActivity extends AppCompatActivity {
                     tvEditHeaderName.setText(!formattedName.isEmpty() ? formattedName : "Người dùng BookShare");
                 }
 
+                String avatarUrl = user.getAvatarUrl() != null ? user.getAvatarUrl() : "";
+                getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
+                        .putString("user_avatar_url", avatarUrl)
+                        .apply();
+                vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(EditProfileActivity.this, ivEditAvatar, avatarUrl, false);
+
                 if (user.getCity() != null && spCity != null) {
                     ArrayAdapter adapter = (ArrayAdapter) spCity.getAdapter();
                     if (adapter != null) {
@@ -368,6 +406,18 @@ public class EditProfileActivity extends AppCompatActivity {
         if (cardFavoriteSpot != null) {
             cardFavoriteSpot.setOnClickListener(v -> showFavoriteSpotsDialog());
         }
+
+        View.OnClickListener pickAvatarListener = v -> {
+            if (avatarPickerLauncher != null) {
+                avatarPickerLauncher.launch(new String[]{"image/*"});
+            }
+        };
+        if (ivEditAvatar != null) ivEditAvatar.setOnClickListener(pickAvatarListener);
+        if (btnCameraAvatar != null) btnCameraAvatar.setOnClickListener(pickAvatarListener);
+        if (btnChangeAvatar != null) btnChangeAvatar.setOnClickListener(pickAvatarListener);
+        if (btnRemoveAvatar != null) {
+            btnRemoveAvatar.setOnClickListener(v -> handleRemoveAvatar());
+        }
     }
 
     private void checkAndRequestLocationPermission() {
@@ -393,9 +443,11 @@ public class EditProfileActivity extends AppCompatActivity {
 
             fusedLocationClient.getCurrentLocation(request, null).addOnSuccessListener(this, location -> {
                 if (location != null) {
+                    double safeLat = LocationHelper.normalizeLatitude(location.getLatitude(), location.getLongitude());
+                    double safeLng = LocationHelper.normalizeLongitude(location.getLatitude(), location.getLongitude());
                     Geocoder geocoder = new Geocoder(this, new Locale("vi", "VN"));
                     try {
-                        List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                        List<Address> addresses = geocoder.getFromLocation(safeLat, safeLng, 1);
                         if (addresses != null && !addresses.isEmpty()) {
                             Address address = addresses.get(0);
                             String city = address.getAdminArea();
@@ -431,11 +483,11 @@ public class EditProfileActivity extends AppCompatActivity {
                                 }, 300);
                             }
 
-                            currentLatitude = location.getLatitude();
-                            currentLongitude = location.getLongitude();
+                            currentLatitude = safeLat;
+                            currentLongitude = safeLng;
                             getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
-                                    .putFloat("user_lat", (float) location.getLatitude())
-                                    .putFloat("user_lng", (float) location.getLongitude())
+                                    .putFloat("user_lat", (float) safeLat)
+                                    .putFloat("user_lng", (float) safeLng)
                                     .apply();
 
                             Toast.makeText(this, "Đã lấy vị trí chính xác thành công!", Toast.LENGTH_SHORT).show();
@@ -443,11 +495,11 @@ public class EditProfileActivity extends AppCompatActivity {
                             Toast.makeText(this, "Không thể giải mã tọa độ vị trí.", Toast.LENGTH_SHORT).show();
                         }
                     } catch (IOException e) {
-                        currentLatitude = location.getLatitude();
-                        currentLongitude = location.getLongitude();
+                        currentLatitude = safeLat;
+                        currentLongitude = safeLng;
                         getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
-                                .putFloat("user_lat", (float) location.getLatitude())
-                                .putFloat("user_lng", (float) location.getLongitude())
+                                .putFloat("user_lat", (float) safeLat)
+                                .putFloat("user_lng", (float) safeLng)
                                 .apply();
                         Toast.makeText(this, "Đã lấy tọa độ GPS thành công!", Toast.LENGTH_SHORT).show();
                     }
@@ -468,7 +520,14 @@ public class EditProfileActivity extends AppCompatActivity {
         List<String> spotNames = new ArrayList<>();
         List<String> spotAddresses = new ArrayList<>();
 
-        if (selectedFavoriteSpotName != null && !selectedFavoriteSpotName.isEmpty() && !selectedFavoriteSpotName.equals("Chưa chọn điểm hẹn") && !selectedFavoriteSpotName.equals("Chạm để thêm điểm hẹn giao dịch")) {
+        // Luôn cung cấp điểm hẹn mặc định của cộng đồng UEH Cơ sở B
+        spotNames.add("UEH Cơ sở B (Điểm hẹn mặc định)");
+        spotAddresses.add(LocationHelper.UEH_CAMPUS_B_ADDRESS);
+
+        if (selectedFavoriteSpotName != null && !selectedFavoriteSpotName.isEmpty()
+                && !selectedFavoriteSpotName.equals("Chưa chọn điểm hẹn")
+                && !selectedFavoriteSpotName.equals("Chạm để thêm điểm hẹn giao dịch")
+                && !spotNames.contains(selectedFavoriteSpotName)) {
             spotNames.add(selectedFavoriteSpotName);
             spotAddresses.add(selectedFavoriteSpotAddress);
         }
@@ -477,24 +536,16 @@ public class EditProfileActivity extends AppCompatActivity {
             spotAddresses.add(historySpotAddress);
         }
 
-        if (spotNames.isEmpty()) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Điểm hẹn giao nhận ưa thích")
-                    .setMessage("Chưa có lịch sử check-in điểm hẹn nào. Điểm hẹn sẽ được ghi nhận và lưu lại tự động khi bạn thực hiện các giao dịch trao đổi sách hoặc check-in vị trí trong ứng dụng.")
-                    .setPositiveButton("Đã hiểu", null)
-                    .show();
-        } else {
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Chọn điểm hẹn giao nhận (Dựa trên lịch sử check-in)");
-            builder.setItems(spotNames.toArray(new String[0]), (dialog, which) -> {
-                selectedFavoriteSpotName = spotNames.get(which);
-                selectedFavoriteSpotAddress = spotAddresses.get(which);
-                if (tvFavoriteSpotName != null) tvFavoriteSpotName.setText(selectedFavoriteSpotName);
-                if (tvFavoriteSpotAddress != null) tvFavoriteSpotAddress.setText(selectedFavoriteSpotAddress);
-                Toast.makeText(this, "Đã chọn: " + selectedFavoriteSpotName, Toast.LENGTH_SHORT).show();
-            });
-            builder.show();
-        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Chọn điểm hẹn giao nhận ưa thích");
+        builder.setItems(spotNames.toArray(new String[0]), (dialog, which) -> {
+            selectedFavoriteSpotName = spotNames.get(which);
+            selectedFavoriteSpotAddress = spotAddresses.get(which);
+            if (tvFavoriteSpotName != null) tvFavoriteSpotName.setText(selectedFavoriteSpotName);
+            if (tvFavoriteSpotAddress != null) tvFavoriteSpotAddress.setText(selectedFavoriteSpotAddress);
+            Toast.makeText(this, "Đã chọn: " + selectedFavoriteSpotName, Toast.LENGTH_SHORT).show();
+        });
+        builder.show();
     }
 
     private boolean isFromLogin() {

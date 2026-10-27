@@ -1,6 +1,7 @@
 package vn.edu.ueh.rtmiue20.project.ui.profile;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
@@ -8,21 +9,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import vn.edu.ueh.rtmiue20.project.R;
-import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.ui.book.BookDetailActivity;
+import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
 import vn.edu.ueh.rtmiue20.project.ui.home.BookAdapter;
+import vn.edu.ueh.rtmiue20.project.ui.home.BookViewModel;
+import vn.edu.ueh.rtmiue20.project.util.LocationHelper;
 
 public class MyPostsActivity extends AppCompatActivity {
 
@@ -31,11 +30,23 @@ public class MyPostsActivity extends AppCompatActivity {
     private TextView tvEmpty;
     private BookAdapter bookAdapter;
     private String currentUserId;
+    private BookViewModel bookViewModel;
+    private FavoriteViewModel favoriteViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        androidx.activity.EdgeToEdge.enable(this);
         setContentView(R.layout.activity_my_posts);
+
+        View rootView = findViewById(android.R.id.content);
+        if (rootView != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
+                androidx.core.graphics.Insets systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
@@ -62,33 +73,36 @@ public class MyPostsActivity extends AppCompatActivity {
         });
         rvMyPosts.setAdapter(bookAdapter);
 
+        SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        float lat = prefs.getFloat("user_lat", 0f);
+        float lng = prefs.getFloat("user_lng", 0f);
+        if (lat != 0f && lng != 0f) {
+            bookAdapter.setUserDistanceToExchange(LocationHelper.getDistanceToUEHCampusB(lat, lng));
+        }
+
+        bookViewModel = new ViewModelProvider(this).get(BookViewModel.class);
+        favoriteViewModel = new ViewModelProvider(this).get(FavoriteViewModel.class);
+
         loadMyPosts();
     }
 
     private void loadMyPosts() {
-        FirebaseFirestore.getInstance().collection("books")
-                .whereEqualTo("ownerId", currentUserId)
-                .addSnapshotListener((value, error) -> {
-                    if (error != null) {
-                        Toast.makeText(this, "Lỗi tải bài đăng: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    if (value != null) {
-                        List<Book> list = new ArrayList<>();
-                        for (DocumentSnapshot doc : value.getDocuments()) {
-                            Book b = doc.toObject(Book.class);
-                            if (b != null) {
-                                b.setId(doc.getId());
-                                list.add(b);
-                            }
-                        }
-                        bookAdapter.update(list);
-                        if (list.isEmpty()) {
-                            tvEmpty.setVisibility(View.VISIBLE);
-                        } else {
-                            tvEmpty.setVisibility(View.GONE);
-                        }
-                    }
-                });
+        // Đồng bộ qua Room SQLite + Firestore để hoạt động mượt cả khi Offline (FR12)
+        bookViewModel.getBooksByOwner(currentUserId).observe(this, list -> {
+            if (list != null) {
+                bookAdapter.update(list);
+                if (list.isEmpty()) {
+                    tvEmpty.setVisibility(View.VISIBLE);
+                } else {
+                    tvEmpty.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        favoriteViewModel.getFavoriteBookIds().observe(this, ids -> {
+            if (bookAdapter != null && ids != null) {
+                bookAdapter.setFavoritedBookIds(ids);
+            }
+        });
     }
 }

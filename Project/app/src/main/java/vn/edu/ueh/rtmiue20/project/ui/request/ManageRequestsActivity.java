@@ -46,7 +46,17 @@ public class ManageRequestsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        androidx.activity.EdgeToEdge.enable(this);
         setContentView(R.layout.activity_manage_requests);
+
+        View rootView = findViewById(android.R.id.content);
+        if (rootView != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
+                androidx.core.graphics.Insets systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
 
         // Khởi tạo Repository với Context
         RequestRepository.getInstance(this);
@@ -68,8 +78,11 @@ public class ManageRequestsActivity extends AppCompatActivity {
         layoutSummaryBanner = findViewById(R.id.layoutSummaryBanner);
         rvRequests = findViewById(R.id.rvRequests);
 
-        if (ivAvatarSmall != null && user.getPhotoUrl() != null) {
-            Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(ivAvatarSmall);
+        if (ivAvatarSmall != null) {
+            ivAvatarSmall.setOnClickListener(v -> {
+                startActivity(new Intent(ManageRequestsActivity.this, ProfileActivity.class));
+            });
+            loadAvatarSmall();
         }
 
         viewModel = new ViewModelProvider(this).get(RequestViewModel.class);
@@ -177,6 +190,39 @@ public class ManageRequestsActivity extends AppCompatActivity {
 
         // Mặc định mở Tab Yêu cầu đến
         switchTab(false);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadAvatarSmall();
+    }
+
+    private void loadAvatarSmall() {
+        if (ivAvatarSmall == null || currentUserId == null) return;
+        android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        if (prefs.contains("user_avatar_url")) {
+            vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(
+                    this, ivAvatarSmall, prefs.getString("user_avatar_url", ""), true
+            );
+        }
+        vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.getInstance().getUserProfile(
+                currentUserId,
+                new vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.UserCallback() {
+                    @Override
+                    public void onSuccess(vn.edu.ueh.rtmiue20.project.data.model.User userProfile) {
+                        if (isFinishing() || isDestroyed()) return;
+                        String avatarUrl = userProfile != null && userProfile.getAvatarUrl() != null
+                                ? userProfile.getAvatarUrl()
+                                : "";
+                        prefs.edit().putString("user_avatar_url", avatarUrl).apply();
+                        vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(ManageRequestsActivity.this, ivAvatarSmall, avatarUrl, true);
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {}
+                }
+        );
     }
 
     private void setupBottomNavigation() {

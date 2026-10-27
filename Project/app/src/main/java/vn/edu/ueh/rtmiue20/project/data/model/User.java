@@ -4,13 +4,14 @@ import java.util.HashMap;
 import java.util.Map;
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "user_table")
 public class User {
     @PrimaryKey
     @NonNull
-    private String uid;
+    private String uid = "";
     private String fullName;
     private String nickname;
     private String email;
@@ -33,7 +34,8 @@ public class User {
     public User() {
     }
 
-    public User(String uid, String fullName, String email, String avatarUrl, String phoneNumber, String bio, String role, String status, long createdAt) {
+    @Ignore
+    public User(@NonNull String uid, String fullName, String email, String avatarUrl, String phoneNumber, String bio, String role, String status, long createdAt) {
         this.uid = uid;
         this.fullName = fullName;
         this.email = email;
@@ -52,11 +54,12 @@ public class User {
         return fullName != null ? fullName : "";
     }
 
+    @NonNull
     public String getUid() {
         return uid;
     }
 
-    public void setUid(String uid) {
+    public void setUid(@NonNull String uid) {
         this.uid = uid;
     }
 

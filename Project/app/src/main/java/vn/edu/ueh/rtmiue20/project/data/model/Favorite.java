@@ -2,6 +2,7 @@ package vn.edu.ueh.rtmiue20.project.data.model;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "favorite_table")
@@ -17,6 +18,7 @@ public class Favorite {
     public Favorite() {
     }
 
+    @Ignore
     public Favorite(@NonNull String favoriteId, String userId, String bookId, Long timestamp) {
         this.favoriteId = favoriteId;
         this.userId = userId;

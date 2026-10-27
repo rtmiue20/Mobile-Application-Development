@@ -27,10 +27,13 @@
             app:tint="@color/text_primary" />
 
         <LinearLayout
+            android:id="@+id/layoutBrandLogo"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -282,7 +285,7 @@
                         android:id="@+id/tvCategory"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="VĂN HỌC KINH ĐIỂN"
+                        android:text=""
                         android:textColor="@color/secondary_green"
                         android:textSize="12sp"
                         android:textStyle="bold" />
@@ -308,7 +311,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Cây Cam Ngọt Của Tôi"
+                    android:text=""
                     android:textColor="@color/primary"
                     android:textSize="26sp"
                     android:textStyle="bold" />
@@ -331,7 +334,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
-                        android:text="José Mauro de Vasconcelos"
+                        android:text=""
                         android:textColor="@color/on_surface_variant"
                         android:textSize="16sp" />
                 </LinearLayout>
@@ -367,7 +370,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
-                            android:text="Như mới (95%)"
+                            android:text="Mới"
                             android:textColor="@color/primary_dark_green"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -388,11 +391,36 @@
                             android:src="@drawable/ic_volunteer_activism"
                             app:tint="#623F18" />
                         <TextView
+                            android:id="@+id/tvSharingType"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
                             android:text="Tặng miễn phí 0đ"
                             android:textColor="#623F18"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_tag_grey"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp">
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_visibility"
+                            app:tint="@color/on_surface_variant" />
+                        <TextView
+                            android:id="@+id/tvDetailViewCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:text="0 lượt xem"
+                            android:textColor="@color/on_surface_variant"
                             android:textSize="12sp" />
                     </LinearLayout>
 
@@ -427,7 +455,7 @@
                         android:id="@+id/tvOwnerName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Nguyễn Hà Linh"
+                        android:text="Người đăng sách"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -452,7 +480,7 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <!-- OWNER ACTIONS (Mới thêm vào XML) -->
+            <!-- OWNER ACTIONS -->
             <LinearLayout
                 android:id="@+id/layoutOwnerActions"
                 android:layout_width="match_parent"
@@ -500,7 +528,7 @@
                     android:textStyle="bold" />
             </RelativeLayout>
 
-            <!-- REAL COMMENTS (FR08) - ĐÃ XÓA SẠCH DUMMY DATA -->
+            <!-- REAL COMMENTS (FR08) -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvComments"
                 android:layout_width="match_parent"
