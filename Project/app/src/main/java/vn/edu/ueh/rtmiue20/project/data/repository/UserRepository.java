@@ -121,36 +121,104 @@ public class UserRepository {
     }
 
     public void uploadAvatar(String uid, Uri imageUri, UploadCallback callback) {
-        StorageReference avatarRef = storage.getReference().child("avatars/" + uid + ".jpg");
+        uploadAvatar(null, uid, imageUri, callback);
+    }
 
-        avatarRef.putFile(imageUri)
-                .continueWithTask(task -> {
-                    if (!task.isSuccessful() && task.getException() != null) {
-                        throw task.getException();
+    public void uploadAvatar(android.content.Context context, String uid, Uri imageUri, UploadCallback callback) {
+        if (imageUri == null) {
+            callback.onError("Không tìm thấy đường dẫn ảnh.");
+            return;
+        }
+
+        new Thread(() -> {
+            byte[] jpegBytes = context != null
+                    ? vn.edu.ueh.rtmiue20.project.util.ImageHelper.compressImageUriToJpegBytes(context, imageUri, 400, 75)
+                    : null;
+            String fallbackDataUri = vn.edu.ueh.rtmiue20.project.util.ImageHelper.toBase64DataUri(jpegBytes);
+            final java.util.concurrent.atomic.AtomicBoolean completed = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+            try {
+                storage.setMaxUploadRetryTimeMillis(1500);
+                storage.setMaxOperationRetryTimeMillis(1500);
+            } catch (Exception ignored) {}
+
+            StorageReference avatarRef = storage.getReference().child("avatars/" + uid + ".jpg");
+            com.google.firebase.storage.UploadTask uploadTask = (jpegBytes != null && jpegBytes.length > 0)
+                    ? avatarRef.putBytes(jpegBytes)
+                    : avatarRef.putFile(imageUri);
+
+            if (fallbackDataUri != null) {
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    if (completed.compareAndSet(false, true)) {
+                        try {
+                            uploadTask.cancel();
+                        } catch (Exception ignored) {}
+                        saveAvatarUrlToUser(uid, fallbackDataUri, callback);
                     }
-                    return avatarRef.getDownloadUrl();
+                }, 1800);
+            }
+
+            uploadTask.continueWithTask(task -> {
+                if (!task.isSuccessful() && task.getException() != null) {
+                    throw task.getException();
+                }
+                return avatarRef.getDownloadUrl();
+            }).addOnCompleteListener(task -> {
+                if (!completed.compareAndSet(false, true)) return;
+                if (task.isSuccessful() && task.getResult() != null) {
+                    saveAvatarUrlToUser(uid, task.getResult().toString(), callback);
+                } else if (fallbackDataUri != null) {
+                    saveAvatarUrlToUser(uid, fallbackDataUri, callback);
+                } else {
+                    String errorMsg = task.getException() != null ? task.getException().getLocalizedMessage() : "Tải ảnh lên thất bại.";
+                    callback.onError(errorMsg);
+                }
+            });
+        }).start();
+    }
+
+    private void saveAvatarUrlToUser(String uid, String avatarUrl, UploadCallback callback) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("avatarUrl", avatarUrl);
+
+        firestore.collection("users").document(uid)
+                .set(data, com.google.firebase.firestore.SetOptions.merge())
+                .addOnSuccessListener(unused -> {
+                    if (avatarUrl != null && avatarUrl.startsWith("http")) {
+                        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+                        if (firebaseUser != null) {
+                            UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
+                                    .setPhotoUri(Uri.parse(avatarUrl))
+                                    .build();
+                            firebaseUser.updateProfile(profileUpdates);
+                        }
+                    }
+                    callback.onSuccess(avatarUrl);
                 })
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && task.getResult() != null) {
-                        String downloadUrl = task.getResult().toString();
+                .addOnFailureListener(e -> callback.onError("Cập nhật ảnh đại diện thất bại: " + e.getLocalizedMessage()));
+    }
 
-                        firestore.collection("users").document(uid)
-                                .update("avatarUrl", downloadUrl)
-                                .addOnSuccessListener(unused -> {
-                                    FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-                                    if (firebaseUser != null) {
-                                        UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
-                                                .setPhotoUri(Uri.parse(downloadUrl))
-                                                .build();
-                                        firebaseUser.updateProfile(profileUpdates);
-                                    }
-                                    callback.onSuccess(downloadUrl);
-                                })
-                                .addOnFailureListener(e -> callback.onError("Cập nhật link ảnh đại diện thất bại: " + e.getLocalizedMessage()));
-                    } else {
-                        String errorMsg = task.getException() != null ? task.getException().getLocalizedMessage() : "Tải ảnh lên thất bại.";
-                        callback.onError(errorMsg);
+    public void removeAvatar(String uid, UpdateCallback callback) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("avatarUrl", "");
+
+        firestore.collection("users").document(uid)
+                .set(data, com.google.firebase.firestore.SetOptions.merge())
+                .addOnSuccessListener(unused -> {
+                    FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+                    if (firebaseUser != null) {
+                        UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
+                                .setPhotoUri(null)
+                                .build();
+                        firebaseUser.updateProfile(profileUpdates);
                     }
+                    try {
+                        storage.getReference().child("avatars/" + uid + ".jpg").delete();
+                    } catch (Exception ignored) {}
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onError("Xóa ảnh đại diện thất bại: " + e.getLocalizedMessage());
                 });
     }
 

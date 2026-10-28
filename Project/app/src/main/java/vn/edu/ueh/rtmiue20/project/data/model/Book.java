@@ -70,9 +70,7 @@ public class Book {
 
     public int getViewCount() { return Math.max(0, viewCount); }
     public void setViewCount(int viewCount) { this.viewCount = Math.max(0, viewCount); }
-    public void setViewCount(long viewCount) { this.viewCount = (int) Math.max(0, viewCount); }
 
     public int getFavoriteCount() { return Math.max(0, favoriteCount); }
     public void setFavoriteCount(int favoriteCount) { this.favoriteCount = Math.max(0, favoriteCount); }
-    public void setFavoriteCount(long favoriteCount) { this.favoriteCount = (int) Math.max(0, favoriteCount); }
 }

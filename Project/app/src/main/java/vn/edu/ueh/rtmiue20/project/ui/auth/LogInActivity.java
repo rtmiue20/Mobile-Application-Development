@@ -233,7 +233,7 @@ public class LogInActivity extends AppCompatActivity {
             public void onSuccess(FirebaseUser user) {
                 saveRememberMe(identifier);
                 Toast.makeText(LogInActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-                navigateToEditProfile();
+                navigateToDashboard();
             }
 
             @Override
@@ -251,7 +251,7 @@ public class LogInActivity extends AppCompatActivity {
             public void onSuccess(FirebaseUser user) {
                 saveRememberMe(user.getEmail() != null ? user.getEmail() : "");
                 Toast.makeText(LogInActivity.this, "Đăng nhập Google thành công!", Toast.LENGTH_SHORT).show();
-                navigateToEditProfile();
+                navigateToDashboard();
             }
 
             @Override
@@ -275,18 +275,43 @@ public class LogInActivity extends AppCompatActivity {
         editor.apply();
     }
 
-    private void navigateToEditProfile() {
+    private void navigateToDashboard() {
         FirebaseUser user = authRepository.getCurrentUser();
         if (user != null) {
             if (user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty()) {
                 SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                 prefs.edit().putString("user_fullname", user.getDisplayName()).apply();
             }
+            vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.getInstance().getUserProfile(
+                    user.getUid(),
+                    new vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.UserCallback() {
+                        @Override
+                        public void onSuccess(vn.edu.ueh.rtmiue20.project.data.model.User userProfile) {
+                            Intent intent;
+                            if (userProfile != null && "admin".equalsIgnoreCase(userProfile.getRole())) {
+                                intent = new Intent(LogInActivity.this, AdminDashboardActivity.class);
+                            } else {
+                                intent = new Intent(LogInActivity.this, HomeActivity.class);
+                            }
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                        }
+
+                        @Override
+                        public void onError(String errorMessage) {
+                            Intent intent = new Intent(LogInActivity.this, HomeActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                        }
+                    }
+            );
+        } else {
+            Intent intent = new Intent(LogInActivity.this, HomeActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
         }
-        Intent intent = new Intent(LogInActivity.this, EditProfileActivity.class);
-        intent.putExtra("from_login", true);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
     }
 }

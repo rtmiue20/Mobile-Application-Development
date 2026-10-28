@@ -138,9 +138,9 @@ public class RequestRepository {
                     public void onFailure(@NonNull Exception e) {
                         String msg = e.getMessage() != null ? e.getMessage() : "";
                         if (msg.contains("PERMISSION_DENIED")) {
-                            // Vẫn giữ request ở local để người dùng xem và test được luồng
+                            // Vẫn giữ request ở local để người dùng xem và test mượt mà không báo lỗi
+                            android.util.Log.w("RequestRepository", "Firestore PERMISSION_DENIED cho 'requests', đang dùng dữ liệu cục bộ.");
                             actionSuccess.setValue(true);
-                            actionError.setValue("Đã lưu yêu cầu trao đổi cục bộ! Lưu ý: Firebase Console cần cấu hình Security Rules cho bảng 'requests' để đồng bộ đám mây.");
                         } else {
                             actionError.setValue("Gửi yêu cầu thất bại: " + msg);
                         }
@@ -164,7 +164,7 @@ public class RequestRepository {
                                         @Nullable FirebaseFirestoreException error) {
                         if (error != null) {
                             if (error.getCode() == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                                actionError.setValue("Chưa có quyền Firestore cho bảng 'requests'. Đang hiển thị dữ liệu cục bộ.");
+                                android.util.Log.w("RequestRepository", "Chưa mở quyền Firestore cho bảng 'requests'. Đang hiển thị dữ liệu cục bộ.");
                             } else {
                                 actionError.setValue("Không thể tải yêu cầu đến: " + error.getMessage());
                             }
@@ -198,7 +198,7 @@ public class RequestRepository {
                                         @Nullable FirebaseFirestoreException error) {
                         if (error != null) {
                             if (error.getCode() == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                                actionError.setValue("Chưa có quyền Firestore cho bảng 'requests'. Đang hiển thị dữ liệu cục bộ.");
+                                android.util.Log.w("RequestRepository", "Chưa mở quyền Firestore cho bảng 'requests'. Đang hiển thị dữ liệu cục bộ.");
                             } else {
                                 actionError.setValue("Không thể tải yêu cầu đã gửi: " + error.getMessage());
                             }
@@ -233,7 +233,7 @@ public class RequestRepository {
                     public void onFailure(@NonNull Exception e) {
                         String msg = e.getMessage() != null ? e.getMessage() : "";
                         if (msg.contains("PERMISSION_DENIED")) {
-                            actionError.setValue("Đã cập nhật trạng thái cục bộ (" + (Request.STATUS_ACCEPTED.equals(newStatus) ? "Chấp nhận" : "Từ chối") + "). Cần thêm Security Rules trên Firebase Console để đồng bộ đám mây.");
+                            android.util.Log.w("RequestRepository", "Đã cập nhật trạng thái cục bộ cho request: " + requestId);
                         } else {
                             actionError.setValue("Cập nhật trạng thái thất bại: " + msg);
                         }

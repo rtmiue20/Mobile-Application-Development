@@ -17,13 +17,14 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Request;
+import vn.edu.ueh.rtmiue20.project.util.FCMSender;
 import vn.edu.ueh.rtmiue20.project.util.LocationHelper;
 
 public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestViewHolder> {
@@ -117,7 +118,7 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
 
         // Chi tiết điểm hẹn trao đổi sách
         if (holder.tvAppointmentDetail != null) {
-            holder.tvAppointmentDetail.setText("Địa điểm trao đổi: Đại học Kinh Tế TP. Hồ Chí Minh - Cơ sở B (279 Nguyễn Tri Phương, Phường Diên Hồng, Quận 10)");
+            holder.tvAppointmentDetail.setText("Địa điểm trao đổi: Đại học Kinh Tế TP. Hồ Chí Minh - Cơ sở B (" + LocationHelper.UEH_CAMPUS_B_ADDRESS + ")");
         }
 
         // UI Logic dựa vào Tab (isSentTab)
@@ -164,40 +165,42 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
         }
 
         // Bắt sự kiện Click
-        holder.btnAccept.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (listener != null) listener.onAccept(request);
-            }
+        holder.btnAccept.setOnClickListener(v -> {
+            if (listener != null) listener.onAccept(request);
         });
 
-        holder.btnReject.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (listener != null) listener.onReject(request);
-            }
+        holder.btnReject.setOnClickListener(v -> {
+            if (listener != null) listener.onReject(request);
         });
 
-        holder.btnCancelRequest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (listener != null) listener.onCancel(request);
-            }
+        holder.btnCancelRequest.setOnClickListener(v -> {
+            if (listener != null) listener.onCancel(request);
         });
 
-        holder.btnRemind.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(v.getContext(), "Đã gửi thông báo nhắc nhở đến chủ sách!", Toast.LENGTH_SHORT).show();
+        holder.btnRemind.setOnClickListener(v -> {
+            Context ctx = v.getContext();
+            if (request.getOwnerId() != null && !request.getOwnerId().isEmpty()) {
+                FirebaseFirestore.getInstance().collection("users").document(request.getOwnerId())
+                        .get()
+                        .addOnSuccessListener(doc -> {
+                            if (doc != null && doc.exists()) {
+                                String ownerToken = doc.getString("fcmToken");
+                                if (ownerToken != null && !ownerToken.isEmpty()) {
+                                    String requesterName = request.getRequesterName() != null ? request.getRequesterName() : "Bạn đọc";
+                                    String bookTitle = request.getBookTitle() != null ? request.getBookTitle() : "sách";
+                                    FCMSender.pushNotification(
+                                            ownerToken,
+                                            "Lời nhắc yêu cầu nhận sách",
+                                            requesterName + " đang chờ phản hồi của bạn về cuốn \"" + bookTitle + "\"."
+                                    );
+                                }
+                            }
+                        });
             }
+            Toast.makeText(ctx, "Đã gửi thông báo nhắc nhở đến chủ sách!", Toast.LENGTH_SHORT).show();
         });
 
-        holder.btnViewQR.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showExchangeQrDialog(v.getContext(), request);
-            }
-        });
+        holder.btnViewQR.setOnClickListener(v -> showExchangeQrDialog(v.getContext(), request));
     }
 
     private void showExchangeQrDialog(Context context, Request request) {
@@ -210,7 +213,7 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
                         "Cuốn sách: " + (request.getBookTitle() != null ? request.getBookTitle() : "") + "\n" +
                         "Chủ sách: " + (request.getOwnerName() != null ? request.getOwnerName() : "Chủ sách") + "\n" +
                         "Người nhận: " + (request.getRequesterName() != null ? request.getRequesterName() : "Bạn đọc") + "\n\n" +
-                        "📍 Điểm hẹn giao nhận:\nĐại học Kinh Tế TP. Hồ Chí Minh (Cơ sở B)\nĐịa chỉ: 279 Nguyễn Tri Phương, Phường Diên Hồng (Phường 5 cũ), Quận 10, TP.HCM\n\nVui lòng đưa mã này cho chủ sách khi đến nhận trao đổi.")
+                        "📍 Điểm hẹn giao nhận:\nĐại học Kinh Tế TP. Hồ Chí Minh (Cơ sở B)\nĐịa chỉ: " + LocationHelper.UEH_CAMPUS_B_ADDRESS + "\n\nVui lòng đưa mã này cho chủ sách khi đến nhận trao đổi.")
                 .setPositiveButton("Đã hiểu", null)
                 .show();
     }

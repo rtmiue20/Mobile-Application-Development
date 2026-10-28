@@ -22,7 +22,6 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp">
 
-            <!-- THÊM NÚT BACK VÀO ĐÂY -->
             <ImageView
                 android:id="@+id/btnBackProfile"
                 android:layout_width="36dp"
@@ -38,7 +37,6 @@
                 android:src="@drawable/ic_arrow_back"
                 app:tint="@color/text_primary" />
 
-            <!-- GẮN ID layoutBrandLogo VÀ ĐẨY NÓ SANG BÊN PHẢI NÚT BACK -->
             <LinearLayout
                 android:id="@+id/layoutBrandLogo"
                 android:layout_width="wrap_content"
@@ -75,7 +73,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="ĐĂNG BÀI"
+                        android:text="HỒ SƠ CÁ NHÂN"
                         android:textColor="@color/text_secondary"
                         android:textSize="10sp"
                         android:textStyle="bold" />
@@ -91,6 +89,7 @@
                 android:orientation="horizontal">
 
                 <ImageView
+                    android:id="@+id/btnProfileInfo"
                     android:layout_width="28dp"
                     android:layout_height="28dp"
                     android:layout_marginEnd="12dp"
@@ -352,7 +351,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="0.0 (0)"
+                        android:text="5.0 ★"
                         android:textColor="@color/primary_dark_green"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -419,7 +418,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Đại sứ Lan tỏa Tri thức 2025"
+                        android:text="Đại sứ Lan tỏa Tri thức UEH"
                         android:textColor="#FFFFFF"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -427,7 +426,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Section 1: Bookshelf & Transactions (Clean rows without left icon backgrounds) -->
+        <!-- Section 1: Bookshelf & Transactions -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -565,7 +564,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Section 2: System & Settings (Clean rows) -->
+        <!-- Section 2: System & Settings -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -592,9 +591,12 @@
 
                 <!-- Item 1: App Settings -->
                 <RelativeLayout
+                    android:id="@+id/btnAppSettings"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:paddingVertical="12dp">
 
                     <TextView
@@ -619,9 +621,12 @@
 
                 <!-- Item 2: Help & Policies -->
                 <RelativeLayout
+                    android:id="@+id/btnHelpCenter"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:paddingVertical="12dp">
 
                     <TextView

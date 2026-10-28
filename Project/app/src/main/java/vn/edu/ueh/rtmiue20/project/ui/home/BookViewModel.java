@@ -20,6 +20,7 @@ public class BookViewModel extends AndroidViewModel {
     }
     public LiveData<List<Book>> getAllBooks() { return repo.getAllBooks(); }
     public LiveData<Book> getBook(String id) { return repo.getBook(id); }
+    public LiveData<List<Book>> getBooksByOwner(String ownerId) { return repo.getBooksByOwner(ownerId); }
     public LiveData<List<Book>> search(String q) { return repo.search(q); }
     public void insert(Book b) { repo.insert(b); }
     public void delete(String id) { repo.delete(id); }

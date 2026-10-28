@@ -1,7 +1,10 @@
 package vn.edu.ueh.rtmiue20.project.ui.home;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
@@ -14,7 +17,10 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -22,18 +28,29 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.location.CurrentLocationRequest;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Book;
+import vn.edu.ueh.rtmiue20.project.data.model.Request;
 import vn.edu.ueh.rtmiue20.project.ui.book.BookDetailActivity;
 import vn.edu.ueh.rtmiue20.project.ui.book.CreatePostActivity;
 import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
 import vn.edu.ueh.rtmiue20.project.ui.profile.ProfileActivity;
 import vn.edu.ueh.rtmiue20.project.ui.request.ManageRequestsActivity;
+import vn.edu.ueh.rtmiue20.project.ui.request.RequestViewModel;
+import vn.edu.ueh.rtmiue20.project.util.LocationHelper;
 import vn.edu.ueh.rtmiue20.project.util.ViewPressEffectHelper;
 
 public class HomeActivity extends AppCompatActivity {
@@ -52,6 +69,7 @@ public class HomeActivity extends AppCompatActivity {
     private ImageView btnNotifications;
     private ImageView btnGoToProfile;
     private View btnFilter;
+    private View layoutBrandLogo, ivBrandLogoIcon;
 
     // Category pills
     private TextView pillAll, pillLiterature, pillEconomics, pillTextbook, pillOther;
@@ -60,7 +78,12 @@ public class HomeActivity extends AppCompatActivity {
     // Filter states
     private String filterCondition = "Tất cả";
     private String filterSharingType = "Tất cả";
+    private String filterFavoriteMode = "Tất cả sách";
     private String filterSortOrder = "Mới nhất";
+    private Set<String> currentFavoriteBookIds = new HashSet<>();
+
+    private FusedLocationProviderClient fusedLocationClient;
+    private ActivityResultLauncher<String[]> locationPermissionLauncher;
 
     // Bottom Navigation & Actions
     private View btnNavHome, btnNavSearch, btnNavRequests, btnNavProfile;
@@ -71,6 +94,11 @@ public class HomeActivity extends AppCompatActivity {
     private int currentPage = 1;
     private int totalPages = 1;
     private TextView btnPrevPage, btnNextPage, tvPageIndicator;
+
+    // Real-time notification state
+    private int pendingReceivedCount = 0;
+    private int acceptedSentCount = 0;
+    private int previousTotalBooksCount = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,27 +118,184 @@ public class HomeActivity extends AppCompatActivity {
         BookViewModel bookViewModel = new ViewModelProvider(this).get(BookViewModel.class);
         bookViewModel.getAllBooks().observe(this, books -> {
             if (books != null) {
+                boolean addedNewBook = previousTotalBooksCount >= 0 && books.size() > previousTotalBooksCount;
+                previousTotalBooksCount = books.size();
                 allBooksList = books;
+                if (addedNewBook) {
+                    currentPage = 1;
+                    filterSortOrder = "Mới nhất";
+                    if (!"Tất cả".equals(selectedCategory)) {
+                        selectCategory("Tất cả", pillAll);
+                        return;
+                    }
+                }
                 applyFilters();
             }
         });
 
         FavoriteViewModel favoriteViewModel = new ViewModelProvider(this).get(FavoriteViewModel.class);
         favoriteViewModel.getFavoriteBookIds().observe(this, ids -> {
+            currentFavoriteBookIds = ids != null ? new HashSet<>(ids) : new HashSet<>();
             if (bookAdapter != null && ids != null) {
                 bookAdapter.setFavoritedBookIds(ids);
             }
+            if (!"Tất cả sách".equals(filterFavoriteMode)) {
+                applyFilters();
+            }
         });
 
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        setupLocationPermissionLauncher();
+
+        observeNotificationData();
         setupListeners();
         setupPressEffects();
         updateUserDistanceToExchange();
+        loadHeaderUserAvatar();
+        requestLocationOnAppStart();
+        handleFocusSearchIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleFocusSearchIntent(intent);
+    }
+
+    private void handleFocusSearchIntent(Intent intent) {
+        if (intent != null && intent.getBooleanExtra("focus_search", false)) {
+            intent.removeExtra("focus_search");
+            if (etSearchBook != null) {
+                etSearchBook.postDelayed(() -> {
+                    if (mainScrollView != null) {
+                        mainScrollView.smoothScrollTo(0, etSearchBook.getTop());
+                    }
+                    etSearchBook.requestFocus();
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+                        imm.showSoftInput(etSearchBook, InputMethodManager.SHOW_IMPLICIT);
+                    }
+                }, 200);
+            }
+        }
+    }
+
+    private void observeNotificationData() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
+        RequestViewModel requestViewModel = new ViewModelProvider(this).get(RequestViewModel.class);
+        requestViewModel.getReceivedRequests(user.getUid()).observe(this, list -> {
+            int pending = 0;
+            if (list != null) {
+                for (Request r : list) {
+                    if (Request.STATUS_PENDING.equalsIgnoreCase(r.getStatus())) {
+                        pending++;
+                    }
+                }
+            }
+            pendingReceivedCount = pending;
+        });
+
+        requestViewModel.getSentRequests(user.getUid()).observe(this, list -> {
+            int accepted = 0;
+            if (list != null) {
+                for (Request r : list) {
+                    if (Request.STATUS_ACCEPTED.equalsIgnoreCase(r.getStatus())) {
+                        accepted++;
+                    }
+                }
+            }
+            acceptedSentCount = accepted;
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         updateUserDistanceToExchange();
+        loadHeaderUserAvatar();
+    }
+
+    private void loadHeaderUserAvatar() {
+        if (btnGoToProfile == null) return;
+        android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        if (prefs.contains("user_avatar_url")) {
+            String cachedAvatar = prefs.getString("user_avatar_url", "");
+            vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(this, btnGoToProfile, cachedAvatar, true);
+        }
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.getInstance().getUserProfile(
+                    user.getUid(),
+                    new vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.UserCallback() {
+                        @Override
+                        public void onSuccess(vn.edu.ueh.rtmiue20.project.data.model.User userProfile) {
+                            if (isFinishing() || isDestroyed()) return;
+                            String avatarUrl = (userProfile != null && userProfile.getAvatarUrl() != null)
+                                    ? userProfile.getAvatarUrl()
+                                    : "";
+                            prefs.edit().putString("user_avatar_url", avatarUrl).apply();
+                            vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(HomeActivity.this, btnGoToProfile, avatarUrl, true);
+                        }
+
+                        @Override
+                        public void onError(String errorMessage) {}
+                    }
+            );
+        }
+    }
+
+    private void setupLocationPermissionLauncher() {
+        locationPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                result -> {
+                    Boolean fineGranted = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
+                    Boolean coarseGranted = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
+                    if ((fineGranted != null && fineGranted) || (coarseGranted != null && coarseGranted)) {
+                        fetchCurrentGpsDistance();
+                    }
+                }
+        );
+    }
+
+    private void requestLocationOnAppStart() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            fetchCurrentGpsDistance();
+        } else if (locationPermissionLauncher != null) {
+            locationPermissionLauncher.launch(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            });
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private void fetchCurrentGpsDistance() {
+        if (fusedLocationClient == null) return;
+        try {
+            CurrentLocationRequest request = new CurrentLocationRequest.Builder()
+                    .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+                    .setDurationMillis(8000)
+                    .build();
+            fusedLocationClient.getCurrentLocation(request, null).addOnSuccessListener(this, location -> {
+                if (location != null) {
+                    double safeLat = LocationHelper.normalizeLatitude(location.getLatitude(), location.getLongitude());
+                    double safeLng = LocationHelper.normalizeLongitude(location.getLatitude(), location.getLongitude());
+                    getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
+                            .putFloat("user_lat", (float) safeLat)
+                            .putFloat("user_lng", (float) safeLng)
+                            .apply();
+                    String dist = LocationHelper.getDistanceToUEHCampusB(safeLat, safeLng);
+                    if (bookAdapter != null) {
+                        bookAdapter.setUserDistanceToExchange(dist);
+                    }
+                }
+            });
+        } catch (SecurityException ignored) {}
     }
 
     private void updateUserDistanceToExchange() {
@@ -158,6 +343,8 @@ public class HomeActivity extends AppCompatActivity {
         btnNotifications = findViewById(R.id.btnNotifications);
         btnGoToProfile = findViewById(R.id.btnGoToProfile);
         btnFilter = findViewById(R.id.btnFilter);
+        layoutBrandLogo = findViewById(R.id.layoutBrandLogo);
+        ivBrandLogoIcon = findViewById(R.id.ivBrandLogoIcon);
 
         pillAll = findViewById(R.id.pillAll);
         pillLiterature = findViewById(R.id.pillLiterature);
@@ -234,7 +421,23 @@ public class HomeActivity extends AppCompatActivity {
             btnFilter.setOnClickListener(v -> showFilterDialog());
         }
 
-        // Bottom Navigation Tabs
+        // Bottom Navigation Tabs & Brand Logo
+        View.OnClickListener resetToDashboardTop = v -> {
+            if (etSearchBook != null && etSearchBook.getText().length() > 0) {
+                etSearchBook.setText("");
+            }
+            filterCondition = "Tất cả";
+            filterSharingType = "Tất cả";
+            filterFavoriteMode = "Tất cả sách";
+            filterSortOrder = "Mới nhất";
+            selectCategory("Tất cả", pillAll);
+            if (mainScrollView != null) {
+                mainScrollView.smoothScrollTo(0, 0);
+            }
+        };
+        if (layoutBrandLogo != null) layoutBrandLogo.setOnClickListener(resetToDashboardTop);
+        if (ivBrandLogoIcon != null) ivBrandLogoIcon.setOnClickListener(resetToDashboardTop);
+
         if (btnNavHome != null) {
             btnNavHome.setOnClickListener(v -> {
                 if (mainScrollView != null) {
@@ -320,10 +523,33 @@ public class HomeActivity extends AppCompatActivity {
         View sheetView = getLayoutInflater().inflate(R.layout.dialog_notifications, null);
         dialog.setContentView(sheetView);
 
+        TextView tvTitle = sheetView.findViewById(R.id.tvNotificationTitle);
+        TextView tvMsg = sheetView.findViewById(R.id.tvNotificationMessage);
+        TextView btnViewRequests = sheetView.findViewById(R.id.btnViewRequestsFromNotification);
+
+        int totalActiveNotifs = pendingReceivedCount + acceptedSentCount;
+        if (totalActiveNotifs > 0) {
+            if (tvTitle != null) {
+                tvTitle.setText("Bạn có " + totalActiveNotifs + " thông báo giao dịch sách!");
+            }
+            if (tvMsg != null) {
+                StringBuilder sb = new StringBuilder();
+                if (pendingReceivedCount > 0) {
+                    sb.append("• ").append(pendingReceivedCount).append(" yêu cầu nhận sách đang chờ bạn phản hồi.\n");
+                }
+                if (acceptedSentCount > 0) {
+                    sb.append("• ").append(acceptedSentCount).append(" yêu cầu xin sách của bạn đã được chủ sách đồng ý! Hãy xem mã QR hẹn nhận tại UEH Cơ sở B.");
+                }
+                tvMsg.setText(sb.toString().trim());
+            }
+            if (btnViewRequests != null) {
+                btnViewRequests.setText("Mở quản lý yêu cầu (" + totalActiveNotifs + ")");
+            }
+        }
+
         ImageView btnClose = sheetView.findViewById(R.id.btnCloseNotifications);
         if (btnClose != null) btnClose.setOnClickListener(v -> dialog.dismiss());
 
-        View btnViewRequests = sheetView.findViewById(R.id.btnViewRequestsFromNotification);
         if (btnViewRequests != null) {
             btnViewRequests.setOnClickListener(v -> {
                 dialog.dismiss();
@@ -349,6 +575,9 @@ public class HomeActivity extends AppCompatActivity {
         TextView chipTypeFree = sheetView.findViewById(R.id.chipTypeFree);
         TextView chipTypeExchange = sheetView.findViewById(R.id.chipTypeExchange);
 
+        TextView chipFavAll = sheetView.findViewById(R.id.chipFavAll);
+        TextView chipFavOnly = sheetView.findViewById(R.id.chipFavOnly);
+
         TextView chipSortNewest = sheetView.findViewById(R.id.chipSortNewest);
         TextView chipSortOldest = sheetView.findViewById(R.id.chipSortOldest);
         TextView chipSortTitle = sheetView.findViewById(R.id.chipSortTitle);
@@ -358,11 +587,17 @@ public class HomeActivity extends AppCompatActivity {
 
         final String[] tempCondition = {filterCondition};
         final String[] tempType = {filterSharingType};
+        final String[] tempFav = {filterFavoriteMode};
         final String[] tempSort = {filterSortOrder};
 
         // Initialize chips UI according to current filter
         updateChipGroupState(tempCondition[0], "Tất cả", chipCondAll, "Còn mới / Rất mới", chipCondNew, "Đã qua sử dụng", chipCondUsed);
         updateChipGroupState(tempType[0], "Tất cả", chipTypeAll, "Tặng miễn phí", chipTypeFree, "Trao đổi", chipTypeExchange);
+        if ("❤️ Danh sách yêu thích".equals(tempFav[0])) {
+            setChipActive(chipFavOnly, chipFavAll);
+        } else {
+            setChipActive(chipFavAll, chipFavOnly);
+        }
         updateChipGroupState(tempSort[0], "Mới nhất", chipSortNewest, "Cũ nhất", chipSortOldest, "Tên sách (A-Z)", chipSortTitle);
 
         // Chip click listeners
@@ -392,6 +627,15 @@ public class HomeActivity extends AppCompatActivity {
             setChipActive(chipTypeExchange, chipTypeAll, chipTypeFree);
         });
 
+        if (chipFavAll != null) chipFavAll.setOnClickListener(v -> {
+            tempFav[0] = "Tất cả sách";
+            setChipActive(chipFavAll, chipFavOnly);
+        });
+        if (chipFavOnly != null) chipFavOnly.setOnClickListener(v -> {
+            tempFav[0] = "❤️ Danh sách yêu thích";
+            setChipActive(chipFavOnly, chipFavAll);
+        });
+
         if (chipSortNewest != null) chipSortNewest.setOnClickListener(v -> {
             tempSort[0] = "Mới nhất";
             setChipActive(chipSortNewest, chipSortOldest, chipSortTitle);
@@ -411,9 +655,11 @@ public class HomeActivity extends AppCompatActivity {
             btnReset.setOnClickListener(v -> {
                 tempCondition[0] = "Tất cả";
                 tempType[0] = "Tất cả";
+                tempFav[0] = "Tất cả sách";
                 tempSort[0] = "Mới nhất";
                 setChipActive(chipCondAll, chipCondNew, chipCondUsed);
                 setChipActive(chipTypeAll, chipTypeFree, chipTypeExchange);
+                setChipActive(chipFavAll, chipFavOnly);
                 setChipActive(chipSortNewest, chipSortOldest, chipSortTitle);
             });
         }
@@ -422,6 +668,7 @@ public class HomeActivity extends AppCompatActivity {
             btnApply.setOnClickListener(v -> {
                 filterCondition = tempCondition[0];
                 filterSharingType = tempType[0];
+                filterFavoriteMode = tempFav[0];
                 filterSortOrder = tempSort[0];
                 dialog.dismiss();
                 currentPage = 1;
@@ -433,6 +680,7 @@ public class HomeActivity extends AppCompatActivity {
                 btnClose, btnReset, btnApply,
                 chipCondAll, chipCondNew, chipCondUsed,
                 chipTypeAll, chipTypeFree, chipTypeExchange,
+                chipFavAll, chipFavOnly,
                 chipSortNewest, chipSortOldest, chipSortTitle
         );
 
@@ -525,6 +773,13 @@ public class HomeActivity extends AppCompatActivity {
                     if (!"exchanging".equals(bookStatus) && !bookStatus.contains("trao đổi")) {
                         continue;
                     }
+                }
+            }
+
+            // 4b. Favorite Books Filter
+            if ("❤️ Danh sách yêu thích".equals(filterFavoriteMode)) {
+                if (b.getId() == null || !currentFavoriteBookIds.contains(b.getId())) {
+                    continue;
                 }
             }
 

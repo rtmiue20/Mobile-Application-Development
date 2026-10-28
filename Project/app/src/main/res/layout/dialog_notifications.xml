@@ -69,6 +69,7 @@
             app:tint="@color/primary" />
 
         <TextView
+            android:id="@+id/tvNotificationTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -78,6 +79,7 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/tvNotificationMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="24dp"

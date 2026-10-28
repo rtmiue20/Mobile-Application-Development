@@ -31,7 +31,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp">
 
-                <!-- THÊM NÚT BACK VÀO ĐÂY -->
                 <ImageView
                     android:id="@+id/btnBackProfile"
                     android:layout_width="36dp"
@@ -47,7 +46,6 @@
                     android:src="@drawable/ic_arrow_back"
                     app:tint="@color/text_primary" />
 
-                <!-- GẮN ID layoutBrandLogo VÀ ĐẨY NÓ SANG BÊN PHẢI NÚT BACK -->
                 <LinearLayout
                     android:id="@+id/layoutBrandLogo"
                     android:layout_width="wrap_content"
@@ -83,7 +81,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="ĐĂNG BÀI"
+                            android:text="HỒ SƠ CÁ NHÂN"
                             android:textColor="@color/text_secondary"
                             android:textSize="9sp"
                             android:textStyle="bold" />
@@ -99,6 +97,7 @@
                     android:orientation="horizontal">
 
                     <ImageView
+                        android:id="@+id/btnProfileInfo"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:layout_marginEnd="12dp"
@@ -228,7 +227,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 3. Community Impact Stats (3 Columns) -->
+            <!-- 3. Community Impact Stats (3 Columns - ĐÃ ĐỒNG BỘ ĐẦY ĐỦ ID VỚI PORTRAIT) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -257,17 +256,18 @@
                             android:src="@drawable/ic_leaf"
                             app:tint="@color/secondary_green" />
                         <TextView
+                            android:id="@+id/tvBooksGivenCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="14"
+                            android:text="0"
                             android:textColor="@color/primary_dark_green"
                             android:textSize="18sp"
                             android:textStyle="bold" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Sách tặng"
+                            android:text="Sách đã tặng"
                             android:textColor="@color/text_secondary"
                             android:textSize="10sp" />
                     </LinearLayout>
@@ -295,17 +295,18 @@
                             android:src="@drawable/ic_info"
                             app:tint="@color/secondary_green" />
                         <TextView
+                            android:id="@+id/tvBooksReceivedCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="6"
+                            android:text="0"
                             android:textColor="@color/primary_dark_green"
                             android:textSize="18sp"
                             android:textStyle="bold" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Sách nhận"
+                            android:text="Sách đã nhận"
                             android:textColor="@color/text_secondary"
                             android:textSize="10sp" />
                     </LinearLayout>
@@ -333,12 +334,13 @@
                             android:src="@drawable/ic_lightbulb"
                             app:tint="#D97706" />
                         <TextView
+                            android:id="@+id/tvRatingCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="4.9"
+                            android:text="5.0 ★"
                             android:textColor="@color/primary_dark_green"
-                            android:textSize="18sp"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
                         <TextView
                             android:layout_width="wrap_content"
@@ -418,7 +420,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="Đại sứ Lan tỏa Tri thức 2025"
+                            android:text="Đại sứ Lan tỏa Tri thức UEH"
                             android:textColor="#FFFFFF"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -426,7 +428,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 5. Kệ sách & Giao dịch -->
+            <!-- 5. Kệ sách & Giao dịch (ĐÃ ĐỒNG BỘ ID) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -453,9 +455,12 @@
 
                     <!-- Bài đăng của tôi -->
                     <RelativeLayout
+                        android:id="@+id/layoutMyPosts"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:paddingVertical="10dp">
                         <TextView
                             android:layout_width="wrap_content"
@@ -467,6 +472,7 @@
                             android:textSize="14sp"
                             android:textStyle="bold" />
                         <TextView
+                            android:id="@+id/tvMyPostsCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_centerVertical="true"
@@ -474,7 +480,7 @@
                             android:background="@drawable/bg_badge_inner"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="3dp"
-                            android:text="3 đang hiển thị"
+                            android:text="0 đang hiển thị"
                             android:textColor="@color/secondary_green"
                             android:textSize="11sp" />
                         <ImageView
@@ -490,9 +496,12 @@
 
                     <!-- Sách yêu thích -->
                     <RelativeLayout
+                        android:id="@+id/layoutFavoriteBooks"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:paddingVertical="10dp">
                         <TextView
                             android:layout_width="wrap_content"
@@ -504,11 +513,12 @@
                             android:textSize="14sp"
                             android:textStyle="bold" />
                         <TextView
+                            android:id="@+id/tvFavoriteCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_centerVertical="true"
                             android:layout_toStartOf="@id/ivArrow2"
-                            android:text="12 cuốn"
+                            android:text="0 cuốn"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
                         <ImageView
@@ -524,9 +534,12 @@
 
                     <!-- Lịch sử -->
                     <RelativeLayout
+                        android:id="@+id/layoutHistoryRequests"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:paddingVertical="10dp">
                         <TextView
                             android:layout_width="wrap_content"
@@ -575,9 +588,12 @@
 
                     <!-- Cài đặt -->
                     <RelativeLayout
+                        android:id="@+id/btnAppSettings"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:paddingVertical="10dp">
                         <TextView
                             android:layout_width="wrap_content"
@@ -599,9 +615,12 @@
 
                     <!-- Trợ giúp -->
                     <RelativeLayout
+                        android:id="@+id/btnHelpCenter"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:paddingVertical="10dp">
                         <TextView
                             android:layout_width="wrap_content"

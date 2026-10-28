@@ -97,6 +97,7 @@
     </LinearLayout>
 
     <ScrollView
+        android:id="@+id/adminScrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
@@ -161,10 +162,11 @@
                     </LinearLayout>
 
                     <TextView
+                        android:id="@+id/tvAdminSystemStatus"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Uptime: 99.98% • Trực tuyến 18h"
+                        android:text="Đồng bộ thời gian thực với Firebase Firestore"
                         android:textColor="@color/text_secondary"
                         android:textSize="11sp" />
                 </LinearLayout>
@@ -197,7 +199,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- 2. Metric KPI Cards (2x2 Grid) -->
+            <!-- 2. Metric KPI Cards (2x2 Grid - Dữ liệu thực từ Firestore) -->
             <GridLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -240,19 +242,21 @@
                     </RelativeLayout>
 
                     <TextView
+                        android:id="@+id/tvAdminTotalUsers"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="12,480"
+                        android:text="0"
                         android:textColor="@color/primary"
                         android:textSize="22sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvAdminUserGrowth"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="+12% tuần này"
+                        android:text="Chạm để quản lý ›"
                         android:textColor="@color/secondary"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -260,10 +264,13 @@
 
                 <!-- Metric 2: Sách cộng đồng -->
                 <LinearLayout
+                    android:id="@+id/cardTotalBooks"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:background="@drawable/bg_login_card"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:orientation="vertical"
                     android:padding="14dp">
 
@@ -290,24 +297,26 @@
                     </RelativeLayout>
 
                     <TextView
+                        android:id="@+id/tvAdminTotalBooks"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="3,850"
+                        android:text="0"
                         android:textColor="@color/primary"
                         android:textSize="22sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvAdminBooksSub"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="2,900 đã tặng xong"
+                        android:text="0 đang hiển thị"
                         android:textColor="@color/secondary_green"
                         android:textSize="11sp" />
                 </LinearLayout>
 
-                <!-- Metric 3: Chờ kiểm duyệt -->
+                <!-- Metric 3: Yêu cầu trao đổi chờ xử lý -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -323,7 +332,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Chờ kiểm duyệt"
+                            android:text="Yêu cầu giao dịch"
                             android:textColor="@color/tertiary_container"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -347,9 +356,10 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/tvAdminPendingRequests"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="18"
+                            android:text="0"
                             android:textColor="@color/tertiary_container"
                             android:textSize="22sp"
                             android:textStyle="bold" />
@@ -361,22 +371,23 @@
                             android:background="@drawable/bg_pill_inactive"
                             android:paddingHorizontal="6dp"
                             android:paddingVertical="1dp"
-                            android:text="Khẩn"
+                            android:text="Trực tiếp"
                             android:textColor="@color/tertiary_container"
                             android:textSize="10sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
                     <TextView
+                        android:id="@+id/tvAdminRequestsSub"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Cần xử lý ngay"
+                        android:text="0 chờ phản hồi"
                         android:textColor="@color/tertiary_container"
                         android:textSize="11sp" />
                 </LinearLayout>
 
-                <!-- Metric 4: Báo cáo vi phạm -->
+                <!-- Metric 4: Bài đăng đã ẩn / khóa -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -392,7 +403,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Báo cáo vi phạm"
+                            android:text="Bài ẩn / Tài khoản khóa"
                             android:textColor="@color/red_danger"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -409,10 +420,11 @@
                     </RelativeLayout>
 
                     <TextView
+                        android:id="@+id/tvAdminFlaggedCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="04"
+                        android:text="0"
                         android:textColor="@color/red_danger"
                         android:textSize="22sp"
                         android:textStyle="bold" />
@@ -421,7 +433,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Spam link &amp; lừa đảo"
+                        android:text="Kiểm duyệt an toàn"
                         android:textColor="@color/red_danger"
                         android:textSize="11sp" />
                 </LinearLayout>
@@ -468,7 +480,7 @@
                         android:background="@drawable/bg_btn_primary"
                         android:gravity="center"
                         android:paddingHorizontal="14dp"
-                        android:text="Duyệt tin (18)"
+                        android:text="Quản lý bài đăng"
                         android:textColor="@color/white"
                         android:textSize="12sp"
                         android:textStyle="bold" />
@@ -488,24 +500,16 @@
                         android:textSize="12sp" />
 
                     <TextView
+                        android:id="@+id/btnViewMemberFeed"
                         android:layout_width="wrap_content"
                         android:layout_height="38dp"
                         android:layout_marginStart="8dp"
                         android:background="@drawable/bg_pill_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:paddingHorizontal="14dp"
-                        android:text="Quy chuẩn cộng đồng"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="38dp"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_pill_inactive"
-                        android:gravity="center"
-                        android:paddingHorizontal="14dp"
-                        android:text="Thông báo toàn trạm"
+                        android:text="Xem giao diện Member"
                         android:textColor="@color/text_primary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -548,22 +552,24 @@
                     </LinearLayout>
 
                     <TextView
+                        android:id="@+id/tvCommunityHealthPercent"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
-                        android:text="94.2% Thành công"
+                        android:text="100% An toàn"
                         android:textColor="@color/secondary"
                         android:textSize="13sp"
                         android:textStyle="bold" />
                 </RelativeLayout>
 
                 <ProgressBar
+                    android:id="@+id/pbCommunityHealth"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="8dp"
                     android:layout_marginTop="10dp"
                     android:max="100"
-                    android:progress="94"
+                    android:progress="100"
                     android:progressDrawable="@drawable/bg_pill_active" />
 
                 <RelativeLayout
@@ -574,22 +580,24 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="📍 42 Điểm hẹn đọc sách an toàn"
+                        android:text="📍 Điểm hẹn chính: UEH Cơ sở B (Q.10)"
                         android:textColor="@color/text_secondary"
                         android:textSize="11sp" />
 
                     <TextView
+                        android:id="@+id/tvAdminInteractionCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
-                        android:text="🤝 18,200 Lượt tương tác"
+                        android:text="🤝 0 Lượt tương tác"
                         android:textColor="@color/primary"
                         android:textSize="11sp" />
                 </RelativeLayout>
             </LinearLayout>
 
-            <!-- 5. Pending Review Section ("Bài đăng cần xử lý") -->
+            <!-- 5. Real Books Management Section ("Bài đăng trên hệ thống") -->
             <RelativeLayout
+                android:id="@+id/sectionManageBooks"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="22dp">
@@ -598,12 +606,13 @@
                     android:id="@+id/tvReviewTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Bài đăng cần xử lý"
+                    android:text="Quản lý bài đăng sách"
                     android:textColor="@color/primary"
                     android:textSize="17sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvAdminRecentCountBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
@@ -612,392 +621,46 @@
                     android:background="@drawable/bg_tag_secondary"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="2dp"
-                    android:text="3"
+                    android:text="0"
                     android:textColor="@color/on_secondary_container"
                     android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvAdminViewAllBooks"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    android:text="Xem tất cả (18) ›"
+                    android:text="Chạm vào sách để kiểm duyệt ›"
                     android:textColor="@color/secondary"
-                    android:textSize="13sp"
+                    android:textSize="12sp"
                     android:textStyle="bold" />
             </RelativeLayout>
 
-            <!-- Review Card 1 -->
-            <LinearLayout
+            <TextView
+                android:id="@+id/tvAdminEmptyBooks"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:background="@drawable/bg_login_card"
-                android:orientation="vertical"
-                android:padding="14dp">
+                android:gravity="center"
+                android:padding="20dp"
+                android:text="Chưa có bài đăng sách nào trên hệ thống."
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:visibility="gone" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="60dp"
-                        android:layout_height="76dp"
-                        android:background="@drawable/bg_input_field"
-                        android:contentDescription="Bìa sách"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/ic_bookshare_logo" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:orientation="vertical">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:background="@drawable/bg_tag_secondary"
-                                android:paddingHorizontal="8dp"
-                                android:paddingVertical="2dp"
-                                android:text="Giáo trình"
-                                android:textColor="@color/on_secondary_container"
-                                android:textSize="10sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="20.000 đ (Tượng trưng)"
-                                android:textColor="@color/tertiary_container"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Sách: Giáo trình Kinh Tế Vi Mô"
-                            android:textColor="@color/primary"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Lê Văn Cường • Mới tạo (2 ngày)"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:background="@drawable/bg_tips_card"
-                            android:padding="6dp"
-                            android:text="Lý do: Ảnh chụp nghiêng góc rộng, gắn giá chia sẻ tượng trưng."
-                            android:textColor="@color/text_primary"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="36dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_btn_primary"
-                        android:gravity="center"
-                        android:text="Duyệt"
-                        android:textColor="@color/white"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="36dp"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_pill_inactive"
-                        android:gravity="center"
-                        android:text="Bổ sung"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="36dp"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_pill_inactive"
-                        android:gravity="center"
-                        android:text="Từ chối"
-                        android:textColor="@color/red_danger"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Review Card 2: AI Flagged -->
-            <LinearLayout
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvAdminBooks"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:background="@drawable/bg_login_card"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="60dp"
-                        android:layout_height="76dp"
-                        android:background="@drawable/bg_input_field"
-                        android:contentDescription="Bìa sách"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/ic_bookshare_logo" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:orientation="vertical">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:background="@drawable/bg_tag_secondary"
-                                android:paddingHorizontal="8dp"
-                                android:paddingVertical="2dp"
-                                android:text="Tặng miễn phí"
-                                android:textColor="@color/on_secondary_container"
-                                android:textSize="10sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:background="@drawable/bg_tips_card"
-                                android:paddingHorizontal="8dp"
-                                android:paddingVertical="2dp"
-                                android:text="🤖 AI Flagged"
-                                android:textColor="@color/red_danger"
-                                android:textSize="10sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Combo Manga Conan Tập 1-50"
-                            android:textColor="@color/primary"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Hoàng Yến • 3 báo cáo spam"
-                            android:textColor="@color/red_danger"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:background="@drawable/bg_tips_card"
-                            android:padding="6dp"
-                            android:text="⚠️ Phát hiện link Zalo / Telegram rút gọn trong phần mô tả nhận sách."
-                            android:textColor="@color/red_danger"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="36dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_pill_inactive"
-                        android:gravity="center"
-                        android:text="Chi tiết"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="36dp"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_pill_inactive"
-                        android:gravity="center"
-                        android:text="Ẩn bài"
-                        android:textColor="@color/tertiary_container"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="36dp"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_pill_inactive"
-                        android:gravity="center"
-                        android:text="Khóa"
-                        android:textColor="@color/red_danger"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Review Card 3: Đắc Nhân Tâm -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_login_card"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="60dp"
-                        android:layout_height="76dp"
-                        android:background="@drawable/bg_input_field"
-                        android:contentDescription="Bìa sách"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/ic_bookshare_logo" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:orientation="vertical">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:background="@drawable/bg_tag_secondary"
-                                android:paddingHorizontal="8dp"
-                                android:paddingVertical="2dp"
-                                android:text="Sách xưa / Kỷ niệm"
-                                android:textColor="@color/on_secondary_container"
-                                android:textSize="10sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="Trao đổi tự nguyện"
-                                android:textColor="@color/secondary"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Đắc Nhân Tâm (Bản in cũ 1998)"
-                            android:textColor="@color/primary"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Minh Tuấn • Uy tín 4.9★"
-                            android:textColor="@color/secondary"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:background="@drawable/bg_tips_card"
-                            android:padding="6dp"
-                            android:text="Trạng thái: Chờ gán nhãn danh mục 'Sưu tầm hiếm'."
-                            android:textColor="@color/text_primary"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="36dp"
-                        android:layout_weight="2"
-                        android:background="@drawable/bg_btn_primary"
-                        android:gravity="center"
-                        android:text="Duyệt nhanh &amp; Phân loại"
-                        android:textColor="@color/white"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="36dp"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_pill_inactive"
-                        android:gravity="center"
-                        android:text="Chuyển tiếp"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
+                android:nestedScrollingEnabled="false"
+                tools:listitem="@layout/item_book" />
 
             <!-- 6. Bottom Log Activity Micro-widget -->
             <LinearLayout
+                android:id="@+id/cardSystemLog"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
@@ -1023,16 +686,17 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Nhật ký hệ thống hôm nay"
+                        android:text="Trạng thái cơ sở dữ liệu"
                         android:textColor="@color/primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvAdminLogSummary"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Đã duyệt 142 bài • Xử lý 9 khiếu nại"
+                        android:text="Đang đồng bộ dữ liệu thực..."
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>

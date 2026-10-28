@@ -17,6 +17,8 @@ public interface BookDao {
     @Query("SELECT * FROM book_table ORDER BY createdAt DESC") LiveData<List<Book>> getAllBooks();
     @Query("SELECT * FROM book_table WHERE id = :id")
     LiveData<Book> getBook(String id);
+    @Query("SELECT * FROM book_table WHERE ownerId = :ownerId ORDER BY createdAt DESC")
+    LiveData<List<Book>> getBooksByOwner(String ownerId);
     @Query("SELECT * FROM book_table WHERE (title LIKE '%' || :q || '%' OR author LIKE '%' || :q || '%') ORDER BY createdAt DESC") LiveData<List<Book>> search(String q);
     @Query("SELECT * FROM book_table WHERE category = :category ORDER BY createdAt DESC") LiveData<List<Book>> getBooksByCategory(String category);
     @Query("UPDATE book_table SET viewCount = COALESCE(viewCount, 0) + 1 WHERE id = :id") void incrementViewCount(String id);
