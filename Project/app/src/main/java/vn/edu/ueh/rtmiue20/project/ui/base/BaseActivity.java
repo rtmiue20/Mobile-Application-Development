@@ -1,11 +1,13 @@
 package vn.edu.ueh.rtmiue20.project.ui.base;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
 
 public class BaseActivity extends AppCompatActivity {
@@ -29,8 +31,12 @@ public class BaseActivity extends AppCompatActivity {
      */
     protected void handleSmartBack() {
         if (isTaskRoot()) {
-            // Nếu đây là màn hình duy nhất còn lại trong stack -> Tránh thoát app, quay về Home
-            Intent intent = new Intent(this, HomeActivity.class);
+            SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+            String role = prefs.getString("user_role", "");
+            Class<?> targetHome = "admin".equalsIgnoreCase(role)
+                    ? AdminDashboardActivity.class
+                    : HomeActivity.class;
+            Intent intent = new Intent(this, targetHome);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
         }

@@ -20,14 +20,11 @@
         android:paddingHorizontal="16dp">
 
         <ImageView
-            android:id="@+id/btnBack"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Quay lại"
-            android:padding="6dp"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="@color/text_primary" />
+            android:id="@+id/ivAdminBrandLogo"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:contentDescription="BookShare Logo"
+            android:src="@drawable/ic_bookshare_logo" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -96,7 +93,7 @@
             app:tint="@color/secondary" />
     </LinearLayout>
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:id="@+id/adminScrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -318,10 +315,15 @@
 
                 <!-- Metric 3: Yêu cầu trao đổi chờ xử lý -->
                 <LinearLayout
+                    android:id="@+id/cardTotalRequests"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:background="@drawable/bg_tips_card"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:descendantFocusability="blocksDescendants"
                     android:orientation="vertical"
                     android:padding="14dp">
 
@@ -389,10 +391,13 @@
 
                 <!-- Metric 4: Bài đăng đã ẩn / khóa -->
                 <LinearLayout
+                    android:id="@+id/cardFlaggedItems"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
                     android:background="@drawable/bg_tips_card"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:orientation="vertical"
                     android:padding="14dp">
 
@@ -632,6 +637,11 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="4dp"
                     android:text="Chạm vào sách để kiểm duyệt ›"
                     android:textColor="@color/secondary"
                     android:textSize="12sp"
@@ -665,6 +675,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:background="@drawable/bg_login_card"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="16dp">
@@ -710,5 +722,5 @@
             </LinearLayout>
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 </LinearLayout>

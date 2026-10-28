@@ -6,6 +6,26 @@ import androidx.room.PrimaryKey;
 
 @Entity(tableName = "book_table")
 public class Book {
+    // TC-ADMIN-06: Trạng thái kiểm duyệt bài đăng
+    public static final String STATUS_AVAILABLE = "available";        // Đã duyệt - Tặng miễn phí
+    public static final String STATUS_EXCHANGING = "exchanging";      // Đã duyệt - Đang trao đổi
+    public static final String STATUS_PENDING_REVIEW = "pending_review"; // Member mới đăng, chờ Admin duyệt
+    public static final String STATUS_HIDDEN = "hidden";              // Admin ẩn bài vi phạm
+
+    /** Sách đang chờ Admin kiểm duyệt (dùng static để Firestore/Room không coi là field). */
+    public static boolean isPendingReview(Book b) {
+        return b != null && STATUS_PENDING_REVIEW.equalsIgnoreCase(b.getStatus());
+    }
+
+    /**
+     * Trạng thái công khai sau khi Admin phê duyệt: suy ra từ hình thức chia sẻ
+     * mà Member đã chọn (lưu trong mô tả bởi CreatePostActivity).
+     */
+    public static String resolveApprovedStatus(Book b) {
+        String desc = (b != null && b.getDescription() != null) ? b.getDescription() : "";
+        return desc.contains("Trao đổi sách khác") ? STATUS_EXCHANGING : STATUS_AVAILABLE;
+    }
+
     @PrimaryKey
     @NonNull
     private String id = "";
