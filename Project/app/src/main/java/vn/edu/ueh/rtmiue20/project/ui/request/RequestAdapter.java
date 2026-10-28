@@ -1,6 +1,7 @@
 package vn.edu.ueh.rtmiue20.project.ui.request;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.text.format.DateUtils;
@@ -24,6 +25,7 @@ import java.util.List;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Request;
+import vn.edu.ueh.rtmiue20.project.ui.book.BookDetailActivity;
 import vn.edu.ueh.rtmiue20.project.util.FCMSender;
 import vn.edu.ueh.rtmiue20.project.util.LocationHelper;
 
@@ -38,10 +40,15 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
     private final List<Request> requests = new ArrayList<>();
     private final OnRequestActionListener listener;
     private boolean isSentTab;
+    private boolean isAdminMode = false;
 
     public RequestAdapter(boolean isSentTab, OnRequestActionListener listener) {
         this.isSentTab = isSentTab;
         this.listener = listener;
+    }
+
+    public void setAdminMode(boolean isAdminMode) {
+        this.isAdminMode = isAdminMode;
     }
 
     public void setSentTab(boolean isSentTab) {
@@ -76,6 +83,17 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
 
         holder.tvBookTitle.setText(request.getBookTitle() != null ? request.getBookTitle() : "Sách không tên");
         holder.tvMessage.setText(request.getMessage() != null ? request.getMessage() : "Xin chào, mình rất muốn nhận cuốn sách này!");
+
+        // Cho phép bấm vào ảnh bìa sách hoặc tên sách để xem chi tiết
+        View.OnClickListener openBookDetailListener = v -> {
+            if (request.getBookId() != null && !request.getBookId().isEmpty()) {
+                Intent detailIntent = new Intent(v.getContext(), BookDetailActivity.class);
+                detailIntent.putExtra("bookId", request.getBookId());
+                v.getContext().startActivity(detailIntent);
+            }
+        };
+        holder.ivBookCover.setOnClickListener(openBookDetailListener);
+        holder.tvBookTitle.setOnClickListener(openBookDetailListener);
 
         // Tác giả sách
         if (request.getBookAuthor() != null && !request.getBookAuthor().trim().isEmpty()) {
@@ -121,8 +139,35 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
             holder.tvAppointmentDetail.setText("Địa điểm trao đổi: Đại học Kinh Tế TP. Hồ Chí Minh - Cơ sở B (" + LocationHelper.UEH_CAMPUS_B_ADDRESS + ")");
         }
 
-        // UI Logic dựa vào Tab (isSentTab)
-        if (isSentTab) {
+        // UI Logic dựa vào Admin mode hoặc Tab (isSentTab)
+        if (isAdminMode) {
+            // CHẾ ĐỘ ADMIN: Hiển thị đầy đủ thông tin giao dịch giữa Người xin và Chủ sách
+            String personInfo = "Người xin: " + (request.getRequesterName() != null ? request.getRequesterName() : "Bạn đọc");
+            if (request.getOwnerName() != null && !request.getOwnerName().isEmpty()) {
+                personInfo += "  •  Chủ sách: " + request.getOwnerName();
+            }
+            holder.tvPersonName.setText(personInfo);
+
+            if (request.getRequesterAvatar() != null && !request.getRequesterAvatar().isEmpty()) {
+                Glide.with(holder.itemView.getContext()).load(request.getRequesterAvatar()).into(holder.ivUserAvatar);
+            } else {
+                holder.ivUserAvatar.setImageResource(R.drawable.ic_person);
+            }
+
+            holder.tvBookTag.setVisibility(View.VISIBLE);
+
+            if (Request.STATUS_PENDING.equalsIgnoreCase(request.getStatus())) {
+                setupStatusBadge(holder.tvStatusBadge, "Chờ kiểm duyệt", "#E65100", "#FFF3E0");
+                holder.btnReject.setVisibility(View.VISIBLE);
+                holder.btnAccept.setVisibility(View.VISIBLE);
+            } else if (Request.STATUS_ACCEPTED.equalsIgnoreCase(request.getStatus())) {
+                setupStatusBadge(holder.tvStatusBadge, "Đã phê duyệt", "#1B5E20", "#E8F5E9");
+                holder.layoutAppointment.setVisibility(View.VISIBLE);
+            } else {
+                setupStatusBadge(holder.tvStatusBadge, "Đã từ chối", "#B71C1C", "#FFEBEE");
+            }
+
+        } else if (isSentTab) {
             // TAB "ĐÃ GỬI" (Người xin sách xem)
             holder.tvPersonName.setText("Gửi tới: " + (request.getOwnerName() != null ? request.getOwnerName() : "Chủ sách"));
             holder.ivUserAvatar.setImageResource(R.drawable.ic_person);

@@ -44,6 +44,7 @@ import java.util.Set;
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.data.model.Request;
+import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.book.BookDetailActivity;
 import vn.edu.ueh.rtmiue20.project.ui.book.CreatePostActivity;
 import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
@@ -66,6 +67,7 @@ public class HomeActivity extends AppCompatActivity {
     private TextView tvEmptyBooks;
     private TextView tvBookCountBadge;
 
+    private TextView btnBackToAdminDashboard;
     private ImageView btnNotifications;
     private ImageView btnGoToProfile;
     private View btnFilter;
@@ -219,9 +221,13 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void loadHeaderUserAvatar() {
-        if (btnGoToProfile == null) return;
         android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
-        if (prefs.contains("user_avatar_url")) {
+        if (btnBackToAdminDashboard != null) {
+            boolean isCachedAdmin = "admin".equalsIgnoreCase(prefs.getString("user_role", ""));
+            btnBackToAdminDashboard.setVisibility(isCachedAdmin ? View.VISIBLE : View.GONE);
+        }
+
+        if (btnGoToProfile != null && prefs.contains("user_avatar_url")) {
             String cachedAvatar = prefs.getString("user_avatar_url", "");
             vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(this, btnGoToProfile, cachedAvatar, true);
         }
@@ -237,8 +243,19 @@ public class HomeActivity extends AppCompatActivity {
                             String avatarUrl = (userProfile != null && userProfile.getAvatarUrl() != null)
                                     ? userProfile.getAvatarUrl()
                                     : "";
-                            prefs.edit().putString("user_avatar_url", avatarUrl).apply();
-                            vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(HomeActivity.this, btnGoToProfile, avatarUrl, true);
+                            String role = (userProfile != null && userProfile.getRole() != null)
+                                    ? userProfile.getRole()
+                                    : "member";
+                            prefs.edit()
+                                    .putString("user_avatar_url", avatarUrl)
+                                    .putString("user_role", role)
+                                    .apply();
+                            if (btnBackToAdminDashboard != null) {
+                                btnBackToAdminDashboard.setVisibility("admin".equalsIgnoreCase(role) ? View.VISIBLE : View.GONE);
+                            }
+                            if (btnGoToProfile != null) {
+                                vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(HomeActivity.this, btnGoToProfile, avatarUrl, true);
+                            }
                         }
 
                         @Override
@@ -340,6 +357,7 @@ public class HomeActivity extends AppCompatActivity {
         tvEmptyBooks = findViewById(R.id.tvEmptyBooks);
         tvBookCountBadge = findViewById(R.id.tvBookCountBadge);
 
+        btnBackToAdminDashboard = findViewById(R.id.btnBackToAdminDashboard);
         btnNotifications = findViewById(R.id.btnNotifications);
         btnGoToProfile = findViewById(R.id.btnGoToProfile);
         btnFilter = findViewById(R.id.btnFilter);
@@ -375,6 +393,15 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
+        if (btnBackToAdminDashboard != null) {
+            btnBackToAdminDashboard.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, AdminDashboardActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+                finish();
+            });
+        }
+
         // Search text watcher
         etSearchBook.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -487,7 +514,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private void setupPressEffects() {
         ViewPressEffectHelper.applyPressEffect(
-                btnNotifications, btnGoToProfile, btnClearSearch,
+                btnBackToAdminDashboard, btnNotifications, btnGoToProfile, btnClearSearch,
                 pillAll, pillLiterature, pillEconomics, pillTextbook, pillOther,
                 btnFilter, btnPrevPage, btnNextPage,
                 btnNavHome, btnNavSearch, fabAddBook, btnNavRequests, btnNavProfile
@@ -717,11 +744,19 @@ public class HomeActivity extends AppCompatActivity {
 
         currentFilteredList = new ArrayList<>();
         String searchQuery = etSearchBook != null ? etSearchBook.getText().toString().trim().toLowerCase() : "";
+        FirebaseUser currentUserForFilter = FirebaseAuth.getInstance().getCurrentUser();
+        String currentUidForFilter = currentUserForFilter != null ? currentUserForFilter.getUid() : null;
 
         for (Book b : allBooksList) {
             // 1. Check status hidden
             String status = b.getStatus();
             if ("hidden".equalsIgnoreCase(status)) {
+                continue;
+            }
+
+            // 1b. TC-ADMIN-06: Sách chờ Admin duyệt chỉ hiển thị cho chính người đăng (nhãn "Chờ duyệt")
+            if (Book.isPendingReview(b)
+                    && (currentUidForFilter == null || !currentUidForFilter.equals(b.getOwnerId()))) {
                 continue;
             }
 

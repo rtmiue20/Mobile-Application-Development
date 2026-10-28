@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 
 import vn.edu.ueh.rtmiue20.project.data.model.Request;
 
@@ -41,6 +40,7 @@ public class RequestRepository {
 
     private final MutableLiveData<List<Request>> receivedLiveData = new MutableLiveData<List<Request>>();
     private final MutableLiveData<List<Request>> sentLiveData = new MutableLiveData<List<Request>>();
+    private final MutableLiveData<List<Request>> allRequestsLiveData = new MutableLiveData<List<Request>>();
 
     private final MutableLiveData<Boolean> actionSuccess = new MutableLiveData<Boolean>();
     private final MutableLiveData<String> actionError = new MutableLiveData<String>();
@@ -49,6 +49,7 @@ public class RequestRepository {
 
     private ListenerRegistration receivedListener;
     private ListenerRegistration sentListener;
+    private ListenerRegistration allRequestsListener;
     private String currentOwnerListening = null;
     private String currentRequesterListening = null;
 
@@ -115,21 +116,21 @@ public class RequestRepository {
                         // --- GỌI FCM: TÌM TOKEN CHỦ SÁCH VÀ BẮN THÔNG BÁO ---
                         if (request.getOwnerId() != null && !request.getOwnerId().isEmpty()) {
                             firestore.collection("users").document(request.getOwnerId()).get()
-                                    .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                                        @Override
-                                        public void onSuccess(DocumentSnapshot documentSnapshot) {
-                                            if (documentSnapshot.exists() && documentSnapshot.contains("fcmToken")) {
-                                                String token = documentSnapshot.getString("fcmToken");
-                                                if (token != null && !token.isEmpty()) {
-                                                    vn.edu.ueh.rtmiue20.project.util.FCMSender.pushNotification(
-                                                            token,
-                                                            "Yêu cầu nhận sách mới!",
-                                                            request.getRequesterName() + " muốn nhận cuốn " + request.getBookTitle() + " của bạn."
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    });
+                                     .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                         @Override
+                                         public void onSuccess(DocumentSnapshot documentSnapshot) {
+                                             if (documentSnapshot.exists() && documentSnapshot.contains("fcmToken")) {
+                                                 String token = documentSnapshot.getString("fcmToken");
+                                                 if (token != null && !token.isEmpty()) {
+                                                     vn.edu.ueh.rtmiue20.project.util.FCMSender.pushNotification(
+                                                             token,
+                                                             "Yêu cầu nhận sách mới!",
+                                                             request.getRequesterName() + " muốn nhận cuốn " + request.getBookTitle() + " của bạn."
+                                                     );
+                                                 }
+                                             }
+                                         }
+                                     });
                         }
                     }
                 })
@@ -138,7 +139,6 @@ public class RequestRepository {
                     public void onFailure(@NonNull Exception e) {
                         String msg = e.getMessage() != null ? e.getMessage() : "";
                         if (msg.contains("PERMISSION_DENIED")) {
-                            // Vẫn giữ request ở local để người dùng xem và test mượt mà không báo lỗi
                             android.util.Log.w("RequestRepository", "Firestore PERMISSION_DENIED cho 'requests', đang dùng dữ liệu cục bộ.");
                             actionSuccess.setValue(true);
                         } else {
@@ -150,7 +150,6 @@ public class RequestRepository {
 
     public LiveData<List<Request>> getReceivedRequests(final String ownerId) {
         currentOwnerListening = ownerId;
-        // Hiển thị ngay từ bộ nhớ cục bộ
         receivedLiveData.setValue(getLocalReceived(ownerId));
 
         if (receivedListener != null) {
@@ -168,7 +167,6 @@ public class RequestRepository {
                             } else {
                                 actionError.setValue("Không thể tải yêu cầu đến: " + error.getMessage());
                             }
-                            // Luôn hiển thị dữ liệu cục bộ khi có lỗi
                             receivedLiveData.setValue(getLocalReceived(ownerId));
                             return;
                         }
@@ -184,7 +182,6 @@ public class RequestRepository {
 
     public LiveData<List<Request>> getSentRequests(final String requesterId) {
         currentRequesterListening = requesterId;
-        // Hiển thị ngay từ bộ nhớ cục bộ
         sentLiveData.setValue(getLocalSent(requesterId));
 
         if (sentListener != null) {
@@ -213,6 +210,49 @@ public class RequestRepository {
                     }
                 });
         return sentLiveData;
+    }
+
+    /** TC-ADMIN-07: Admin Dashboard quan sát tất cả yêu cầu (Realtime Firestore + Offline Room/Prefs) */
+    public LiveData<List<Request>> getAllRequests() {
+        loadLocalCacheFromPrefs();
+        allRequestsLiveData.setValue(getAllLocalRequests());
+
+        if (allRequestsListener != null) {
+            allRequestsListener.remove();
+        }
+        allRequestsListener = firestore.collection(COLLECTION_REQUESTS)
+                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot snapshots,
+                                        @Nullable FirebaseFirestoreException error) {
+                        if (error != null) {
+                            android.util.Log.w("RequestRepository", "Firestore getAllRequests: " + error.getMessage() + ". Dùng dữ liệu cục bộ.");
+                            allRequestsLiveData.setValue(getAllLocalRequests());
+                            return;
+                        }
+                        if (snapshots != null) {
+                            List<Request> remoteList = toRequestList(snapshots);
+                            mergeRemoteRequests(remoteList);
+                            allRequestsLiveData.setValue(getAllLocalRequests());
+                        }
+                    }
+                });
+        return allRequestsLiveData;
+    }
+
+    public synchronized List<Request> getAllLocalRequests() {
+        loadLocalCacheFromPrefs();
+        List<Request> list = new ArrayList<>(localCache);
+        Collections.sort(list, new Comparator<Request>() {
+            @Override
+            public int compare(Request a, Request b) {
+                boolean pa = Request.STATUS_PENDING.equalsIgnoreCase(a.getStatus());
+                boolean pb = Request.STATUS_PENDING.equalsIgnoreCase(b.getStatus());
+                if (pa != pb) return pa ? -1 : 1;
+                return Long.compare(b.getTimestamp(), a.getTimestamp());
+            }
+        });
+        return list;
     }
 
     public void updateRequestStatus(final String requestId, final String newStatus) {
@@ -272,6 +312,7 @@ public class RequestRepository {
             localCache.add(0, request);
         }
         saveLocalCacheToPrefs();
+        allRequestsLiveData.setValue(getAllLocalRequests());
     }
 
     private synchronized void updateLocalRequestStatus(String requestId, String status) {
@@ -282,6 +323,7 @@ public class RequestRepository {
             }
         }
         saveLocalCacheToPrefs();
+        allRequestsLiveData.setValue(getAllLocalRequests());
         if (currentOwnerListening != null) {
             receivedLiveData.setValue(getLocalReceived(currentOwnerListening));
         }
@@ -298,6 +340,7 @@ public class RequestRepository {
             }
         }
         saveLocalCacheToPrefs();
+        allRequestsLiveData.setValue(getAllLocalRequests());
         if (currentOwnerListening != null) {
             receivedLiveData.setValue(getLocalReceived(currentOwnerListening));
         }
@@ -323,6 +366,7 @@ public class RequestRepository {
             }
         }
         saveLocalCacheToPrefs();
+        allRequestsLiveData.setValue(getAllLocalRequests());
     }
 
     private synchronized List<Request> getLocalReceived(String ownerId) {
@@ -436,6 +480,10 @@ public class RequestRepository {
         if (sentListener != null) {
             sentListener.remove();
             sentListener = null;
+        }
+        if (allRequestsListener != null) {
+            allRequestsListener.remove();
+            allRequestsListener = null;
         }
     }
 

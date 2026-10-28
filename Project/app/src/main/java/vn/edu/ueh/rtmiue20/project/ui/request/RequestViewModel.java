@@ -20,6 +20,11 @@ public class RequestViewModel extends ViewModel {
         return repository.getSentRequests(requesterId);
     }
 
+    /** TC-ADMIN-07: Admin Dashboard quan sát và kiểm duyệt tất cả yêu cầu */
+    public LiveData<List<Request>> getAllRequests() {
+        return repository.getAllRequests();
+    }
+
     public void sendRequest(Request request) {
         repository.sendRequest(request);
     }

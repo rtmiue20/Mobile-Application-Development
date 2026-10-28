@@ -10,6 +10,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.widget.ImageViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -29,6 +30,7 @@ public class UserManageAdapter extends RecyclerView.Adapter<UserManageAdapter.Us
     public interface OnUserActionListener {
         void onLock(User user);
         void onUnlock(User user);
+        void onResetPassword(User user);
     }
 
     private List<User> userList = new ArrayList<>();
@@ -87,7 +89,7 @@ public class UserManageAdapter extends RecyclerView.Adapter<UserManageAdapter.Us
         }
 
         // 5. Status & Lock/Unlock state
-        boolean isLocked = "locked".equalsIgnoreCase(user.getStatus());
+        boolean isLocked = "locked".equalsIgnoreCase(user.getStatus()) || "banned".equalsIgnoreCase(user.getStatus());
         if (isLocked) {
             holder.tvFullName.setPaintFlags(holder.tvFullName.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
             holder.tvFullName.setAlpha(0.7f);
@@ -119,14 +121,24 @@ public class UserManageAdapter extends RecyclerView.Adapter<UserManageAdapter.Us
             holder.dotStatus.setBackgroundResource(R.drawable.bg_fab_add);
             holder.layoutLockReason.setVisibility(View.GONE);
 
-            holder.tvActionSubtitle.setText("Đang hoạt động bình thường");
-
-            holder.btnLockUser.setVisibility(View.VISIBLE);
-            holder.btnUnlockUser.setVisibility(View.GONE);
+            String currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+            boolean isSelfAdmin = currentUid != null && currentUid.equals(user.getUid());
+            if (isSelfAdmin) {
+                holder.tvActionSubtitle.setText("Phiên Quản trị viên của bạn (Đang đăng nhập)");
+                holder.btnLockUser.setVisibility(View.GONE);
+                holder.btnUnlockUser.setVisibility(View.GONE);
+            } else {
+                holder.tvActionSubtitle.setText("Đang hoạt động bình thường");
+                holder.btnLockUser.setVisibility(View.VISIBLE);
+                holder.btnUnlockUser.setVisibility(View.GONE);
+            }
         }
 
         // 6. Avatar
         if (user.getAvatarUrl() != null && !user.getAvatarUrl().trim().isEmpty()) {
+            ImageViewCompat.setImageTintList(holder.ivUserAvatar, null);
+            holder.ivUserAvatar.clearColorFilter();
+            holder.ivUserAvatar.setPadding(0, 0, 0, 0);
             Glide.with(context)
                     .load(user.getAvatarUrl())
                     .placeholder(R.drawable.ic_person)
@@ -134,11 +146,22 @@ public class UserManageAdapter extends RecyclerView.Adapter<UserManageAdapter.Us
                     .circleCrop()
                     .into(holder.ivUserAvatar);
         } else {
+            try {
+                Glide.with(context.getApplicationContext()).clear(holder.ivUserAvatar);
+            } catch (Exception ignored) {}
             holder.ivUserAvatar.setImageResource(R.drawable.ic_person);
+            int padPx = Math.round(6f * context.getResources().getDisplayMetrics().density);
+            holder.ivUserAvatar.setPadding(padPx, padPx, padPx, padPx);
             holder.ivUserAvatar.setColorFilter(context.getResources().getColor(R.color.outline));
         }
 
         // 7. Actions Click Listeners
+        if (holder.btnResetPassword != null) {
+            holder.btnResetPassword.setOnClickListener(v -> {
+                if (listener != null) listener.onResetPassword(user);
+            });
+        }
+
         holder.btnLockUser.setOnClickListener(v -> {
             if (listener != null) listener.onLock(user);
         });
@@ -147,7 +170,7 @@ public class UserManageAdapter extends RecyclerView.Adapter<UserManageAdapter.Us
             if (listener != null) listener.onUnlock(user);
         });
 
-        ViewPressEffectHelper.applyPressEffect(holder.btnLockUser, holder.btnUnlockUser);
+        ViewPressEffectHelper.applyPressEffect(holder.btnResetPassword, holder.btnLockUser, holder.btnUnlockUser);
     }
 
     @Override
@@ -161,7 +184,7 @@ public class UserManageAdapter extends RecyclerView.Adapter<UserManageAdapter.Us
         TextView tvFullName, tvAdminBadge, tvStatusBadge;
         TextView tvEmail, tvUid, tvRoleTag, tvCreatedAt;
         LinearLayout layoutLockReason;
-        TextView tvLockReason, tvActionSubtitle;
+        TextView tvLockReason, tvActionSubtitle, btnResetPassword;
         LinearLayout btnLockUser, btnUnlockUser;
 
         UserViewHolder(@NonNull View itemView) {
@@ -178,6 +201,7 @@ public class UserManageAdapter extends RecyclerView.Adapter<UserManageAdapter.Us
             layoutLockReason = itemView.findViewById(R.id.layoutLockReason);
             tvLockReason = itemView.findViewById(R.id.tvLockReason);
             tvActionSubtitle = itemView.findViewById(R.id.tvActionSubtitle);
+            btnResetPassword = itemView.findViewById(R.id.btnResetPassword);
             btnLockUser = itemView.findViewById(R.id.btnLockUser);
             btnUnlockUser = itemView.findViewById(R.id.btnUnlockUser);
         }

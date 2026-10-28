@@ -514,7 +514,8 @@ public class BookDetailActivity extends AppCompatActivity {
 
                     vn.edu.ueh.rtmiue20.project.data.model.Request newRequest = new vn.edu.ueh.rtmiue20.project.data.model.Request(
                             null, bookId, currentBookTitle, coverUrl, user.getUid(), userName, userAvatar,
-                            currentOwnerId, ownerNameText, msg,
+                            (currentOwnerId != null && !currentOwnerId.isEmpty()) ? currentOwnerId :
+                                    (bookViewModel.getBook(bookId).getValue() != null ? bookViewModel.getBook(bookId).getValue().getOwnerId() : ""), ownerNameText, msg,
                             vn.edu.ueh.rtmiue20.project.data.model.Request.STATUS_PENDING, System.currentTimeMillis()
                     );
                     if (currentBookAuthor != null && !currentBookAuthor.isEmpty()) {

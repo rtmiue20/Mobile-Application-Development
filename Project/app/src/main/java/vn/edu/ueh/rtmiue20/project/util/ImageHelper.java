@@ -128,4 +128,36 @@ public class ImageHelper {
             }
         }
     }
+
+    /**
+     * Đồng bộ hiển thị ảnh đại diện Admin ở góc trên bên phải (ivAdminAvatar).
+     * Khi có ảnh: hiển thị ảnh tròn rõ nét. Khi chưa có ảnh: hiển thị icon mặc định với màu secondary.
+     */
+    public static void bindAdminHeaderAvatar(Context context, android.widget.ImageView imageView, String avatarUrl) {
+        if (context == null || imageView == null) return;
+        if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
+            androidx.core.widget.ImageViewCompat.setImageTintList(imageView, null);
+            imageView.clearColorFilter();
+            imageView.setPadding(0, 0, 0, 0);
+            com.bumptech.glide.Glide.with(context)
+                    .load(avatarUrl)
+                    .circleCrop()
+                    .placeholder(vn.edu.ueh.rtmiue20.project.R.drawable.ic_person)
+                    .error(vn.edu.ueh.rtmiue20.project.R.drawable.ic_person)
+                    .into(imageView);
+        } else {
+            try {
+                com.bumptech.glide.Glide.with(context.getApplicationContext()).clear(imageView);
+            } catch (Exception ignored) {}
+            imageView.setImageResource(vn.edu.ueh.rtmiue20.project.R.drawable.ic_person);
+            int padPx = Math.round(2f * context.getResources().getDisplayMetrics().density);
+            imageView.setPadding(padPx, padPx, padPx, padPx);
+            int tintColor = androidx.core.content.ContextCompat.getColor(
+                    context, vn.edu.ueh.rtmiue20.project.R.color.secondary);
+            androidx.core.widget.ImageViewCompat.setImageTintList(
+                    imageView,
+                    android.content.res.ColorStateList.valueOf(tintColor)
+            );
+        }
+    }
 }

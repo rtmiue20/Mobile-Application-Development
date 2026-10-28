@@ -1,6 +1,7 @@
 package vn.edu.ueh.rtmiue20.project.ui.profile;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -17,7 +18,6 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -67,6 +67,7 @@ public class ProfileActivity extends BaseActivity {
 
     private int booksGivenVal = 0;
     private int booksReceivedVal = 0;
+    private boolean isAdminUser = false;
 
     private ActivityResultLauncher<String[]> imagePickerLauncher;
 
@@ -84,6 +85,9 @@ public class ProfileActivity extends BaseActivity {
                 return insets;
             });
         }
+
+        SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        isAdminUser = "admin".equalsIgnoreCase(prefs.getString("user_role", ""));
 
         authRepository = AuthRepository.getInstance();
         userRepository = UserRepository.getInstance();
@@ -143,7 +147,10 @@ public class ProfileActivity extends BaseActivity {
 
         if (layoutBrandLogo != null) {
             layoutBrandLogo.setOnClickListener(v -> {
-                Intent intent = new Intent(ProfileActivity.this, HomeActivity.class);
+                SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+                boolean isAdmin = isAdminUser || "admin".equalsIgnoreCase(prefs.getString("user_role", ""));
+                Class<?> targetHome = isAdmin ? AdminDashboardActivity.class : HomeActivity.class;
+                Intent intent = new Intent(ProfileActivity.this, targetHome);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
                 finish();
@@ -228,7 +235,7 @@ public class ProfileActivity extends BaseActivity {
 
         String immediateName = currentUser.getDisplayName();
         if (immediateName == null || immediateName.trim().isEmpty()) {
-            android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+            SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
             immediateName = prefs.getString("user_fullname", "");
         }
         if (immediateName == null || immediateName.trim().isEmpty()) {
@@ -252,12 +259,18 @@ public class ProfileActivity extends BaseActivity {
                     }
                 }
 
+                String role = user.getRole() != null ? user.getRole() : "member";
+                isAdminUser = "admin".equalsIgnoreCase(role);
+
                 if (tvProfileRole != null) {
-                    if ("admin".equalsIgnoreCase(user.getRole())) {
+                    if (isAdminUser) {
                         tvProfileRole.setText("✔ Quản trị viên (Admin) - Chạm để vào Dashboard");
-                        tvProfileRole.setOnClickListener(v ->
-                                startActivity(new Intent(ProfileActivity.this, AdminDashboardActivity.class))
-                        );
+                        tvProfileRole.setOnClickListener(v -> {
+                            Intent intent = new Intent(ProfileActivity.this, AdminDashboardActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                            startActivity(intent);
+                            finish();
+                        });
                     } else {
                         tvProfileRole.setText("✔ Thành viên uy tín 5 sao");
                     }
@@ -266,6 +279,7 @@ public class ProfileActivity extends BaseActivity {
                 String avatarToLoad = user.getAvatarUrl() != null ? user.getAvatarUrl() : "";
                 getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
                         .putString("user_avatar_url", avatarToLoad)
+                        .putString("user_role", role)
                         .apply();
                 vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(ProfileActivity.this, ivAvatar, avatarToLoad, false);
                 vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(ProfileActivity.this, ivHeaderAvatar, avatarToLoad, false);
@@ -363,8 +377,12 @@ public class ProfileActivity extends BaseActivity {
     }
 
     private void handleLogout() {
-        android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
-        prefs.edit().remove("user_fullname").remove("user_avatar_url").apply();
+        SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        prefs.edit()
+                .remove("user_fullname")
+                .remove("user_avatar_url")
+                .remove("user_role")
+                .apply();
         authRepository.logout();
         Toast.makeText(this, "Đã đăng xuất khỏi BookShare.", Toast.LENGTH_SHORT).show();
         navigateToLogin();
