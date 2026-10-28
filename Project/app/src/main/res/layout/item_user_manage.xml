@@ -212,34 +212,52 @@
             android:background="@color/divider_color" />
 
         <!-- Bottom Action Row -->
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp">
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/tvActionSubtitle"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:text="Lần hoạt động: Vừa xong"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Đang hoạt động bình thường"
                 android:textColor="@color/outline"
                 android:textSize="11sp" />
+
+            <!-- Reset Password Button -->
+            <TextView
+                android:id="@+id/btnResetPassword"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_pill_inactive"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:text="Cấp lại mật khẩu"
+                android:textColor="@color/primary"
+                android:textSize="11sp"
+                android:textStyle="bold" />
 
             <!-- Lock Button (When user is active) -->
             <LinearLayout
                 android:id="@+id/btnLockUser"
                 android:layout_width="wrap_content"
                 android:layout_height="34dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
+                android:layout_marginStart="6dp"
                 android:background="@drawable/bg_btn_lock"
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center"
                 android:orientation="horizontal"
-                android:paddingHorizontal="14dp">
+                android:paddingHorizontal="12dp">
 
                 <ImageView
                     android:layout_width="14dp"
@@ -252,9 +270,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="4dp"
-                    android:text="Khóa tài khoản"
+                    android:text="Khóa"
                     android:textColor="@color/error"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -263,14 +281,13 @@
                 android:id="@+id/btnUnlockUser"
                 android:layout_width="wrap_content"
                 android:layout_height="34dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
+                android:layout_marginStart="6dp"
                 android:background="@drawable/bg_btn_unlock"
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center"
                 android:orientation="horizontal"
-                android:paddingHorizontal="14dp"
+                android:paddingHorizontal="12dp"
                 android:visibility="gone">
 
                 <ImageView
@@ -284,11 +301,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="4dp"
-                    android:text="Mở khóa tài khoản"
+                    android:text="Mở khóa"
                     android:textColor="@color/white"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
-        </RelativeLayout>
+        </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

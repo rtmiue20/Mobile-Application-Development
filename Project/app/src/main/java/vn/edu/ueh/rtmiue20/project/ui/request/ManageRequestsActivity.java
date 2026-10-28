@@ -16,15 +16,16 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Request;
 import vn.edu.ueh.rtmiue20.project.data.repository.RequestRepository;
+import vn.edu.ueh.rtmiue20.project.ui.book.BookDetailActivity;
 import vn.edu.ueh.rtmiue20.project.ui.book.CreatePostActivity;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
 import vn.edu.ueh.rtmiue20.project.ui.profile.ProfileActivity;
@@ -32,13 +33,15 @@ import vn.edu.ueh.rtmiue20.project.ui.profile.ProfileActivity;
 public class ManageRequestsActivity extends AppCompatActivity {
 
     private ImageView btnBack, ivAvatarSmall;
-    private TextView tvTabReceived, tvTabSent, tvEmpty, tvSummaryCount;
+    private TextView tvHeaderTitle, tvTabReceived, tvTabSent, tvEmpty, tvSummaryCount;
     private LinearLayout layoutSummaryBanner;
+    private View bottomNavContainer;
     private RecyclerView rvRequests;
 
     private RequestViewModel viewModel;
     private RequestAdapter adapter;
     private String currentUserId;
+    private boolean isAdminMode = false;
 
     private LiveData<List<Request>> currentLiveData;
     private Observer<List<Request>> requestsObserver;
@@ -61,22 +64,42 @@ public class ManageRequestsActivity extends AppCompatActivity {
         // Khởi tạo Repository với Context
         RequestRepository.getInstance(this);
 
+        isAdminMode = getIntent().getBooleanExtra("is_admin_mode", false);
+
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
+        if (user == null && !isAdminMode) {
             Toast.makeText(this, "Vui lòng đăng nhập.", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
-        currentUserId = user.getUid();
+        currentUserId = user != null ? user.getUid() : "admin";
 
         btnBack = findViewById(R.id.btnBack);
         ivAvatarSmall = findViewById(R.id.ivAvatarSmall);
+        tvHeaderTitle = findViewById(R.id.tvHeaderTitle);
         tvTabReceived = findViewById(R.id.tvTabReceived);
         tvTabSent = findViewById(R.id.tvTabSent);
         tvEmpty = findViewById(R.id.tvEmpty);
         tvSummaryCount = findViewById(R.id.tvSummaryCount);
         layoutSummaryBanner = findViewById(R.id.layoutSummaryBanner);
+        bottomNavContainer = findViewById(R.id.bottomNavContainer);
         rvRequests = findViewById(R.id.rvRequests);
+
+        // Chế độ Admin: Tùy biến giao diện phù hợp với việc kiểm duyệt toàn hệ thống
+        if (isAdminMode) {
+            if (tvHeaderTitle != null) {
+                tvHeaderTitle.setText("Kiểm duyệt Yêu cầu Giao dịch");
+            }
+            if (tvTabReceived != null) {
+                tvTabReceived.setText("Chờ kiểm duyệt");
+            }
+            if (tvTabSent != null) {
+                tvTabSent.setText("Tất cả giao dịch");
+            }
+            if (bottomNavContainer != null) {
+                bottomNavContainer.setVisibility(View.GONE);
+            }
+        }
 
         if (ivAvatarSmall != null) {
             ivAvatarSmall.setOnClickListener(v -> {
@@ -92,11 +115,17 @@ public class ManageRequestsActivity extends AppCompatActivity {
             @Override
             public void onAccept(Request request) {
                 viewModel.updateRequestStatus(request.getRequestId(), Request.STATUS_ACCEPTED);
+                Toast.makeText(ManageRequestsActivity.this,
+                        isAdminMode ? "Admin đã phê duyệt giao dịch!" : "Đã đồng ý yêu cầu nhận sách!",
+                        Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onReject(Request request) {
                 viewModel.updateRequestStatus(request.getRequestId(), Request.STATUS_REJECTED);
+                Toast.makeText(ManageRequestsActivity.this,
+                        isAdminMode ? "Admin đã từ chối yêu cầu giao dịch!" : "Đã từ chối yêu cầu.",
+                        Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -112,30 +141,54 @@ public class ManageRequestsActivity extends AppCompatActivity {
                         .show();
             }
         });
+        adapter.setAdminMode(isAdminMode);
         rvRequests.setLayoutManager(new LinearLayoutManager(this));
         rvRequests.setAdapter(adapter);
 
         // Observer chung cho danh sách
         requestsObserver = new Observer<List<Request>>() {
             @Override
-            public void onChanged(List<Request> requests) {
-                adapter.setRequests(requests);
-                if (requests == null || requests.isEmpty()) {
-                    tvEmpty.setText(adapter.isSentTabActive() ? "Bạn chưa gửi yêu cầu nhận sách nào." : "Chưa có yêu cầu nào gửi đến bạn.");
+            public void onChanged(List<Request> rawList) {
+                List<Request> displayList = new ArrayList<>();
+                if (rawList != null) {
+                    if (isAdminMode && !adapter.isSentTabActive()) {
+                        // Tab "Chờ kiểm duyệt" của Admin: Chỉ hiển thị yêu cầu pending
+                        for (Request r : rawList) {
+                            if (Request.STATUS_PENDING.equalsIgnoreCase(r.getStatus())) {
+                                displayList.add(r);
+                            }
+                        }
+                    } else {
+                        displayList.addAll(rawList);
+                    }
+                }
+
+                adapter.setRequests(displayList);
+                if (displayList.isEmpty()) {
+                    if (isAdminMode) {
+                        tvEmpty.setText(!adapter.isSentTabActive()
+                                ? "Không có yêu cầu nào đang chờ kiểm duyệt."
+                                : "Chưa có yêu cầu giao dịch nào trên hệ thống.");
+                    } else {
+                        tvEmpty.setText(adapter.isSentTabActive()
+                                ? "Bạn chưa gửi yêu cầu nhận sách nào."
+                                : "Chưa có yêu cầu nào gửi đến bạn.");
+                    }
                     tvEmpty.setVisibility(View.VISIBLE);
                     layoutSummaryBanner.setVisibility(View.GONE);
                 } else {
                     tvEmpty.setVisibility(View.GONE);
-                    // Chỉ đếm các request "pending" để hiện lên Banner
                     int pendingCount = 0;
-                    for (Request r : requests) {
-                        if (Request.STATUS_PENDING.equals(r.getStatus())) {
+                    for (Request r : (rawList != null ? rawList : displayList)) {
+                        if (Request.STATUS_PENDING.equalsIgnoreCase(r.getStatus())) {
                             pendingCount++;
                         }
                     }
                     if (pendingCount > 0 && !adapter.isSentTabActive()) {
                         layoutSummaryBanner.setVisibility(View.VISIBLE);
-                        tvSummaryCount.setText("Bạn có " + pendingCount + " yêu cầu chờ phản hồi");
+                        tvSummaryCount.setText(isAdminMode
+                                ? "Hệ thống có " + pendingCount + " yêu cầu cần kiểm duyệt"
+                                : "Bạn có " + pendingCount + " yêu cầu chờ phản hồi");
                     } else {
                         layoutSummaryBanner.setVisibility(View.GONE);
                     }
@@ -144,51 +197,31 @@ public class ManageRequestsActivity extends AppCompatActivity {
         };
 
         // Bắt sự kiện Click
-        btnBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+        btnBack.setOnClickListener(v -> finish());
 
-        tvTabReceived.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                switchTab(false);
-            }
-        });
+        tvTabReceived.setOnClickListener(v -> switchTab(false));
 
-        tvTabSent.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                switchTab(true);
-            }
-        });
+        tvTabSent.setOnClickListener(v -> switchTab(true));
 
         // Bắt sự kiện Success/Error từ ViewModel
-        viewModel.getActionSuccess().observe(this, new Observer<Boolean>() {
-            @Override
-            public void onChanged(Boolean success) {
-                if (success != null && success) {
-                    Toast.makeText(ManageRequestsActivity.this, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
-                    viewModel.resetStatus();
-                }
+        viewModel.getActionSuccess().observe(this, success -> {
+            if (success != null && success) {
+                viewModel.resetStatus();
             }
         });
 
-        viewModel.getError().observe(this, new Observer<String>() {
-            @Override
-            public void onChanged(String message) {
-                if (message != null && !message.isEmpty()) {
-                    Toast.makeText(ManageRequestsActivity.this, message, Toast.LENGTH_LONG).show();
-                    viewModel.resetStatus();
-                }
+        viewModel.getError().observe(this, message -> {
+            if (message != null && !message.isEmpty()) {
+                Toast.makeText(ManageRequestsActivity.this, message, Toast.LENGTH_LONG).show();
+                viewModel.resetStatus();
             }
         });
 
-        setupBottomNavigation();
+        if (!isAdminMode) {
+            setupBottomNavigation();
+        }
 
-        // Mặc định mở Tab Yêu cầu đến
+        // Mặc định mở Tab đầu tiên
         switchTab(false);
     }
 
@@ -261,15 +294,19 @@ public class ManageRequestsActivity extends AppCompatActivity {
         }
 
         adapter.setSentTab(showSent);
-        tvEmpty.setText(showSent ? "Bạn chưa gửi yêu cầu nhận sách nào." : "Chưa có yêu cầu nào gửi đến bạn.");
-        tvEmpty.setVisibility(View.VISIBLE); // Hiển thị ban đầu trong lúc tải
+        tvEmpty.setVisibility(View.VISIBLE);
         layoutSummaryBanner.setVisibility(View.GONE);
         updateTabStyles(showSent);
 
-        if (showSent) {
-            currentLiveData = viewModel.getSentRequests(currentUserId);
+        if (isAdminMode) {
+            // Chế độ Admin: Lấy toàn bộ yêu cầu của hệ thống
+            currentLiveData = viewModel.getAllRequests();
         } else {
-            currentLiveData = viewModel.getReceivedRequests(currentUserId);
+            if (showSent) {
+                currentLiveData = viewModel.getSentRequests(currentUserId);
+            } else {
+                currentLiveData = viewModel.getReceivedRequests(currentUserId);
+            }
         }
         currentLiveData.observe(this, requestsObserver);
     }

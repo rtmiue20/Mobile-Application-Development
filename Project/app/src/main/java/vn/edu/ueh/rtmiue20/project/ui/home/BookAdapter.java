@@ -78,7 +78,11 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookHolder> {
         h.tvCondition.setText(condition);
         
         String status = b.getStatus();
-        if ("available".equals(status)) {
+        if (Book.STATUS_PENDING_REVIEW.equals(status)) {
+            h.tvExchangeType.setText("⏳ Chờ duyệt");
+        } else if ("hidden".equals(status)) {
+            h.tvExchangeType.setText("Đã ẩn");
+        } else if ("available".equals(status)) {
             h.tvExchangeType.setText("Miễn phí");
         } else if ("exchanging".equals(status)) {
             h.tvExchangeType.setText("Đang trao đổi");

@@ -1,6 +1,8 @@
 package vn.edu.ueh.rtmiue20.project.ui.admin;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
@@ -30,6 +32,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
@@ -38,6 +42,8 @@ import java.util.List;
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
+import vn.edu.ueh.rtmiue20.project.ui.profile.ProfileActivity;
+import vn.edu.ueh.rtmiue20.project.util.ImageHelper;
 import vn.edu.ueh.rtmiue20.project.util.ViewPressEffectHelper;
 
 public class UserManagementActivity extends AppCompatActivity implements UserManageAdapter.OnUserActionListener {
@@ -49,7 +55,7 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
     private ListenerRegistration usersListener;
 
     private ScrollView scrollViewUserManagement;
-    private ImageView btnBack, btnRefreshUsers, btnHeaderSort, btnClearUserSearch;
+    private ImageView btnBack, btnRefreshUsers, btnHeaderSort, btnClearUserSearch, ivAdminAvatar;
     private TextView tvTotalUsersCount, tvActiveUsersCount, tvLockedUsersCount;
     private EditText etSearchUser;
 
@@ -89,13 +95,52 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
         setupRecyclerView();
         setupListeners();
         setupPressEffects();
+        String initialFilter = getIntent() != null ? getIntent().getStringExtra("initial_filter") : null;
+        if (initialFilter != null && !initialFilter.isEmpty()) {
+            selectFilter(initialFilter);
+        }
         startRealtimeUsersListener();
+        loadAdminAvatar();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadAdminAvatar();
+    }
+
+    private void loadAdminAvatar() {
+        if (ivAdminAvatar == null) return;
+        SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        if (prefs.contains("user_avatar_url")) {
+            String cachedAvatar = prefs.getString("user_avatar_url", "");
+            ImageHelper.bindAdminHeaderAvatar(this, ivAdminAvatar, cachedAvatar);
+        }
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            UserRepository.getInstance().getUserProfile(user.getUid(), new UserRepository.UserCallback() {
+                @Override
+                public void onSuccess(User userProfile) {
+                    if (isFinishing() || isDestroyed()) return;
+                    String avatarUrl = (userProfile != null && userProfile.getAvatarUrl() != null)
+                            ? userProfile.getAvatarUrl()
+                            : "";
+                    prefs.edit().putString("user_avatar_url", avatarUrl).apply();
+                    ImageHelper.bindAdminHeaderAvatar(UserManagementActivity.this, ivAdminAvatar, avatarUrl);
+                }
+
+                @Override
+                public void onError(String errorMessage) {}
+            });
+        }
     }
 
     private void initViews() {
         scrollViewUserManagement = findViewById(R.id.scrollViewUserManagement);
         btnBack = findViewById(R.id.btnBack);
         btnHeaderSort = findViewById(R.id.btnHeaderSort);
+        ivAdminAvatar = findViewById(R.id.ivAdminAvatar);
         btnRefreshUsers = findViewById(R.id.btnRefreshUsers);
 
         tvTotalUsersCount = findViewById(R.id.tvTotalUsersCount);
@@ -132,6 +177,12 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
 
     private void setupListeners() {
         btnBack.setOnClickListener(v -> finish());
+
+        if (ivAdminAvatar != null) {
+            ivAdminAvatar.setOnClickListener(v ->
+                    startActivity(new Intent(UserManagementActivity.this, ProfileActivity.class))
+            );
+        }
 
         btnRefreshUsers.setOnClickListener(v -> {
             RotateAnimation rotate = new RotateAnimation(0, 360,
@@ -190,7 +241,7 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
 
     private void setupPressEffects() {
         ViewPressEffectHelper.applyPressEffect(
-                btnBack, btnRefreshUsers, btnHeaderSort, btnClearUserSearch,
+                btnBack, btnRefreshUsers, btnHeaderSort, ivAdminAvatar, btnClearUserSearch,
                 chipFilterAll, chipFilterMembers, chipFilterAdmins, chipFilterLocked,
                 btnSortUsers, btnPrevPage, btnNextPage
         );
@@ -226,7 +277,7 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
         int admins = 0;
 
         for (User u : allUsersList) {
-            if ("locked".equalsIgnoreCase(u.getStatus())) {
+            if ("locked".equalsIgnoreCase(u.getStatus()) || "banned".equalsIgnoreCase(u.getStatus())) {
                 locked++;
             } else {
                 active++;
@@ -337,7 +388,7 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
             if ("admins".equals(currentFilter) && !"admin".equalsIgnoreCase(u.getRole())) {
                 continue;
             }
-            if ("locked".equals(currentFilter) && !"locked".equalsIgnoreCase(u.getStatus())) {
+            if ("locked".equals(currentFilter) && !"locked".equalsIgnoreCase(u.getStatus()) && !"banned".equalsIgnoreCase(u.getStatus())) {
                 continue;
             }
 
@@ -405,6 +456,12 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
 
     @Override
     public void onLock(User user) {
+        if (user == null) return;
+        FirebaseUser currentAdmin = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentAdmin != null && currentAdmin.getUid().equals(user.getUid())) {
+            Toast.makeText(this, "Không thể tự khóa tài khoản Quản trị viên đang đăng nhập!", Toast.LENGTH_SHORT).show();
+            return;
+        }
         showLockUserModal(user);
     }
 
@@ -425,6 +482,46 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
                             Toast.makeText(UserManagementActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                         }
                     });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    @Override
+    public void onResetPassword(User user) {
+        if (user == null || user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            Toast.makeText(this, "Tài khoản này chưa có địa chỉ email hợp lệ.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String email = user.getEmail().trim();
+        String name = (user.getFullName() != null && !user.getFullName().trim().isEmpty())
+                ? user.getFullName()
+                : email;
+
+        new AlertDialog.Builder(this)
+                .setTitle("Cấp lại mật khẩu")
+                .setMessage("Bạn có chắc chắn muốn gửi email đặt lại mật khẩu cho thành viên " + name + " (" + email + ") không?")
+                .setPositiveButton("Gửi email", (dialog, which) -> {
+                    vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository.getInstance()
+                            .sendPasswordResetEmail(email, new vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository.ActionCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    Toast.makeText(
+                                            UserManagementActivity.this,
+                                            "Đã gửi email cấp lại mật khẩu tới " + email + "!",
+                                            Toast.LENGTH_LONG
+                                    ).show();
+                                }
+
+                                @Override
+                                public void onError(String errorMessage) {
+                                    Toast.makeText(
+                                            UserManagementActivity.this,
+                                            "Lỗi gửi email: " + errorMessage,
+                                            Toast.LENGTH_LONG
+                                    ).show();
+                                }
+                            });
                 })
                 .setNegativeButton("Hủy", null)
                 .show();

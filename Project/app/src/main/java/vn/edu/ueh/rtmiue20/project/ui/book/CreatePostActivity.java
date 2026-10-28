@@ -514,7 +514,17 @@ public class CreatePostActivity extends AppCompatActivity {
         }
 
         String finalCondition = condition;
-        String finalStatus = bookStatus;
+        // TC-ADMIN-06: Bài đăng mới của Member phải chờ Admin kiểm duyệt trước khi lên Trang chủ.
+        // Khi chỉnh sửa: giữ nguyên trạng thái "Chờ duyệt"/"Đã ẩn" để Member không tự mở lại bài.
+        String finalStatus;
+        if (editBookId == null || editBookId.trim().isEmpty()) {
+            finalStatus = Book.STATUS_PENDING_REVIEW;
+        } else if (existingBook != null && (Book.isPendingReview(existingBook)
+                || Book.STATUS_HIDDEN.equalsIgnoreCase(existingBook.getStatus()))) {
+            finalStatus = existingBook.getStatus();
+        } else {
+            finalStatus = bookStatus;
+        }
 
         btnSubmit.setEnabled(false);
         btnSubmit.setText(editBookId != null ? "Đang lưu..." : "Đang đăng...");
@@ -556,7 +566,7 @@ public class CreatePostActivity extends AppCompatActivity {
             @Override
             public void onSuccess() {
                 Toast.makeText(CreatePostActivity.this,
-                        editBookId != null ? "Cập nhật thông tin sách thành công!" : "Đăng sách thành công!",
+                        editBookId != null ? "Cập nhật thông tin sách thành công!" : "Đã gửi bài đăng! Sách đang chờ Admin kiểm duyệt trước khi hiển thị trên Trang chủ.",
                         Toast.LENGTH_SHORT).show();
                 finish();
             }
