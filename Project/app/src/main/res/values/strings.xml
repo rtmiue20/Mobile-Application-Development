@@ -96,4 +96,22 @@
     <string name="msg_apply_sort_success">Đã áp dụng sắp xếp bài đăng!</string>
     <string name="msg_reset_sort_success">Đã đặt lại sắp xếp về Mới nhất!</string>
     <string name="cd_btn_sort">Sắp xếp bài đăng sách</string>
+
+    <!-- Strings for Admin User Password Reset Feature -->
+    <string name="title_dialog_reset_password">Đặt lại mật khẩu</string>
+    <string name="subtitle_dialog_reset_password">Cấp lại thông tin đăng nhập cho thành viên</string>
+    <string name="hint_reset_new_password">Nhập mật khẩu mới (tối thiểu 8 ký tự)</string>
+    <string name="hint_reset_confirm_password">Nhập lại mật khẩu mới</string>
+    <string name="security_note_reset_password">Bảo mật Firebase Auth: Mật khẩu mới được xử lý bảo mật. Khi xác nhận, hệ thống ghi nhận phiên cập nhật từ Quản trị viên và gửi email xác thực an toàn tới hộp thư của thành viên.</string>
+    <string name="btn_cancel">Hủy</string>
+    <string name="btn_confirm">Xác nhận</string>
+    <string name="btn_processing">Đang xử lý...</string>
+    <string name="err_password_empty">Vui lòng nhập mật khẩu mới</string>
+    <string name="err_password_min_length">Mật khẩu phải chứa ít nhất 8 ký tự</string>
+    <string name="err_confirm_password_empty">Vui lòng xác nhận mật khẩu</string>
+    <string name="err_password_mismatch">Mật khẩu xác nhận không trùng khớp</string>
+    <string name="err_cannot_reset_admin">Không thể đổi mật khẩu của tài khoản Quản trị viên tại đây.</string>
+    <string name="err_cannot_reset_locked">Tài khoản này đang bị khóa. Vui lòng mở khóa trước khi cấp lại mật khẩu.</string>
+    <string name="err_user_email_invalid">Tài khoản người dùng không có địa chỉ email hợp lệ.</string>
+    <string name="msg_reset_password_success">Đã gửi yêu cầu cấp lại mật khẩu cho %1$s thành công!</string>
 </resources>

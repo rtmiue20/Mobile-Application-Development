@@ -361,4 +361,32 @@ public class UserRepository {
                     if (callback != null) callback.onError(e.getLocalizedMessage());
                 });
     }
+
+    /**
+     * Ghi nhận phiên quản trị viên yêu cầu cấp lại mật khẩu cho thành viên.
+     * Cập nhật metadata vào Firestore document của user để lưu vết kiểm duyệt (audit trail).
+     */
+    public void recordAdminPasswordReset(String uid, UpdateCallback callback) {
+        if (uid == null || uid.trim().isEmpty()) {
+            if (callback != null) callback.onError("UID người dùng không hợp lệ.");
+            return;
+        }
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("passwordResetByAdmin", true);
+        updates.put("passwordResetRequestedAt", System.currentTimeMillis());
+        FirebaseUser currentAdmin = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentAdmin != null) {
+            updates.put("passwordResetRequestedBy", currentAdmin.getUid());
+        }
+
+        firestore.collection("users").document(uid)
+                .set(updates, com.google.firebase.firestore.SetOptions.merge())
+                .addOnSuccessListener(unused -> {
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onError(e.getLocalizedMessage());
+                });
+    }
 }
