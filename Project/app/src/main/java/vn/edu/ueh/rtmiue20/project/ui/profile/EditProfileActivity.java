@@ -737,8 +737,9 @@ public class EditProfileActivity extends AppCompatActivity {
         chip.setText(categoryName);
         chip.setCheckable(true);
         chip.setClickable(true);
-        chip.setCheckedIconVisible(true);
-        chip.setCheckedIconTint(ColorStateList.valueOf(Color.WHITE));
+        chip.setCheckedIconVisible(false); // Tắt icon chấm tròn/checkmark để chiều rộng giữ nguyên tuyệt đối, không bị nhảy dòng
+        chip.setChipIconVisible(false);
+        chip.setEnsureMinTouchTargetSize(false);
         chip.setChipBackgroundColorResource(R.color.chip_interest_background);
         chip.setTextColor(ContextCompat.getColorStateList(this, R.color.chip_interest_text));
         chip.setChipStrokeColorResource(R.color.chip_interest_stroke);

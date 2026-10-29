@@ -737,7 +737,8 @@
                         app:chipBackgroundColor="@color/white"
                         app:chipStrokeColor="@color/secondary_green"
                         app:chipStrokeWidth="1dp"
-                        app:chipIconVisible="false" />
+                        app:chipIconVisible="false"
+                        app:checkedIconVisible="false" />
                 </com.google.android.material.chip.ChipGroup>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
