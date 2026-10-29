@@ -6,6 +6,7 @@ public class Request {
     public static final String STATUS_PENDING = "pending";
     public static final String STATUS_ACCEPTED = "accepted";
     public static final String STATUS_REJECTED = "rejected";
+    public static final String STATUS_COMPLETED = "completed";
 
     private String requestId;
     private String bookId;
@@ -20,6 +21,10 @@ public class Request {
     private String message; // Mới: Lời nhắn
     private String status;
     private long timestamp;
+    private boolean rated = false;
+    private float ratingValue = 5.0f;
+    private String ratingComment;
+    private long completedTimestamp;
 
     public Request() {}
 
@@ -80,4 +85,16 @@ public class Request {
 
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+
+    public boolean isRated() { return rated; }
+    public void setRated(boolean rated) { this.rated = rated; }
+
+    public float getRatingValue() { return ratingValue; }
+    public void setRatingValue(float ratingValue) { this.ratingValue = ratingValue; }
+
+    public String getRatingComment() { return ratingComment; }
+    public void setRatingComment(String ratingComment) { this.ratingComment = ratingComment; }
+
+    public long getCompletedTimestamp() { return completedTimestamp; }
+    public void setCompletedTimestamp(long completedTimestamp) { this.completedTimestamp = completedTimestamp; }
 }

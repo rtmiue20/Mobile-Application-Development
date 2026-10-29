@@ -292,13 +292,102 @@
             <!-- Nút Mã QR (Hiện khi được chấp nhận) -->
             <TextView
                 android:id="@+id/btnViewQR"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="#F3F4F6"
+                android:gravity="center"
+                android:text="QR Mã hẹn"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <!-- Nút Người nhận bấm Hoàn thành & Đánh giá -->
+            <TextView
+                android:id="@+id/btnConfirmReceived"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1.4"
                 android:background="@drawable/bg_pill_active"
                 android:gravity="center"
-                android:text="QR Xem Mã QR &amp; Chi tiết điểm hẹn"
+                android:text="✓ Đã nhận &amp; Đánh giá"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <!-- Nút Chủ sách xác nhận bàn giao -->
+            <TextView
+                android:id="@+id/btnOwnerComplete"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_pill_active"
+                android:gravity="center"
+                android:text="✓ Đã bàn giao sách"
                 android:textColor="#FFFFFF"
                 android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- HÀNG 5: KHỐI KẾT QUẢ ĐÁNH GIÁ (Khi status == completed) -->
+        <LinearLayout
+            android:id="@+id/layoutRatingCompleted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="#F0FDF4"
+            android:orientation="vertical"
+            android:padding="10dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_star"
+                    app:tint="#D97706" />
+
+                <TextView
+                    android:id="@+id/tvRatingCompletedTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="Đã đánh giá 5.0 ★"
+                    android:textColor="#15803D"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvRatingCompletedComment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Nhận xét: ..."
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/btnRateNow"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_pill_active"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="⭐ Đánh giá chủ sách ngay"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
         </LinearLayout>

@@ -30,6 +30,21 @@ public class User {
     private String lockReason;
     private long createdAt;
 
+    @Ignore
+    private java.util.List<String> interests;
+
+    @Ignore
+    private Boolean showPhone = true;
+    @Ignore
+    private Boolean directRequest = true;
+    @Ignore
+    private Boolean bookAlerts = true;
+
+    @Ignore
+    private Double ratingAverage = 5.0;
+    @Ignore
+    private Integer ratingCount = 0;
+
     // Default constructor required for Firestore
     public User() {
     }
@@ -199,6 +214,54 @@ public class User {
         this.longitude = longitude;
     }
 
+    public java.util.List<String> getInterests() {
+        return interests != null ? interests : new java.util.ArrayList<>();
+    }
+
+    public void setInterests(java.util.List<String> interests) {
+        this.interests = interests;
+    }
+
+    public Boolean isShowPhone() {
+        return showPhone != null ? showPhone : true;
+    }
+
+    public void setShowPhone(Boolean showPhone) {
+        this.showPhone = showPhone;
+    }
+
+    public Boolean isDirectRequest() {
+        return directRequest != null ? directRequest : true;
+    }
+
+    public void setDirectRequest(Boolean directRequest) {
+        this.directRequest = directRequest;
+    }
+
+    public Boolean isBookAlerts() {
+        return bookAlerts != null ? bookAlerts : true;
+    }
+
+    public void setBookAlerts(Boolean bookAlerts) {
+        this.bookAlerts = bookAlerts;
+    }
+
+    public Double getRatingAverage() {
+        return ratingAverage != null ? ratingAverage : 5.0;
+    }
+
+    public void setRatingAverage(Double ratingAverage) {
+        this.ratingAverage = ratingAverage;
+    }
+
+    public Integer getRatingCount() {
+        return ratingCount != null ? ratingCount : 0;
+    }
+
+    public void setRatingCount(Integer ratingCount) {
+        this.ratingCount = ratingCount;
+    }
+
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("uid", uid);
@@ -219,6 +282,14 @@ public class User {
         map.put("status", status);
         map.put("lockReason", lockReason);
         map.put("createdAt", createdAt);
+        if (interests != null) {
+            map.put("interests", interests);
+        }
+        if (showPhone != null) map.put("showPhone", showPhone);
+        if (directRequest != null) map.put("directRequest", directRequest);
+        if (bookAlerts != null) map.put("bookAlerts", bookAlerts);
+        if (ratingAverage != null) map.put("ratingAverage", ratingAverage);
+        if (ratingCount != null) map.put("ratingCount", ratingCount);
         return map;
     }
 }

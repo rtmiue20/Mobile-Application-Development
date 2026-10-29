@@ -281,6 +281,59 @@ public class RequestRepository {
                 });
     }
 
+    /**
+     * TC-RATING: Người nhận xác nhận đã nhận sách, đánh giá số sao (1-5★) và hoàn tất giao dịch.
+     */
+    public void completeAndRateRequest(final Request request, final float ratingValue, final String comment) {
+        if (request == null || request.getRequestId() == null) return;
+
+        request.setStatus(Request.STATUS_COMPLETED);
+        request.setRated(true);
+        request.setRatingValue(ratingValue);
+        request.setRatingComment(comment);
+        request.setCompletedTimestamp(System.currentTimeMillis());
+
+        addOrUpdateLocalRequest(request);
+        actionSuccess.setValue(true);
+
+        java.util.Map<String, Object> updates = new java.util.HashMap<>();
+        updates.put("status", Request.STATUS_COMPLETED);
+        updates.put("rated", true);
+        updates.put("ratingValue", ratingValue);
+        updates.put("ratingComment", comment != null ? comment : "");
+        updates.put("completedTimestamp", System.currentTimeMillis());
+
+        firestore.collection(COLLECTION_REQUESTS)
+                .document(request.getRequestId())
+                .update(updates)
+                .addOnSuccessListener(unused -> actionSuccess.setValue(true))
+                .addOnFailureListener(e -> {
+                    android.util.Log.w("RequestRepository", "Cập nhật Firestore completed thất bại: " + e.getMessage());
+                });
+
+        // Cập nhật điểm uy tín cho chủ sách (owner)
+        if (request.getOwnerId() != null && !request.getOwnerId().isEmpty()) {
+            UserRepository.getInstance().submitUserRating(request.getOwnerId(), ratingValue, comment, null);
+
+            // Bắn FCM thông báo cho chủ sách
+            firestore.collection("users").document(request.getOwnerId()).get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc != null && doc.contains("fcmToken")) {
+                            String token = doc.getString("fcmToken");
+                            if (token != null && !token.isEmpty()) {
+                                String rName = request.getRequesterName() != null ? request.getRequesterName() : "Bạn đọc";
+                                String bTitle = request.getBookTitle() != null ? request.getBookTitle() : "sách";
+                                vn.edu.ueh.rtmiue20.project.util.FCMSender.pushNotification(
+                                        token,
+                                        "Giao dịch sách hoàn tất!",
+                                        rName + " đã nhận cuốn \"" + bTitle + "\" và gửi tặng bạn " + ratingValue + "★ uy tín!"
+                                );
+                            }
+                        }
+                    });
+        }
+    }
+
     public void cancelRequest(final String requestId) {
         removeLocalRequest(requestId);
         actionSuccess.setValue(true);
@@ -427,6 +480,10 @@ public class RequestRepository {
                     r.setMessage(obj.optString("message"));
                     r.setStatus(obj.optString("status", Request.STATUS_PENDING));
                     r.setTimestamp(obj.optLong("timestamp", System.currentTimeMillis()));
+                    r.setRated(obj.optBoolean("rated", false));
+                    r.setRatingValue((float) obj.optDouble("ratingValue", 5.0));
+                    r.setRatingComment(obj.optString("ratingComment", ""));
+                    r.setCompletedTimestamp(obj.optLong("completedTimestamp", 0));
                     localCache.add(r);
                 }
             }
@@ -452,6 +509,10 @@ public class RequestRepository {
                 obj.put("message", r.getMessage());
                 obj.put("status", r.getStatus());
                 obj.put("timestamp", r.getTimestamp());
+                obj.put("rated", r.isRated());
+                obj.put("ratingValue", r.getRatingValue());
+                obj.put("ratingComment", r.getRatingComment());
+                obj.put("completedTimestamp", r.getCompletedTimestamp());
                 arr.put(obj);
             }
             SharedPreferences prefs = appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);

@@ -710,10 +710,11 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvSelectedInterestsCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
-                        android:text="3 đã chọn"
+                        android:text="0 đã chọn"
                         android:textColor="@color/text_hint"
                         android:textSize="11sp" />
                 </RelativeLayout>
@@ -723,59 +724,21 @@
                     android:id="@+id/chipGroupInterests"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:chipSpacingHorizontal="8dp"
+                    app:chipSpacingVertical="6dp"
                     app:singleSelection="false">
 
                     <com.google.android.material.chip.Chip
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:text="Văn học Việt Nam"
-                        app:chipBackgroundColor="@color/primary_dark_green"
-                        app:chipIconVisible="true"
-                        app:chipSurfaceColor="@color/primary_dark_green" />
-
-                    <com.google.android.material.chip.Chip
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:text="Tâm lý - Kỹ năng"
-                        app:chipBackgroundColor="@color/primary_dark_green"
-                        app:chipIconVisible="true" />
-
-                    <com.google.android.material.chip.Chip
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true"
-                        android:text="Tiểu thuyết kinh điển"
-                        app:chipBackgroundColor="@color/primary_dark_green"
-                        app:chipIconVisible="true" />
-
-                    <com.google.android.material.chip.Chip
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Triết học" />
-
-                    <com.google.android.material.chip.Chip
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Khoa học" />
-
-                    <com.google.android.material.chip.Chip
-                        style="@style/Widget.Material3.Chip.Filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Truyện tranh Manga" />
-
-                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipAddInterest"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="+ Thêm thể loại"
-                        app:chipIconTint="@color/secondary_green" />
+                        android:textColor="@color/secondary_green"
+                        app:chipBackgroundColor="@color/white"
+                        app:chipStrokeColor="@color/secondary_green"
+                        app:chipStrokeWidth="1dp"
+                        app:chipIconVisible="false"
+                        app:checkedIconVisible="false" />
                 </com.google.android.material.chip.ChipGroup>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -843,8 +806,8 @@
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
                         android:checked="true"
-                        app:thumbTint="@color/secondary_green"
-                        app:trackTint="#A7F3D0" />
+                        app:thumbTint="@color/switch_thumb_selector"
+                        app:trackTint="@color/switch_track_selector" />
                 </RelativeLayout>
 
                 <!-- Toggle 2: Direct loan requests -->
@@ -885,8 +848,8 @@
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
                         android:checked="true"
-                        app:thumbTint="@color/secondary_green"
-                        app:trackTint="#A7F3D0" />
+                        app:thumbTint="@color/switch_thumb_selector"
+                        app:trackTint="@color/switch_track_selector" />
                 </RelativeLayout>
 
                 <!-- Toggle 3: Neighborhood Book Alerts -->
@@ -911,10 +874,11 @@
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvBookAlertsDesc"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="Cập nhật tự động khi có đầu sách mới tại Cầu Giấy"
+                            android:text="Cập nhật tự động khi có đầu sách mới tại khu vực của bạn"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -926,8 +890,8 @@
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
                         android:checked="true"
-                        app:thumbTint="@color/secondary_green"
-                        app:trackTint="#A7F3D0" />
+                        app:thumbTint="@color/switch_thumb_selector"
+                        app:trackTint="@color/switch_track_selector" />
                 </RelativeLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

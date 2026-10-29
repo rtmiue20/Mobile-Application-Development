@@ -79,34 +79,6 @@
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:id="@+id/btnProfileInfo"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_marginEnd="12dp"
-                    android:contentDescription="Notifications"
-                    android:src="@drawable/ic_info"
-                    app:tint="@color/text_primary" />
-
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/ivHeaderAvatar"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_person"
-                    app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.CornerSize50Percent"
-                    app:strokeColor="#EAE1DC"
-                    app:strokeWidth="1dp" />
-            </LinearLayout>
         </RelativeLayout>
 
         <!-- Profile Header Card -->

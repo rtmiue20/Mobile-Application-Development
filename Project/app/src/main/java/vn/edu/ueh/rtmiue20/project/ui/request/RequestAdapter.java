@@ -35,6 +35,8 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
         void onAccept(Request request);
         void onReject(Request request);
         void onCancel(Request request);
+        void onCompleteAndRate(Request request);
+        void onOwnerComplete(Request request);
     }
 
     private final List<Request> requests = new ArrayList<>();
@@ -131,6 +133,11 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
         holder.btnCancelRequest.setVisibility(View.GONE);
         holder.btnRemind.setVisibility(View.GONE);
         holder.btnViewQR.setVisibility(View.GONE);
+        if (holder.btnConfirmReceived != null) holder.btnConfirmReceived.setVisibility(View.GONE);
+        if (holder.btnOwnerComplete != null) holder.btnOwnerComplete.setVisibility(View.GONE);
+        if (holder.layoutRatingCompleted != null) holder.layoutRatingCompleted.setVisibility(View.GONE);
+        if (holder.tvRatingCompletedComment != null) holder.tvRatingCompletedComment.setVisibility(View.GONE);
+        if (holder.btnRateNow != null) holder.btnRateNow.setVisibility(View.GONE);
         holder.layoutAppointment.setVisibility(View.GONE);
         holder.tvBookTag.setVisibility(View.GONE);
 
@@ -163,6 +170,16 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
             } else if (Request.STATUS_ACCEPTED.equalsIgnoreCase(request.getStatus())) {
                 setupStatusBadge(holder.tvStatusBadge, "Đã phê duyệt", "#1B5E20", "#E8F5E9");
                 holder.layoutAppointment.setVisibility(View.VISIBLE);
+            } else if (Request.STATUS_COMPLETED.equalsIgnoreCase(request.getStatus())) {
+                setupStatusBadge(holder.tvStatusBadge, "✓ Đã hoàn thành", "#1B5E20", "#E8F5E9");
+                if (request.isRated() && holder.layoutRatingCompleted != null) {
+                    holder.layoutRatingCompleted.setVisibility(View.VISIBLE);
+                    holder.tvRatingCompletedTitle.setText(String.format(java.util.Locale.US, "Đánh giá trao đổi: %.1f ★", request.getRatingValue()));
+                    if (request.getRatingComment() != null && !request.getRatingComment().trim().isEmpty()) {
+                        holder.tvRatingCompletedComment.setText("Nhận xét: \"" + request.getRatingComment().trim() + "\"");
+                        holder.tvRatingCompletedComment.setVisibility(View.VISIBLE);
+                    }
+                }
             } else {
                 setupStatusBadge(holder.tvStatusBadge, "Đã từ chối", "#B71C1C", "#FFEBEE");
             }
@@ -179,7 +196,23 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
             } else if (Request.STATUS_ACCEPTED.equals(request.getStatus())) {
                 setupStatusBadge(holder.tvStatusBadge, "✓ Đã chấp nhận", "#1B5E20", "#E8F5E9");
                 holder.layoutAppointment.setVisibility(View.VISIBLE); // Hiện khối Điểm hẹn
-                holder.btnViewQR.setVisibility(View.VISIBLE); // Hiện nút QR màu xanh
+                holder.btnViewQR.setVisibility(View.VISIBLE); // Hiện nút QR
+                if (holder.btnConfirmReceived != null) holder.btnConfirmReceived.setVisibility(View.VISIBLE); // Hiện nút Đã nhận & Đánh giá
+            } else if (Request.STATUS_COMPLETED.equals(request.getStatus())) {
+                setupStatusBadge(holder.tvStatusBadge, "✓ Đã hoàn thành", "#1B5E20", "#E8F5E9");
+                if (holder.layoutRatingCompleted != null) {
+                    holder.layoutRatingCompleted.setVisibility(View.VISIBLE);
+                    if (request.isRated()) {
+                        holder.tvRatingCompletedTitle.setText(String.format(java.util.Locale.US, "Bạn đã đánh giá: %.1f ★", request.getRatingValue()));
+                        if (request.getRatingComment() != null && !request.getRatingComment().trim().isEmpty()) {
+                            holder.tvRatingCompletedComment.setText("Nhận xét: \"" + request.getRatingComment().trim() + "\"");
+                            holder.tvRatingCompletedComment.setVisibility(View.VISIBLE);
+                        }
+                    } else {
+                        holder.tvRatingCompletedTitle.setText("Chưa đánh giá chủ sách");
+                        if (holder.btnRateNow != null) holder.btnRateNow.setVisibility(View.VISIBLE);
+                    }
+                }
             } else {
                 setupStatusBadge(holder.tvStatusBadge, "✕ Đã từ chối", "#B71C1C", "#FFEBEE");
                 holder.tvMessage.setText("Lý do: Sách đã được trao cho độc giả khác trước đó.");
@@ -204,6 +237,21 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
             } else if (Request.STATUS_ACCEPTED.equals(request.getStatus())) {
                 setupStatusBadge(holder.tvStatusBadge, "Đã đồng ý", "#1B5E20", "#E8F5E9");
                 holder.layoutAppointment.setVisibility(View.VISIBLE);
+                if (holder.btnOwnerComplete != null) holder.btnOwnerComplete.setVisibility(View.VISIBLE);
+            } else if (Request.STATUS_COMPLETED.equals(request.getStatus())) {
+                setupStatusBadge(holder.tvStatusBadge, "✓ Đã hoàn thành", "#1B5E20", "#E8F5E9");
+                if (holder.layoutRatingCompleted != null) {
+                    holder.layoutRatingCompleted.setVisibility(View.VISIBLE);
+                    if (request.isRated()) {
+                        holder.tvRatingCompletedTitle.setText(String.format(java.util.Locale.US, "Đánh giá từ bạn đọc: %.1f ★", request.getRatingValue()));
+                        if (request.getRatingComment() != null && !request.getRatingComment().trim().isEmpty()) {
+                            holder.tvRatingCompletedComment.setText("Nhận xét: \"" + request.getRatingComment().trim() + "\"");
+                            holder.tvRatingCompletedComment.setVisibility(View.VISIBLE);
+                        }
+                    } else {
+                        holder.tvRatingCompletedTitle.setText("Giao dịch hoàn tất • Chờ bạn đọc đánh giá");
+                    }
+                }
             } else {
                 setupStatusBadge(holder.tvStatusBadge, "Đã từ chối", "#B71C1C", "#FFEBEE");
             }
@@ -246,6 +294,24 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
         });
 
         holder.btnViewQR.setOnClickListener(v -> showExchangeQrDialog(v.getContext(), request));
+
+        if (holder.btnConfirmReceived != null) {
+            holder.btnConfirmReceived.setOnClickListener(v -> {
+                if (listener != null) listener.onCompleteAndRate(request);
+            });
+        }
+
+        if (holder.btnRateNow != null) {
+            holder.btnRateNow.setOnClickListener(v -> {
+                if (listener != null) listener.onCompleteAndRate(request);
+            });
+        }
+
+        if (holder.btnOwnerComplete != null) {
+            holder.btnOwnerComplete.setOnClickListener(v -> {
+                if (listener != null) listener.onOwnerComplete(request);
+            });
+        }
     }
 
     private void showExchangeQrDialog(Context context, Request request) {
@@ -276,8 +342,8 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
         TextView tvTimestamp, tvBookTag, tvStatusBadge, tvBookTitle, tvAuthorMock;
         TextView tvPersonName, tvDistanceMock, tvMessage, tvAppointmentDetail;
         ImageView ivTimeIcon, ivBookCover, ivUserAvatar;
-        LinearLayout layoutMessage, layoutAppointment, layoutActions;
-        TextView btnReject, btnAccept, btnCancelRequest, btnRemind, btnViewQR;
+        LinearLayout layoutMessage, layoutAppointment, layoutActions, layoutRatingCompleted;
+        TextView btnReject, btnAccept, btnCancelRequest, btnRemind, btnViewQR, btnConfirmReceived, btnOwnerComplete, tvRatingCompletedTitle, tvRatingCompletedComment, btnRateNow;
 
         RequestViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -296,11 +362,17 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
             layoutMessage = itemView.findViewById(R.id.layoutMessage);
             layoutAppointment = itemView.findViewById(R.id.layoutAppointment);
             layoutActions = itemView.findViewById(R.id.layoutActions);
+            layoutRatingCompleted = itemView.findViewById(R.id.layoutRatingCompleted);
             btnReject = itemView.findViewById(R.id.btnReject);
             btnAccept = itemView.findViewById(R.id.btnAccept);
             btnCancelRequest = itemView.findViewById(R.id.btnCancelRequest);
             btnRemind = itemView.findViewById(R.id.btnRemind);
             btnViewQR = itemView.findViewById(R.id.btnViewQR);
+            btnConfirmReceived = itemView.findViewById(R.id.btnConfirmReceived);
+            btnOwnerComplete = itemView.findViewById(R.id.btnOwnerComplete);
+            tvRatingCompletedTitle = itemView.findViewById(R.id.tvRatingCompletedTitle);
+            tvRatingCompletedComment = itemView.findViewById(R.id.tvRatingCompletedComment);
+            btnRateNow = itemView.findViewById(R.id.btnRateNow);
         }
     }
 }

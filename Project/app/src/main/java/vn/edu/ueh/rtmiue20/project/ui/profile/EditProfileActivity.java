@@ -40,6 +40,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.switchmaterial.SwitchMaterial;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.util.TypedValue;
+import android.widget.FrameLayout;
+
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
@@ -75,6 +83,26 @@ public class EditProfileActivity extends AppCompatActivity {
     private View cardFavoriteSpot;
     private TextView tvFavoriteSpotName;
     private TextView tvFavoriteSpotAddress;
+
+    private ChipGroup chipGroupInterests;
+    private Chip chipAddInterest;
+    private TextView tvSelectedInterestsCount;
+
+    private SwitchMaterial swShowPhone;
+    private SwitchMaterial swDirectRequest;
+    private SwitchMaterial swBookAlerts;
+    private TextView tvBookAlertsDesc;
+
+    private static final String[] DEFAULT_CATEGORIES = {
+        "Văn học Việt Nam",
+        "Tiểu thuyết kinh điển",
+        "Tâm lý - Kỹ năng",
+        "Kinh tế - Khởi nghiệp",
+        "Khoa học - Công nghệ",
+        "Truyện tranh Manga",
+        "Triết học & Tư tưởng",
+        "Ngoại ngữ - Du học"
+    };
 
     private String selectedFavoriteSpotName = "";
     private String selectedFavoriteSpotAddress = "";
@@ -138,6 +166,21 @@ public class EditProfileActivity extends AppCompatActivity {
         cardFavoriteSpot = findViewById(R.id.cardFavoriteSpot);
         tvFavoriteSpotName = findViewById(R.id.tvFavoriteSpotName);
         tvFavoriteSpotAddress = findViewById(R.id.tvFavoriteSpotAddress);
+
+        chipGroupInterests = findViewById(R.id.chipGroupInterests);
+        chipAddInterest = findViewById(R.id.chipAddInterest);
+        tvSelectedInterestsCount = findViewById(R.id.tvSelectedInterestsCount);
+        setupInterests(null);
+
+        swShowPhone = findViewById(R.id.swShowPhone);
+        swDirectRequest = findViewById(R.id.swDirectRequest);
+        swBookAlerts = findViewById(R.id.swBookAlerts);
+        tvBookAlertsDesc = findViewById(R.id.tvBookAlertsDesc);
+
+        SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        if (swShowPhone != null) swShowPhone.setChecked(prefs.getBoolean("pref_show_phone", true));
+        if (swDirectRequest != null) swDirectRequest.setChecked(prefs.getBoolean("pref_direct_request", true));
+        if (swBookAlerts != null) swBookAlerts.setChecked(prefs.getBoolean("pref_book_alerts", true));
     }
 
     private void setupSpinners() {
@@ -192,6 +235,13 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void updateWardsForDistrict(String district, String targetWard) {
+        if (tvBookAlertsDesc != null) {
+            if (district != null && !district.trim().isEmpty() && !district.equalsIgnoreCase("Chọn Quận/Huyện")) {
+                tvBookAlertsDesc.setText("Cập nhật tự động khi có đầu sách mới tại " + district);
+            } else {
+                tvBookAlertsDesc.setText("Cập nhật tự động khi có đầu sách mới tại khu vực của bạn");
+            }
+        }
         List<String> wards = LocationHelper.getWardsForDistrict(district);
         ArrayAdapter<String> wardAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, wards);
         wardAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -377,6 +427,15 @@ public class EditProfileActivity extends AppCompatActivity {
                             .putFloat("user_lng", currentLongitude.floatValue())
                             .apply();
                 }
+
+                setupInterests(user.getInterests());
+
+                if (swShowPhone != null) swShowPhone.setChecked(user.isShowPhone());
+                if (swDirectRequest != null) swDirectRequest.setChecked(user.isDirectRequest());
+                if (swBookAlerts != null) swBookAlerts.setChecked(user.isBookAlerts());
+                if (user.getDistrict() != null && !user.getDistrict().isEmpty() && tvBookAlertsDesc != null) {
+                    tvBookAlertsDesc.setText("Cập nhật tự động khi có đầu sách mới tại " + user.getDistrict());
+                }
             }
 
             @Override
@@ -387,6 +446,7 @@ public class EditProfileActivity extends AppCompatActivity {
                 if (tvEditHeaderName != null && currentUser.getDisplayName() != null) {
                     tvEditHeaderName.setText(currentUser.getDisplayName());
                 }
+                setupInterests(null);
             }
         });
     }
@@ -630,14 +690,22 @@ public class EditProfileActivity extends AppCompatActivity {
             }
         }
 
-        userRepository.updateUserProfile(currentUser.getUid(), fullName, nickname, phone, bio, city, district, ward, selectedFavoriteSpotName, selectedFavoriteSpotAddress, currentLatitude, currentLongitude, new UserRepository.UpdateCallback() {
+        List<String> selectedInterests = getSelectedInterests();
+        boolean isShowPhone = swShowPhone != null && swShowPhone.isChecked();
+        boolean isDirectRequest = swDirectRequest != null && swDirectRequest.isChecked();
+        boolean isBookAlerts = swBookAlerts != null && swBookAlerts.isChecked();
+
+        userRepository.updateUserProfile(currentUser.getUid(), fullName, nickname, phone, bio, city, district, ward, selectedFavoriteSpotName, selectedFavoriteSpotAddress, currentLatitude, currentLongitude, selectedInterests, isShowPhone, isDirectRequest, isBookAlerts, new UserRepository.UpdateCallback() {
             @Override
             public void onSuccess() {
                 String displayNameFormatted = User.getDisplayNameFormatted(fullName, nickname);
                 android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
                 android.content.SharedPreferences.Editor editor = prefs.edit()
                         .putString("user_fullname", !displayNameFormatted.isEmpty() ? displayNameFormatted : fullName)
-                        .putString("user_nickname", nickname);
+                        .putString("user_nickname", nickname)
+                        .putBoolean("pref_show_phone", isShowPhone)
+                        .putBoolean("pref_direct_request", isDirectRequest)
+                        .putBoolean("pref_book_alerts", isBookAlerts);
                 if (currentLatitude != null && currentLongitude != null) {
                     editor.putFloat("user_lat", currentLatitude.floatValue());
                     editor.putFloat("user_lng", currentLongitude.floatValue());
@@ -655,5 +723,136 @@ public class EditProfileActivity extends AppCompatActivity {
                 Toast.makeText(EditProfileActivity.this, "Lỗi cập nhật: " + errorMessage, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void setupInterests(List<String> savedInterests) {
+        if (chipGroupInterests == null) return;
+
+        // Xóa các chip cũ (giữ lại chip Thêm thể loại)
+        for (int i = chipGroupInterests.getChildCount() - 1; i >= 0; i--) {
+            View child = chipGroupInterests.getChildAt(i);
+            if (child.getId() != R.id.chipAddInterest) {
+                chipGroupInterests.removeViewAt(i);
+            }
+        }
+
+        List<String> allCategories = new ArrayList<>();
+        for (String cat : DEFAULT_CATEGORIES) {
+            allCategories.add(cat);
+        }
+
+        // Nếu user có các sở thích tùy chỉnh đã lưu trước đó không nằm trong danh sách mặc định
+        if (savedInterests != null) {
+            for (String saved : savedInterests) {
+                if (saved != null && !saved.trim().isEmpty() && !allCategories.contains(saved.trim())) {
+                    allCategories.add(saved.trim());
+                }
+            }
+        }
+
+        for (String category : allCategories) {
+            boolean isChecked = savedInterests != null && savedInterests.contains(category);
+            Chip chip = createInterestChip(category, isChecked);
+            int addIndex = chipGroupInterests.indexOfChild(chipAddInterest);
+            if (addIndex >= 0) {
+                chipGroupInterests.addView(chip, addIndex);
+            } else {
+                chipGroupInterests.addView(chip);
+            }
+        }
+
+        updateSelectedInterestsCount();
+
+        if (chipAddInterest != null) {
+            chipAddInterest.setOnClickListener(v -> showAddCategoryDialog());
+        }
+    }
+
+    private Chip createInterestChip(String categoryName, boolean isChecked) {
+        Chip chip = new Chip(this);
+        chip.setText(categoryName);
+        chip.setCheckable(true);
+        chip.setClickable(true);
+        chip.setCheckedIconVisible(false); // Tắt icon chấm tròn/checkmark để chiều rộng giữ nguyên tuyệt đối, không bị nhảy dòng
+        chip.setChipIconVisible(false);
+        chip.setEnsureMinTouchTargetSize(false);
+        chip.setChipBackgroundColorResource(R.color.chip_interest_background);
+        chip.setTextColor(ContextCompat.getColorStateList(this, R.color.chip_interest_text));
+        chip.setChipStrokeColorResource(R.color.chip_interest_stroke);
+        chip.setChipStrokeWidth(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, getResources().getDisplayMetrics()));
+        chip.setChecked(isChecked);
+
+        chip.setOnCheckedChangeListener((buttonView, isNowChecked) -> {
+            updateSelectedInterestsCount();
+        });
+        return chip;
+    }
+
+    private void updateSelectedInterestsCount() {
+        int count = getSelectedInterests().size();
+        if (tvSelectedInterestsCount != null) {
+            tvSelectedInterestsCount.setText(count + " đã chọn");
+        }
+    }
+
+    private List<String> getSelectedInterests() {
+        List<String> list = new ArrayList<>();
+        if (chipGroupInterests != null) {
+            for (int i = 0; i < chipGroupInterests.getChildCount(); i++) {
+                View child = chipGroupInterests.getChildAt(i);
+                if (child instanceof Chip && child.getId() != R.id.chipAddInterest) {
+                    Chip chip = (Chip) child;
+                    if (chip.isChecked()) {
+                        list.add(chip.getText().toString());
+                    }
+                }
+            }
+        }
+        return list;
+    }
+
+    private void showAddCategoryDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Thêm thể loại sách yêu thích");
+
+        final EditText input = new EditText(this);
+        input.setHint("Ví dụ: Kinh doanh, Khoa học viễn tưởng...");
+        input.setSingleLine(true);
+        int padding = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics());
+        FrameLayout container = new FrameLayout(this);
+        container.setPadding(padding, padding / 2, padding, 0);
+        container.addView(input);
+        builder.setView(container);
+
+        builder.setPositiveButton("Thêm", (dialog, which) -> {
+            String newCat = input.getText().toString().trim();
+            if (!newCat.isEmpty()) {
+                boolean exists = false;
+                for (int i = 0; i < chipGroupInterests.getChildCount(); i++) {
+                    View child = chipGroupInterests.getChildAt(i);
+                    if (child instanceof Chip && child.getId() != R.id.chipAddInterest) {
+                        Chip c = (Chip) child;
+                        if (c.getText().toString().equalsIgnoreCase(newCat)) {
+                            c.setChecked(true);
+                            exists = true;
+                            break;
+                        }
+                    }
+                }
+                if (!exists) {
+                    Chip chip = createInterestChip(newCat, true);
+                    int addIndex = chipGroupInterests.indexOfChild(chipAddInterest);
+                    if (addIndex >= 0) {
+                        chipGroupInterests.addView(chip, addIndex);
+                    } else {
+                        chipGroupInterests.addView(chip);
+                    }
+                }
+                updateSelectedInterestsCount();
+                Toast.makeText(this, "Đã thêm thể loại: " + newCat, Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
+        builder.show();
     }
 }
