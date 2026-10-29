@@ -20,21 +20,26 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.os.CancellationSignal;
+import android.util.Log;
 import androidx.activity.EdgeToEdge;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.credentials.Credential;
+import androidx.credentials.CredentialManager;
+import androidx.credentials.CredentialManagerCallback;
+import androidx.credentials.CustomCredential;
+import androidx.credentials.GetCredentialRequest;
+import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.exceptions.GetCredentialCancellationException;
+import androidx.credentials.exceptions.GetCredentialException;
 
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import com.google.firebase.auth.FirebaseUser;
 
 import vn.edu.ueh.rtmiue20.project.R;
@@ -63,8 +68,7 @@ public class RegisterActivity extends AppCompatActivity {
     private boolean isConfirmPasswordVisible = false;
 
     private AuthRepository authRepository;
-    private GoogleSignInClient googleSignInClient;
-    private ActivityResultLauncher<Intent> googleSignInLauncher;
+    private CredentialManager credentialManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,37 +107,74 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void setupGoogleSignIn() {
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id))
-                .requestEmail()
+        credentialManager = CredentialManager.create(this);
+    }
+
+    private void handleGoogleSignIn() {
+        String webClientId = getString(R.string.default_web_client_id);
+        if (webClientId.contains("exampleclientid") || webClientId.contains("1234567890")) {
+            Toast.makeText(this, "Lỗi cấu hình Google Sign-In: Bạn chưa thay thế Web Client ID thật từ Firebase Console!", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        GetSignInWithGoogleOption signInWithGoogleOption = new GetSignInWithGoogleOption.Builder(webClientId)
                 .build();
 
-        googleSignInClient = GoogleSignIn.getClient(this, gso);
+        GetCredentialRequest request = new GetCredentialRequest.Builder()
+                .addCredentialOption(signInWithGoogleOption)
+                .build();
 
-        googleSignInLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
-                        try {
-                            GoogleSignInAccount account = task.getResult(ApiException.class);
-                            if (account != null && account.getIdToken() != null) {
-                                performGoogleAuth(account.getIdToken());
-                            } else {
-                                Toast.makeText(this, "Không thể lấy thông tin xác thực từ Google.", Toast.LENGTH_SHORT).show();
-                            }
-                        } catch (ApiException e) {
-                            String msg;
-                            if (e.getStatusCode() == 10 || e.getStatusCode() == 12500) {
-                                msg = "Đăng ký Google thất bại: Chưa cấu hình SHA-1 / Google Web Client ID trong Firebase Console.";
-                            } else {
-                                msg = "Đăng ký Google thất bại (" + e.getStatusCode() + "): " + (e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Lỗi xác thực Google.");
-                            }
-                            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+        btnGoogleRegister.setEnabled(false);
+
+        credentialManager.getCredentialAsync(
+                this,
+                request,
+                new CancellationSignal(),
+                ContextCompat.getMainExecutor(this),
+                new CredentialManagerCallback<>() {
+                    @Override
+                    public void onResult(GetCredentialResponse result) {
+                        btnGoogleRegister.setEnabled(true);
+                        handleGoogleSignInResponse(result);
+                    }
+
+                    @Override
+                    public void onError(@NonNull GetCredentialException e) {
+                        btnGoogleRegister.setEnabled(true);
+                        if (e instanceof GetCredentialCancellationException) {
+                            return;
                         }
+                        Log.e("RegisterActivity", "Google sign-in error", e);
+                        String msg = "Đăng ký Google thất bại: " + (e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Lỗi xác thực Google.");
+                        Toast.makeText(RegisterActivity.this, msg, Toast.LENGTH_LONG).show();
                     }
                 }
         );
+    }
+
+    private void handleGoogleSignInResponse(GetCredentialResponse result) {
+        Credential credential = result.getCredential();
+        if (credential instanceof CustomCredential) {
+            CustomCredential customCredential = (CustomCredential) credential;
+            if (GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(customCredential.getType())) {
+                try {
+                    GoogleIdTokenCredential googleIdTokenCredential = GoogleIdTokenCredential.createFrom(customCredential.getData());
+                    String idToken = googleIdTokenCredential.getIdToken();
+                    if (!idToken.isEmpty()) {
+                        performGoogleAuth(idToken);
+                    } else {
+                        Toast.makeText(this, "Không thể lấy ID token từ Google.", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Log.e("RegisterActivity", "Parsing Google ID Token failed", e);
+                    Toast.makeText(this, "Lỗi phân tích thông tin xác thực Google.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(this, "Loại thông tin xác thực Google không hỗ trợ.", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(this, "Không nhận được phản hồi hợp lệ từ Google.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setupFormattedTexts() {
@@ -160,10 +201,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         btnRegisterAccount.setOnClickListener(v -> handleRegistration());
 
-        btnGoogleRegister.setOnClickListener(v -> {
-            Intent signInIntent = googleSignInClient.getSignInIntent();
-            googleSignInLauncher.launch(signInIntent);
-        });
+        btnGoogleRegister.setOnClickListener(v -> handleGoogleSignIn());
 
         tvLoginNow.setOnClickListener(v -> finish());
     }

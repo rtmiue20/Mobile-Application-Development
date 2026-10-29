@@ -51,7 +51,51 @@ public class AuthRepository {
         return firebaseAuth.getCurrentUser() != null;
     }
 
-    public void loginWithEmail(String email, String password, AuthCallback callback) {
+    public void loginWithEmail(String identifier, String password, AuthCallback callback) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            callback.onError("Vui lòng nhập Email hoặc Tên đăng nhập.");
+            return;
+        }
+        String trimmed = identifier.trim();
+
+        if (!trimmed.contains("@")) {
+            firestore.collection("users")
+                    .whereEqualTo("nickname", trimmed)
+                    .get()
+                    .addOnSuccessListener(querySnapshots -> {
+                        if (querySnapshots != null && !querySnapshots.isEmpty()) {
+                            String email = querySnapshots.getDocuments().get(0).getString("email");
+                            if (email != null && !email.isEmpty()) {
+                                performFirebaseAuthWithEmail(email, password, callback);
+                            } else {
+                                callback.onError("Tên đăng nhập không có Email liên kết.");
+                            }
+                        } else {
+                            firestore.collection("users")
+                                    .whereEqualTo("fullName", trimmed)
+                                    .get()
+                                    .addOnSuccessListener(fullNameSnapshots -> {
+                                        if (fullNameSnapshots != null && !fullNameSnapshots.isEmpty()) {
+                                            String email = fullNameSnapshots.getDocuments().get(0).getString("email");
+                                            if (email != null && !email.isEmpty()) {
+                                                performFirebaseAuthWithEmail(email, password, callback);
+                                            } else {
+                                                callback.onError("Tên người dùng không có Email liên kết.");
+                                            }
+                                        } else {
+                                            callback.onError("Không tìm thấy tài khoản với Tên đăng nhập này.");
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> callback.onError("Lỗi tìm kiếm tài khoản: " + formatAuthError(e)));
+                        }
+                    })
+                    .addOnFailureListener(e -> callback.onError("Lỗi tìm kiếm tài khoản: " + formatAuthError(e)));
+        } else {
+            performFirebaseAuthWithEmail(trimmed, password, callback);
+        }
+    }
+
+    private void performFirebaseAuthWithEmail(String email, String password, AuthCallback callback) {
         firebaseAuth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener(authResult -> {
                     FirebaseUser firebaseUser = authResult.getUser();
