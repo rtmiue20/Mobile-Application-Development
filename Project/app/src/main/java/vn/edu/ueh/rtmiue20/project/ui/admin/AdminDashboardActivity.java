@@ -389,7 +389,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
             for (Request r : requests) {
                 if (Request.STATUS_PENDING.equalsIgnoreCase(r.getStatus())) {
                     pending++;
-                } else if (Request.STATUS_ACCEPTED.equalsIgnoreCase(r.getStatus())) {
+                } else if (Request.STATUS_ACCEPTED.equalsIgnoreCase(r.getStatus()) || Request.STATUS_COMPLETED.equalsIgnoreCase(r.getStatus())) {
                     accepted++;
                 }
             }

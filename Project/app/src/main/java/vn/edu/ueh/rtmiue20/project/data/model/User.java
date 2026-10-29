@@ -40,6 +40,11 @@ public class User {
     @Ignore
     private Boolean bookAlerts = true;
 
+    @Ignore
+    private Double ratingAverage = 5.0;
+    @Ignore
+    private Integer ratingCount = 0;
+
     // Default constructor required for Firestore
     public User() {
     }
@@ -241,6 +246,22 @@ public class User {
         this.bookAlerts = bookAlerts;
     }
 
+    public Double getRatingAverage() {
+        return ratingAverage != null ? ratingAverage : 5.0;
+    }
+
+    public void setRatingAverage(Double ratingAverage) {
+        this.ratingAverage = ratingAverage;
+    }
+
+    public Integer getRatingCount() {
+        return ratingCount != null ? ratingCount : 0;
+    }
+
+    public void setRatingCount(Integer ratingCount) {
+        this.ratingCount = ratingCount;
+    }
+
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("uid", uid);
@@ -267,6 +288,8 @@ public class User {
         if (showPhone != null) map.put("showPhone", showPhone);
         if (directRequest != null) map.put("directRequest", directRequest);
         if (bookAlerts != null) map.put("bookAlerts", bookAlerts);
+        if (ratingAverage != null) map.put("ratingAverage", ratingAverage);
+        if (ratingCount != null) map.put("ratingCount", ratingCount);
         return map;
     }
 }

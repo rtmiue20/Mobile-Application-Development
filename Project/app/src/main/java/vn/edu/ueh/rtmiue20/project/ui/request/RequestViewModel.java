@@ -38,6 +38,10 @@ public class RequestViewModel extends ViewModel {
         repository.updateRequestStatus(requestId, newStatus);
     }
 
+    public void completeAndRateRequest(Request request, float ratingValue, String comment) {
+        repository.completeAndRateRequest(request, ratingValue, comment);
+    }
+
     public LiveData<Boolean> getActionSuccess() {
         return repository.getActionSuccess();
     }

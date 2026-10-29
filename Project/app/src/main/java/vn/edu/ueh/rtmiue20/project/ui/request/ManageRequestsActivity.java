@@ -140,6 +140,24 @@ public class ManageRequestsActivity extends AppCompatActivity {
                         .setNegativeButton("Đóng", null)
                         .show();
             }
+
+            @Override
+            public void onCompleteAndRate(Request request) {
+                showRatingDialog(request);
+            }
+
+            @Override
+            public void onOwnerComplete(Request request) {
+                new AlertDialog.Builder(ManageRequestsActivity.this)
+                        .setTitle("Xác nhận bàn giao sách")
+                        .setMessage("Bạn đã gặp và trao cuốn \"" + (request.getBookTitle() != null ? request.getBookTitle() : "sách") + "\" cho bạn đọc " + (request.getRequesterName() != null ? request.getRequesterName() : "") + " chưa?")
+                        .setPositiveButton("Đã bàn giao", (dialog, which) -> {
+                            viewModel.updateRequestStatus(request.getRequestId(), Request.STATUS_COMPLETED);
+                            Toast.makeText(ManageRequestsActivity.this, "Đã xác nhận hoàn thành! Đang chờ bạn đọc đánh giá.", Toast.LENGTH_LONG).show();
+                        })
+                        .setNegativeButton("Chưa", null)
+                        .show();
+            }
         });
         adapter.setAdminMode(isAdminMode);
         rvRequests.setLayoutManager(new LinearLayoutManager(this));
@@ -323,5 +341,116 @@ public class ManageRequestsActivity extends AppCompatActivity {
             tvTabSent.setBackgroundResource(android.R.color.transparent);
             tvTabSent.setTextColor(getResources().getColor(R.color.text_secondary));
         }
+    }
+
+    /**
+     * TC-RATING: Hiển thị dialog đánh giá trao đổi sách khi người nhận bấm "Đã nhận sách"
+     */
+    private void showRatingDialog(Request request) {
+        if (isFinishing() || isDestroyed()) return;
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_rating, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(true)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        TextView tvRatingDialogSubtitle = dialogView.findViewById(R.id.tvRatingDialogSubtitle);
+        TextView tvRatingFeedback = dialogView.findViewById(R.id.tvRatingFeedback);
+        com.google.android.material.textfield.TextInputEditText etRatingComment = dialogView.findViewById(R.id.etRatingComment);
+        TextView btnCancelRating = dialogView.findViewById(R.id.btnCancelRating);
+        TextView btnSubmitRating = dialogView.findViewById(R.id.btnSubmitRating);
+
+        ImageView[] starViews = new ImageView[]{
+                dialogView.findViewById(R.id.ivStar1),
+                dialogView.findViewById(R.id.ivStar2),
+                dialogView.findViewById(R.id.ivStar3),
+                dialogView.findViewById(R.id.ivStar4),
+                dialogView.findViewById(R.id.ivStar5)
+        };
+
+        String bookTitle = request.getBookTitle() != null ? request.getBookTitle() : "cuốn sách";
+        String ownerName = request.getOwnerName() != null ? request.getOwnerName() : "chủ sách";
+        if (tvRatingDialogSubtitle != null) {
+            tvRatingDialogSubtitle.setText("Bạn đã nhận \"" + bookTitle + "\" từ " + ownerName + ".\nHãy chia sẻ đánh giá trải nghiệm trao đổi này nhé:");
+        }
+
+        final int[] selectedStars = {5};
+
+        Runnable updateStarDisplay = () -> {
+            int score = selectedStars[0];
+            int activeColor = android.graphics.Color.parseColor("#FFB300");
+            int inactiveColor = android.graphics.Color.parseColor("#D1D5DB");
+
+            for (int i = 0; i < starViews.length; i++) {
+                if (starViews[i] != null) {
+                    starViews[i].setColorFilter(i < score ? activeColor : inactiveColor);
+                }
+            }
+
+            if (tvRatingFeedback != null) {
+                switch (score) {
+                    case 1:
+                        tvRatingFeedback.setText("1.0 ★ • Rất không hài lòng");
+                        tvRatingFeedback.setTextColor(android.graphics.Color.parseColor("#EF4444"));
+                        break;
+                    case 2:
+                        tvRatingFeedback.setText("2.0 ★ • Chưa hài lòng");
+                        tvRatingFeedback.setTextColor(android.graphics.Color.parseColor("#F97316"));
+                        break;
+                    case 3:
+                        tvRatingFeedback.setText("3.0 ★ • Bình thường");
+                        tvRatingFeedback.setTextColor(android.graphics.Color.parseColor("#EAB308"));
+                        break;
+                    case 4:
+                        tvRatingFeedback.setText("4.0 ★ • Rất hài lòng");
+                        tvRatingFeedback.setTextColor(android.graphics.Color.parseColor("#10B981"));
+                        break;
+                    case 5:
+                    default:
+                        tvRatingFeedback.setText("5.0 ★ • Tuyệt vời & Thân thiện!");
+                        tvRatingFeedback.setTextColor(android.graphics.Color.parseColor("#059669"));
+                        break;
+                }
+            }
+        };
+
+        for (int i = 0; i < starViews.length; i++) {
+            final int starIndex = i + 1;
+            if (starViews[i] != null) {
+                starViews[i].setOnClickListener(v -> {
+                    selectedStars[0] = starIndex;
+                    updateStarDisplay.run();
+                });
+            }
+        }
+
+        updateStarDisplay.run();
+
+        if (btnCancelRating != null) {
+            btnCancelRating.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        if (btnSubmitRating != null) {
+            btnSubmitRating.setOnClickListener(v -> {
+                String comment = etRatingComment != null && etRatingComment.getText() != null
+                        ? etRatingComment.getText().toString().trim()
+                        : "";
+                float score = (float) selectedStars[0];
+
+                viewModel.completeAndRateRequest(request, score, comment);
+                dialog.dismiss();
+
+                Toast.makeText(ManageRequestsActivity.this,
+                        "Cảm ơn bạn! Đã xác nhận nhận sách và đánh giá " + score + "★ thành công.",
+                        Toast.LENGTH_LONG).show();
+            });
+        }
+
+        dialog.show();
     }
 }

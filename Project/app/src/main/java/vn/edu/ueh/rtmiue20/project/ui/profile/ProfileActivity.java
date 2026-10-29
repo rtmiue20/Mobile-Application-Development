@@ -22,6 +22,9 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Request;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
@@ -66,6 +69,8 @@ public class ProfileActivity extends BaseActivity {
 
     private int booksGivenVal = 0;
     private int booksReceivedVal = 0;
+    private double currentRatingAverage = 5.0;
+    private int currentRatingCount = 0;
     private boolean isAdminUser = false;
 
     private ActivityResultLauncher<String[]> imagePickerLauncher;
@@ -260,6 +265,13 @@ public class ProfileActivity extends BaseActivity {
                 String role = user.getRole() != null ? user.getRole() : "member";
                 isAdminUser = "admin".equalsIgnoreCase(role);
 
+                if (user.getRatingAverage() != null) {
+                    currentRatingAverage = user.getRatingAverage();
+                }
+                if (user.getRatingCount() != null) {
+                    currentRatingCount = user.getRatingCount();
+                }
+
                 if (tvProfileRole != null) {
                     if (isAdminUser) {
                         tvProfileRole.setText("✔ Quản trị viên (Admin) - Chạm để vào Dashboard");
@@ -270,9 +282,10 @@ public class ProfileActivity extends BaseActivity {
                             finish();
                         });
                     } else {
-                        tvProfileRole.setText("✔ Thành viên uy tín 5 sao");
+                        tvProfileRole.setText(vn.edu.ueh.rtmiue20.project.util.RatingHelper.getRatingBadgeTitle(currentRatingAverage, currentRatingCount));
                     }
                 }
+                updateReputationDisplay();
 
                 String avatarToLoad = user.getAvatarUrl() != null ? user.getAvatarUrl() : "";
                 getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
@@ -315,7 +328,7 @@ public class ProfileActivity extends BaseActivity {
                         int acceptedCount = 0;
                         for (DocumentSnapshot doc : value.getDocuments()) {
                             String st = doc.getString("status");
-                            if (Request.STATUS_ACCEPTED.equalsIgnoreCase(st)) {
+                            if (Request.STATUS_ACCEPTED.equalsIgnoreCase(st) || Request.STATUS_COMPLETED.equalsIgnoreCase(st)) {
                                 acceptedCount++;
                             }
                         }
@@ -336,16 +349,38 @@ public class ProfileActivity extends BaseActivity {
             }
         });
 
+        // 4. TC-RATING: Tính toán điểm uy tín từ các giao dịch trao đổi đã hoàn tất & có đánh giá
+        FirebaseFirestore.getInstance().collection("requests")
+                .whereEqualTo("ownerId", uid)
+                .whereEqualTo("status", Request.STATUS_COMPLETED)
+                .addSnapshotListener((value, error) -> {
+                    if (error == null && value != null && !value.isEmpty()) {
+                        List<Float> ratingsList = new ArrayList<>();
+                        for (DocumentSnapshot doc : value.getDocuments()) {
+                            if (Boolean.TRUE.equals(doc.getBoolean("rated"))) {
+                                Double rVal = doc.getDouble("ratingValue");
+                                if (rVal != null && rVal > 0) {
+                                    ratingsList.add(rVal.floatValue());
+                                }
+                            }
+                        }
+                        if (!ratingsList.isEmpty()) {
+                            currentRatingCount = ratingsList.size();
+                            currentRatingAverage = vn.edu.ueh.rtmiue20.project.util.RatingHelper.calculateAverageRating(ratingsList);
+                            updateReputationDisplay();
+                        }
+                    }
+                });
+
         updateReputationDisplay();
     }
 
     private void updateReputationDisplay() {
         if (tvRatingCount == null) return;
-        int totalActivities = booksGivenVal + booksReceivedVal;
-        if (totalActivities > 0) {
-            tvRatingCount.setText("5.0 (" + totalActivities + ")");
-        } else {
-            tvRatingCount.setText("5.0 ★");
+        tvRatingCount.setText(vn.edu.ueh.rtmiue20.project.util.RatingHelper.formatRating(currentRatingAverage, currentRatingCount));
+
+        if (tvProfileRole != null && !isAdminUser) {
+            tvProfileRole.setText(vn.edu.ueh.rtmiue20.project.util.RatingHelper.getRatingBadgeTitle(currentRatingAverage, currentRatingCount));
         }
     }
 
