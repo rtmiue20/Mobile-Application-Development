@@ -103,19 +103,18 @@ public class RequestRepository {
         request.setStatus(Request.STATUS_PENDING);
         request.setTimestamp(System.currentTimeMillis());
 
-        // Lưu vào bộ nhớ cục bộ / SharedPreferences trước để đảm bảo mượt mà
-        addOrUpdateLocalRequest(request);
-        if (request.getRequesterId() != null) {
-            sentLiveData.setValue(getLocalSent(request.getRequesterId()));
-        }
-        if (request.getOwnerId() != null) {
-            receivedLiveData.setValue(getLocalReceived(request.getOwnerId()));
-        }
-
         docRef.set(request)
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void unused) {
+                        // Chỉ lưu cache khi Firestore ghi thành công
+                        addOrUpdateLocalRequest(request);
+                        if (request.getRequesterId() != null) {
+                            sentLiveData.setValue(getLocalSent(request.getRequesterId()));
+                        }
+                        if (request.getOwnerId() != null) {
+                            receivedLiveData.setValue(getLocalReceived(request.getOwnerId()));
+                        }
                         actionSuccess.setValue(true);
 
                         // --- GỌI FCM: TÌM TOKEN CHỦ SÁCH VÀ BẮN THÔNG BÁO ---
@@ -144,8 +143,8 @@ public class RequestRepository {
                     public void onFailure(@NonNull Exception e) {
                         String msg = e.getMessage() != null ? e.getMessage() : "";
                         if (msg.contains("PERMISSION_DENIED")) {
-                            android.util.Log.w("RequestRepository", "Firestore PERMISSION_DENIED cho 'requests', đang dùng dữ liệu cục bộ.");
-                            actionSuccess.setValue(true);
+                            android.util.Log.e("RequestRepository", "Firestore PERMISSION_DENIED cho 'requests': Rules chưa deploy hoặc không có quyền ghi.");
+                            actionError.setValue("Lỗi quyền Firestore (PERMISSION_DENIED): Vui lòng kiểm tra và cập nhật Rules trên Firebase Console!");
                         } else {
                             actionError.setValue("Gửi yêu cầu thất bại: " + msg);
                         }
@@ -261,15 +260,13 @@ public class RequestRepository {
     }
 
     public void updateRequestStatus(final String requestId, final String newStatus) {
-        updateLocalRequestStatus(requestId, newStatus);
-        actionSuccess.setValue(true);
-
         firestore.collection(COLLECTION_REQUESTS)
                 .document(requestId)
                 .update("status", newStatus)
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void unused) {
+                        updateLocalRequestStatus(requestId, newStatus);
                         actionSuccess.setValue(true);
                     }
                 })
@@ -278,7 +275,8 @@ public class RequestRepository {
                     public void onFailure(@NonNull Exception e) {
                         String msg = e.getMessage() != null ? e.getMessage() : "";
                         if (msg.contains("PERMISSION_DENIED")) {
-                            android.util.Log.w("RequestRepository", "Đã cập nhật trạng thái cục bộ cho request: " + requestId);
+                            android.util.Log.e("RequestRepository", "PERMISSION_DENIED khi cập nhật trạng thái Firestore: " + msg);
+                            actionError.setValue("Lỗi quyền Firestore (PERMISSION_DENIED): Không thể cập nhật trạng thái.");
                         } else {
                             actionError.setValue("Cập nhật trạng thái thất bại: " + msg);
                         }
@@ -342,8 +340,10 @@ public class RequestRepository {
                 .addOnFailureListener(e -> {
                     String msg = e.getMessage() != null ? e.getMessage() : "";
                     if (msg.contains("PERMISSION_DENIED")) {
-                        actionSuccess.setValue(true);
-                        if (callback != null) callback.onSuccess();
+                        String err = "Lỗi quyền Firestore (PERMISSION_DENIED): Không thể xác nhận nhận sách.";
+                        android.util.Log.e("RequestRepository", err);
+                        actionError.setValue(err);
+                        if (callback != null) callback.onError(err);
                     } else {
                         actionError.setValue("Xác nhận nhận sách thất bại: " + msg);
                         if (callback != null) callback.onError(msg);
@@ -404,8 +404,10 @@ public class RequestRepository {
                 .addOnFailureListener(e -> {
                     String msg = e.getMessage() != null ? e.getMessage() : "";
                     if (msg.contains("PERMISSION_DENIED")) {
-                        actionSuccess.setValue(true);
-                        if (callback != null) callback.onSuccess();
+                        String err = "Lỗi quyền Firestore (PERMISSION_DENIED): Không thể báo cáo chưa nhận sách.";
+                        android.util.Log.e("RequestRepository", err);
+                        actionError.setValue(err);
+                        if (callback != null) callback.onError(err);
                     } else {
                         actionError.setValue("Gửi phản hồi thất bại: " + msg);
                         if (callback != null) callback.onError(msg);

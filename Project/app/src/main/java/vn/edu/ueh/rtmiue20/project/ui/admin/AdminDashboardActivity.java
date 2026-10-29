@@ -541,77 +541,180 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
     private void showAdminBookModerationDialog(Book book) {
         if (book == null) return;
-        String[] options = new String[]{
-                "Xem chi tiết bài đăng",
-                "Phê duyệt bài đăng (Hiển thị công khai trên Trang chủ)",
-                "Từ chối / Ẩn bài đăng vi phạm (Ẩn khỏi Trang chủ)",
-                "Xóa vĩnh viễn bài đăng"
-        };
-        String stateLabel = Book.isPendingReview(book) ? "⏳ Chờ duyệt"
-                : "hidden".equalsIgnoreCase(book.getStatus()) ? "🚫 Đã ẩn" : "✅ Đang hiển thị";
 
-        new AlertDialog.Builder(this)
-                .setTitle("Kiểm duyệt: " + (book.getTitle() != null ? book.getTitle() : "Bài đăng sách") + " (" + stateLabel + ")")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        Intent intent = new Intent(AdminDashboardActivity.this, BookDetailActivity.class);
-                        intent.putExtra("bookId", book.getId());
-                        startActivity(intent);
-                    } else if (which == 1) {
-                        final String approvedStatus = Book.resolveApprovedStatus(book);
-                        book.setStatus(approvedStatus);
-                        bookViewModel.saveBook(book, new BookRepository.ActionCallback() {
-                            @Override
-                            public void onSuccess() {
-                                Toast.makeText(AdminDashboardActivity.this,
-                                        "Đã phê duyệt! Sách hiển thị công khai với nhãn \""
-                                                + (Book.STATUS_EXCHANGING.equals(approvedStatus) ? "Đang trao đổi" : "Miễn phí") + "\".",
-                                        Toast.LENGTH_SHORT).show();
-                            }
+        com.google.android.material.bottomsheet.BottomSheetDialog sheet =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(this);
+        sheet.setContentView(R.layout.bottom_sheet_admin_book_moderation);
 
-                            @Override
-                            public void onError(String errorMessage) {
-                                Toast.makeText(AdminDashboardActivity.this, "Lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    } else if (which == 2) {
-                        book.setStatus("hidden");
-                        bookViewModel.saveBook(book, new BookRepository.ActionCallback() {
-                            @Override
-                            public void onSuccess() {
-                                Toast.makeText(AdminDashboardActivity.this,
-                                        "Đã ẩn bài đăng vi phạm khỏi Trang chủ!",
-                                        Toast.LENGTH_SHORT).show();
-                            }
+        ImageView btnClose = sheet.findViewById(R.id.btnCloseModerationSheet);
+        ImageView ivCover = sheet.findViewById(R.id.ivModerationBookCover);
+        TextView tvTitle = sheet.findViewById(R.id.tvModerationBookTitle);
+        TextView tvAuthor = sheet.findViewById(R.id.tvModerationBookAuthor);
+        TextView tvOwner = sheet.findViewById(R.id.tvModerationBookOwner);
+        TextView tvStatusBadge = sheet.findViewById(R.id.tvModerationStatusBadge);
 
-                            @Override
-                            public void onError(String errorMessage) {
-                                Toast.makeText(AdminDashboardActivity.this, "Lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    } else if (which == 3) {
-                        new AlertDialog.Builder(AdminDashboardActivity.this)
-                                .setTitle("Xác nhận xóa bài đăng")
-                                .setMessage("Bạn có chắc chắn muốn xóa vĩnh viễn sách \"" + book.getTitle() + "\" khỏi hệ thống?")
-                                .setPositiveButton("Xóa vĩnh viễn", (d, w) -> {
-                                    bookViewModel.deleteBook(book.getId(), new BookRepository.ActionCallback() {
-                                        @Override
-                                        public void onSuccess() {
-                                            Toast.makeText(AdminDashboardActivity.this, "Đã xóa bài đăng thành công!", Toast.LENGTH_SHORT).show();
-                                        }
+        View btnActionView = sheet.findViewById(R.id.btnActionViewDetail);
+        View btnActionApprove = sheet.findViewById(R.id.btnActionApproveBook);
+        View btnActionHide = sheet.findViewById(R.id.btnActionHideBook);
+        View btnActionDelete = sheet.findViewById(R.id.btnActionDeleteBook);
+        View btnCancel = sheet.findViewById(R.id.btnCancelModerationSheet);
 
-                                        @Override
-                                        public void onError(String errorMessage) {
-                                            Toast.makeText(AdminDashboardActivity.this, "Lỗi xóa: " + errorMessage, Toast.LENGTH_SHORT).show();
-                                        }
-                                    });
-                                })
-                                .setNegativeButton("Hủy", null)
-                                .show();
+        // Hiển thị thông tin sách vắn tắt
+        if (tvTitle != null) {
+            tvTitle.setText(book.getTitle() != null ? book.getTitle() : "Bài đăng sách");
+        }
+        if (tvAuthor != null) {
+            String author = (book.getAuthor() != null && !book.getAuthor().trim().isEmpty())
+                    ? book.getAuthor() : "Chưa rõ tác giả";
+            tvAuthor.setText("Tác giả: " + author);
+        }
+        if (tvOwner != null) {
+            String cat = (book.getCategory() != null && !book.getCategory().trim().isEmpty())
+                    ? book.getCategory() : "Chia sẻ sách";
+            String cond = (book.getCondition() != null && !book.getCondition().trim().isEmpty())
+                    ? book.getCondition() : "Đã qua sử dụng";
+            tvOwner.setText(cat + " • " + cond);
+
+            if (book.getOwnerId() != null && !book.getOwnerId().trim().isEmpty()) {
+                UserRepository.getInstance().getUserProfile(book.getOwnerId(), new UserRepository.UserCallback() {
+                    @Override
+                    public void onSuccess(User u) {
+                        if (u != null && u.getFullName() != null && !u.getFullName().trim().isEmpty()) {
+                            tvOwner.setText("Người đăng: " + u.getFullName());
+                        }
                     }
-                })
-                .setNegativeButton("Đóng", null)
-                .show();
+
+                    @Override
+                    public void onError(String error) {}
+                });
+            }
+        }
+
+        // Bìa sách
+        if (ivCover != null) {
+            if (book.getImageUrl() != null && !book.getImageUrl().trim().isEmpty()) {
+                com.bumptech.glide.Glide.with(this)
+                        .load(book.getImageUrl())
+                        .placeholder(R.drawable.ic_bookshare_logo)
+                        .error(R.drawable.ic_bookshare_logo)
+                        .into(ivCover);
+            } else {
+                ivCover.setImageResource(R.drawable.ic_bookshare_logo);
+            }
+        }
+
+        // Huy hiệu trạng thái sách
+        boolean isPending = Book.isPendingReview(book);
+        boolean isHidden = "hidden".equalsIgnoreCase(book.getStatus());
+        if (tvStatusBadge != null) {
+            if (isPending) {
+                tvStatusBadge.setText("⏳ Chờ duyệt");
+                tvStatusBadge.setBackgroundResource(R.drawable.bg_tag_secondary);
+                tvStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.tertiary_container));
+            } else if (isHidden) {
+                tvStatusBadge.setText("🚫 Đã ẩn vi phạm");
+                tvStatusBadge.setBackgroundResource(R.drawable.bg_moderation_action_danger);
+                tvStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.error));
+            } else {
+                tvStatusBadge.setText("✅ Đang hiển thị");
+                tvStatusBadge.setBackgroundResource(R.drawable.bg_tag_secondary);
+                tvStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.on_secondary_container));
+            }
+        }
+
+        TextView tvApproveTitle = sheet.findViewById(R.id.tvActionApproveTitle);
+        if (tvApproveTitle != null && !isPending && !isHidden) {
+            tvApproveTitle.setText("Cập nhật phê duyệt (Đang hiển thị)");
+        }
+
+        // Khối 1: Xem chi tiết
+        if (btnActionView != null) {
+            btnActionView.setOnClickListener(v -> {
+                sheet.dismiss();
+                Intent intent = new Intent(AdminDashboardActivity.this, BookDetailActivity.class);
+                intent.putExtra("bookId", book.getId());
+                startActivity(intent);
+            });
+        }
+
+        // Khối 2: Phê duyệt
+        if (btnActionApprove != null) {
+            btnActionApprove.setOnClickListener(v -> {
+                sheet.dismiss();
+                final String approvedStatus = Book.resolveApprovedStatus(book);
+                book.setStatus(approvedStatus);
+                bookViewModel.saveBook(book, new BookRepository.ActionCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(AdminDashboardActivity.this,
+                                "Đã phê duyệt! Sách hiển thị công khai với nhãn \""
+                                        + (Book.STATUS_EXCHANGING.equals(approvedStatus) ? "Đang trao đổi" : "Miễn phí") + "\".",
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        Toast.makeText(AdminDashboardActivity.this, "Lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            });
+        }
+
+        // Khối 3: Từ chối / Tạm ẩn
+        if (btnActionHide != null) {
+            btnActionHide.setOnClickListener(v -> {
+                sheet.dismiss();
+                book.setStatus("hidden");
+                bookViewModel.saveBook(book, new BookRepository.ActionCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(AdminDashboardActivity.this,
+                                "Đã ẩn bài đăng vi phạm khỏi Trang chủ!",
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        Toast.makeText(AdminDashboardActivity.this, "Lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            });
+        }
+
+        // Khối 4: Xóa vĩnh viễn
+        if (btnActionDelete != null) {
+            btnActionDelete.setOnClickListener(v -> {
+                sheet.dismiss();
+                new AlertDialog.Builder(AdminDashboardActivity.this)
+                        .setTitle("Xác nhận xóa bài đăng")
+                        .setMessage("Bạn có chắc chắn muốn xóa vĩnh viễn sách \"" + book.getTitle() + "\" khỏi hệ thống?")
+                        .setPositiveButton("Xóa vĩnh viễn", (d, w) -> {
+                            bookViewModel.deleteBook(book.getId(), new BookRepository.ActionCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    Toast.makeText(AdminDashboardActivity.this, "Đã xóa bài đăng thành công!", Toast.LENGTH_SHORT).show();
+                                }
+
+                                @Override
+                                public void onError(String errorMessage) {
+                                    Toast.makeText(AdminDashboardActivity.this, "Lỗi xóa: " + errorMessage, Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        })
+                        .setNegativeButton("Hủy", null)
+                        .show();
+            });
+        }
+
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> sheet.dismiss());
+        }
+        if (btnCancel != null) {
+            btnCancel.setOnClickListener(v -> sheet.dismiss());
+        }
+
+        ViewPressEffectHelper.applyPressEffect(btnClose, btnCancel, btnActionView, btnActionApprove, btnActionHide, btnActionDelete);
+        sheet.show();
     }
 
     private void observeRealTimeMetrics() {
@@ -738,22 +841,70 @@ public class AdminDashboardActivity extends AppCompatActivity {
     private void showDatabaseStatusDialog() {
         int activeUsers = Math.max(0, totalUsersCount - bannedUsersCount);
         int visibleBooks = Math.max(0, totalBooksCount - hiddenBooksCount);
-        String msg = "☁️ Cloud Firebase Firestore Collections:\n"
-                + "• users: " + totalUsersCount + " bản ghi (" + activeUsers + " hoạt động, " + bannedUsersCount + " bị khóa)\n"
-                + "• books: " + totalBooksCount + " bản ghi (" + visibleBooks + " hiển thị, " + hiddenBooksCount + " đã ẩn)\n"
-                + "• requests: " + totalRequestsCount + " bản ghi (" + pendingRequestsCount + " chờ duyệt, " + acceptedRequestsCount + " hoàn tất)\n"
-                + "• favorites: " + totalFavoritesCount + " bản ghi yêu thích\n\n"
-                + "💾 Offline Room SQLite (BookRoomDatabase):\n"
-                + "• book_table: Đã đồng bộ " + totalBooksCount + " sách cục bộ\n"
-                + "• favorite_table: Đang bật chế độ Offline-first (FR12)\n"
-                + "• Trạng thái đồng bộ: Hoạt động ổn định (Realtime Sync)";
 
-        new AlertDialog.Builder(this)
-                .setTitle("Báo cáo Trạng thái Cơ sở dữ liệu")
-                .setMessage(msg)
-                .setPositiveButton("Làm mới dữ liệu ngay", (d, w) -> refreshDatabaseMetricsNow())
-                .setNegativeButton("Đóng", null)
-                .show();
+        com.google.android.material.bottomsheet.BottomSheetDialog sheet =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(this);
+        sheet.setContentView(R.layout.bottom_sheet_admin_database_status);
+
+        ImageView btnClose = sheet.findViewById(R.id.btnCloseDbStatusSheet);
+        View btnRefresh = sheet.findViewById(R.id.btnRefreshDbMetrics);
+        View btnCancel = sheet.findViewById(R.id.btnCancelDbStatusSheet);
+
+        TextView tvUsersCount = sheet.findViewById(R.id.tvDbUsersCount);
+        TextView tvUsersActive = sheet.findViewById(R.id.tvDbUsersActive);
+        TextView tvUsersLocked = sheet.findViewById(R.id.tvDbUsersLocked);
+
+        TextView tvBooksCount = sheet.findViewById(R.id.tvDbBooksCount);
+        TextView tvBooksVisible = sheet.findViewById(R.id.tvDbBooksVisible);
+        TextView tvBooksHidden = sheet.findViewById(R.id.tvDbBooksHidden);
+
+        TextView tvRequestsCount = sheet.findViewById(R.id.tvDbRequestsCount);
+        TextView tvRequestsPending = sheet.findViewById(R.id.tvDbRequestsPending);
+        TextView tvRequestsCompleted = sheet.findViewById(R.id.tvDbRequestsCompleted);
+
+        TextView tvFavoritesCount = sheet.findViewById(R.id.tvDbFavoritesCount);
+        TextView tvRoomBooksDetail = sheet.findViewById(R.id.tvRoomBooksDetail);
+
+        // Bind metrics vào từng khối thẻ
+        if (tvUsersCount != null) tvUsersCount.setText(totalUsersCount + " bản ghi");
+        if (tvUsersActive != null) tvUsersActive.setText(activeUsers + " hoạt động");
+        if (tvUsersLocked != null) {
+            tvUsersLocked.setText(bannedUsersCount + " bị khóa");
+            if (bannedUsersCount == 0) {
+                tvUsersLocked.setBackgroundResource(R.drawable.bg_tag_grey);
+                tvUsersLocked.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+            }
+        }
+
+        if (tvBooksCount != null) tvBooksCount.setText(totalBooksCount + " bản ghi");
+        if (tvBooksVisible != null) tvBooksVisible.setText(visibleBooks + " hiển thị");
+        if (tvBooksHidden != null) {
+            tvBooksHidden.setText(hiddenBooksCount + " đã ẩn");
+            if (hiddenBooksCount == 0) {
+                tvBooksHidden.setBackgroundResource(R.drawable.bg_tag_grey);
+                tvBooksHidden.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+            }
+        }
+
+        if (tvRequestsCount != null) tvRequestsCount.setText(totalRequestsCount + " bản ghi");
+        if (tvRequestsPending != null) tvRequestsPending.setText(pendingRequestsCount + " chờ duyệt");
+        if (tvRequestsCompleted != null) tvRequestsCompleted.setText(acceptedRequestsCount + " hoàn tất");
+
+        if (tvFavoritesCount != null) tvFavoritesCount.setText(totalFavoritesCount + " bản ghi");
+        if (tvRoomBooksDetail != null) tvRoomBooksDetail.setText("book_table: Đã đồng bộ " + totalBooksCount + " sách cục bộ");
+
+        if (btnClose != null) btnClose.setOnClickListener(v -> sheet.dismiss());
+        if (btnCancel != null) btnCancel.setOnClickListener(v -> sheet.dismiss());
+
+        if (btnRefresh != null) {
+            btnRefresh.setOnClickListener(v -> {
+                sheet.dismiss();
+                refreshDatabaseMetricsNow();
+            });
+        }
+
+        ViewPressEffectHelper.applyPressEffect(btnClose, btnCancel, btnRefresh);
+        sheet.show();
     }
 
     private void refreshDatabaseMetricsNow() {
