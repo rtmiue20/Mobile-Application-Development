@@ -123,3 +123,117 @@ exports.adminSetUserPassword = functions
       );
     }
   });
+
+/**
+ * Cloud Function Trigger: onRequestCreated
+ * Tự động gửi thông báo FCM v1 tới chủ sách khi có người gửi yêu cầu nhận sách mới.
+ * Hỗ trợ nhận diện linh hoạt cả 'ownerId' và 'receiverId'.
+ */
+exports.onRequestCreated = functions
+  .region("us-central1")
+  .firestore.document("requests/{requestId}")
+  .onCreate(async (snapshot, context) => {
+    const data = snapshot.data();
+    if (!data) return null;
+
+    // Nhận diện linh hoạt cả ownerId (chuẩn) và receiverId
+    const ownerId = data.ownerId || data.receiverId;
+    const requesterName = data.requesterName || "Một bạn đọc";
+    const bookTitle = data.bookTitle || "cuốn sách của bạn";
+
+    if (!ownerId) {
+      console.warn("onRequestCreated: Không tìm thấy ownerId trong request", context.params.requestId);
+      return null;
+    }
+
+    try {
+      const ownerDoc = await admin.firestore().collection("users").document(ownerId).get();
+      if (!ownerDoc.exists) return null;
+
+      const fcmToken = ownerDoc.data().fcmToken;
+      if (!fcmToken) {
+        console.log(`Chủ sách ${ownerId} chưa đăng ký fcmToken.`);
+        return null;
+      }
+
+      const message = {
+        token: fcmToken,
+        notification: {
+          title: "Yêu cầu nhận sách mới! 📚",
+          body: `${requesterName} muốn nhận cuốn "${bookTitle}". Bấm để xem và phản hồi!`,
+        },
+        data: {
+          requestId: context.params.requestId,
+          bookId: data.bookId || "",
+          type: "NEW_REQUEST",
+        },
+      };
+
+      await admin.messaging().send(message);
+      console.log(`Đã gửi FCM thông báo yêu cầu sách tới chủ sách ${ownerId}`);
+    } catch (err) {
+      console.error("Lỗi gửi FCM trong onRequestCreated:", err);
+    }
+    return null;
+  });
+
+/**
+ * Cloud Function Trigger: onRequestUpdated
+ * Tự động gửi thông báo FCM v1 tới người gửi yêu cầu khi chủ sách duyệt/từ chối hoặc giao dịch hoàn tất.
+ * Hỗ trợ nhận diện linh hoạt cả 'requesterId' và 'senderId'.
+ */
+exports.onRequestUpdated = functions
+  .region("us-central1")
+  .firestore.document("requests/{requestId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    if (!before || !after || before.status === after.status) return null;
+
+    // Nhận diện linh hoạt cả requesterId (chuẩn) và senderId
+    const requesterId = after.requesterId || after.senderId;
+    const bookTitle = after.bookTitle || "sách";
+
+    if (!requesterId) return null;
+
+    try {
+      const requesterDoc = await admin.firestore().collection("users").document(requesterId).get();
+      if (!requesterDoc.exists) return null;
+
+      const fcmToken = requesterDoc.data().fcmToken;
+      if (!fcmToken) return null;
+
+      let title = "Cập nhật yêu cầu sách 📚";
+      let body = "";
+
+      if (after.status === "accepted") {
+        title = "Yêu cầu được chấp nhận! 🎉";
+        body = `Chủ sách đã đồng ý trao cuốn "${bookTitle}" cho bạn. Hãy kiểm tra địa điểm hẹn nhé!`;
+      } else if (after.status === "rejected") {
+        title = "Yêu cầu trao đổi sách";
+        body = `Yêu cầu nhận cuốn "${bookTitle}" đã bị từ chối.`;
+      } else if (after.status === "completed") {
+        title = "Giao dịch hoàn tất! ✅";
+        body = `Giao dịch cuốn "${bookTitle}" đã hoàn tất thành công. Hãy gửi đánh giá uy tín nhé!`;
+      } else {
+        return null;
+      }
+
+      const message = {
+        token: fcmToken,
+        notification: { title, body },
+        data: {
+          requestId: context.params.requestId,
+          status: after.status,
+          type: "REQUEST_STATUS_CHANGED",
+        },
+      };
+
+      await admin.messaging().send(message);
+      console.log(`Đã gửi FCM cập nhật status '${after.status}' tới requester ${requesterId}`);
+    } catch (err) {
+      console.error("Lỗi gửi FCM trong onRequestUpdated:", err);
+    }
+    return null;
+  });
+

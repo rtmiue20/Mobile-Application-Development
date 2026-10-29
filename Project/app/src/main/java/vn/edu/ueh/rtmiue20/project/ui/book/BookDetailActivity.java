@@ -47,7 +47,7 @@ public class BookDetailActivity extends AppCompatActivity {
     private UserRepository userRepository;
 
     // Ép kiểu View toàn bộ để dứt điểm lỗi ClassCastException với file XML
-    private View btnBack, layoutBrandLogo, btnRequestBook, btnSendComment, btnFavorite;
+    private View btnBack, layoutBrandLogo, btnRequestBook, btnSendComment, btnFavorite, bottomBar;
     private View layoutOwnerActions, btnEdit, btnDelete;
 
     private ImageView ivBookCover, ivOwnerAvatar, ivOwnerAvatarSmall;
@@ -168,6 +168,7 @@ public class BookDetailActivity extends AppCompatActivity {
         btnFavorite = findViewById(R.id.btn_favorite);
         btnSendComment = findViewById(R.id.btn_send_comment);
         layoutOwnerActions = findViewById(R.id.layoutOwnerActions);
+        bottomBar = findViewById(R.id.bottomBar);
 
         tvTitle = findViewById(R.id.tvTitle);
         tvAuthor = findViewById(R.id.tvAuthor);
@@ -298,8 +299,11 @@ public class BookDetailActivity extends AppCompatActivity {
             }
 
             FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-            if (currentUser != null && currentUser.getUid().equals(book.getOwnerId())) {
+            boolean isOwner = (currentUser != null && book.getOwnerId() != null && currentUser.getUid().equals(book.getOwnerId()));
+            if (isOwner) {
                 if (layoutOwnerActions != null) layoutOwnerActions.setVisibility(View.VISIBLE);
+                if (btnRequestBook != null) btnRequestBook.setVisibility(View.GONE);
+                if (bottomBar != null) bottomBar.setVisibility(View.GONE);
 
                 if (btnDelete != null) {
                     btnDelete.setOnClickListener(v -> {
@@ -332,6 +336,8 @@ public class BookDetailActivity extends AppCompatActivity {
                 }
             } else {
                 if (layoutOwnerActions != null) layoutOwnerActions.setVisibility(View.GONE);
+                if (btnRequestBook != null) btnRequestBook.setVisibility(View.VISIBLE);
+                if (bottomBar != null) bottomBar.setVisibility(View.VISIBLE);
             }
         } catch (Exception e) {
             android.util.Log.e("BookDetailActivity", "Lỗi bind dữ liệu sách: " + e.getMessage(), e);
