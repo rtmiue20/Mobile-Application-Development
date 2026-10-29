@@ -17,13 +17,24 @@ import okhttp3.Response;
 
 public class FCMSender {
 
-    // Đường dẫn API của Firebase Cloud Messaging
+    // Đường dẫn API cũ của Firebase Cloud Messaging (đã deprecated/sunset)
     private static final String BASE_URL = "https://fcm.googleapis.com/fcm/send";
 
-    // TODO: Leader cần cung cấp SERVER KEY từ Firebase Console để điền vào đây
+    // Server Key giữ chỗ (nếu chưa cấu hình, ứng dụng sẽ ưu tiên sử dụng thông báo nội bộ / Badge in-app)
     private static final String SERVER_KEY = "key=ĐIỀN_SERVER_KEY_CỦA_FIREBASE_VÀO_ĐÂY";
 
     public static void pushNotification(String targetToken, String title, String body) {
+        if (targetToken == null || targetToken.trim().isEmpty()) {
+            return;
+        }
+
+        // Nếu chưa cấu hình Server Key thật, bỏ qua yêu cầu đẩy FCM API cũ để tránh lỗi mạng
+        // và tập trung vào cơ chế thông báo nội bộ (Badge số yêu cầu ở góc chuông HomeActivity).
+        if (SERVER_KEY.contains("ĐIỀN_SERVER_KEY")) {
+            Log.d("FCM", "FCM push notification skipped: Server key is not configured (Using in-app badge notifications).");
+            return;
+        }
+
         OkHttpClient client = new OkHttpClient();
         JSONObject json = new JSONObject();
         try {
@@ -53,7 +64,7 @@ public class FCMSender {
 
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
-                    Log.d("FCM", "Gửi thông báo thành công: " + response.body().string());
+                    Log.d("FCM", "Gửi thông báo thành công: " + (response.body() != null ? response.body().string() : ""));
                 }
             });
         } catch (JSONException e) {
