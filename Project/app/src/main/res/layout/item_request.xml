@@ -232,98 +232,184 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:visibility="visible">
 
-            <!-- Các Nút của Chủ Sách (Tab Nhận) -->
-            <TextView
-                android:id="@+id/btnReject"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="6dp"
-                android:layout_weight="1"
-                android:background="#FFF5F5"
-                android:gravity="center"
-                android:text="✕ Từ chối"
-                android:textColor="#EF4444"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+            <!-- Các Nút của Chủ Sách (Tab Nhận) khi Pending -->
+            <LinearLayout
+                android:id="@+id/layoutPendingOwnerActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone">
 
-            <TextView
-                android:id="@+id/btnAccept"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="6dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_pill_active"
-                android:gravity="center"
-                android:text="🤝 Đồng ý giao lưu"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/btnReject"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:background="#FFF5F5"
+                    android:gravity="center"
+                    android:text="✕ Từ chối"
+                    android:textColor="#EF4444"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-            <!-- Các Nút của Người Xin (Tab Gửi) -->
-            <TextView
-                android:id="@+id/btnCancelRequest"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="6dp"
-                android:layout_weight="1"
-                android:background="#F3F4F6"
-                android:gravity="center"
-                android:text="Hủy yêu cầu"
-                android:textColor="#EF4444"
-                android:textSize="13sp"
-                android:visibility="gone" />
+                <TextView
+                    android:id="@+id/btnAccept"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_pill_active"
+                    android:gravity="center"
+                    android:text="🤝 Đồng ý giao lưu"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
-            <TextView
-                android:id="@+id/btnRemind"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="6dp"
-                android:layout_weight="1"
-                android:background="#F3F4F6"
-                android:gravity="center"
-                android:text="🔔 Nhắc nhở nhẹ"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp"
-                android:visibility="gone" />
+            <!-- Các Nút của Người Xin (Tab Gửi) khi Pending -->
+            <LinearLayout
+                android:id="@+id/layoutPendingRequesterActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone">
 
-            <!-- Nút Mã QR (Hiện khi được chấp nhận) -->
+                <TextView
+                    android:id="@+id/btnCancelRequest"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:background="#F3F4F6"
+                    android:gravity="center"
+                    android:text="Hủy yêu cầu"
+                    android:textColor="#EF4444"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/btnRemind"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="#F3F4F6"
+                    android:gravity="center"
+                    android:text="🔔 Nhắc nhở nhẹ"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Nút Mã QR (Hiện khi được chấp nhận) - Full Width Pill -->
             <TextView
                 android:id="@+id/btnViewQR"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="6dp"
-                android:layout_weight="1"
-                android:background="#F3F4F6"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_btn_primary"
                 android:gravity="center"
-                android:text="QR Mã hẹn"
-                android:textColor="@color/text_primary"
-                android:textSize="12sp"
+                android:text="QR Xem Mã QR &amp; Chi tiết điểm hẹn"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
 
-            <!-- Nút Người nhận bấm Hoàn thành & Đánh giá -->
+            <!-- Nút Xác nhận đã nhận sách (Chỉ ở tab Đã gửi khi chưa xác nhận) -->
             <TextView
                 android:id="@+id/btnConfirmReceived"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="6dp"
-                android:layout_weight="1.4"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/bg_pill_active"
                 android:gravity="center"
-                android:text="✓ Đã nhận &amp; Đánh giá"
+                android:text="@string/btn_confirm_received_book"
                 android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <!-- Badge / Dòng trạng thái khi ĐÃ NHẬN SÁCH -->
+            <LinearLayout
+                android:id="@+id/layoutReceivedStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_badge_active"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="10dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_verified"
+                    app:tint="@color/secondary" />
+
+                <TextView
+                    android:id="@+id/tvReceivedStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="✓ Đã nhận sách • 14:30 29/10/2026"
+                    android:textColor="@color/primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Cảnh báo khi người nhận báo Chưa nhận được sách -->
+            <LinearLayout
+                android:id="@+id/layoutNotReceivedNotice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_reason_box"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="10dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_warning"
+                    app:tint="@color/error" />
+
+                <TextView
+                    android:id="@+id/tvNotReceivedNoticeText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="⚠ Người nhận báo chưa nhận được sách."
+                    android:textColor="@color/error"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <!-- Dòng trạng thái nhỏ bên phía Chủ Sách (Tab Yêu cầu đến) -->
+            <TextView
+                android:id="@+id/tvOwnerStatusNotice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_pill_inactive"
+                android:gravity="center"
+                android:paddingVertical="8dp"
+                android:paddingHorizontal="12dp"
+                android:text="⏳ Chờ người nhận xác nhận"
+                android:textColor="@color/text_secondary"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
 
-            <!-- Nút Chủ sách xác nhận bàn giao -->
+            <!-- Nút Chủ sách xác nhận bàn giao (nếu dùng) -->
             <TextView
                 android:id="@+id/btnOwnerComplete"
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/bg_pill_active"
                 android:gravity="center"
                 android:text="✓ Đã bàn giao sách"

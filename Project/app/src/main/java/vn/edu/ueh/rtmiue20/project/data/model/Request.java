@@ -25,6 +25,10 @@ public class Request {
     private float ratingValue = 5.0f;
     private String ratingComment;
     private long completedTimestamp;
+    private long receivedAt;
+    private boolean receiveReportedNotYet = false;
+    private String notReceivedNote;
+    private long notReceivedTimestamp;
 
     public Request() {}
 
@@ -97,4 +101,16 @@ public class Request {
 
     public long getCompletedTimestamp() { return completedTimestamp; }
     public void setCompletedTimestamp(long completedTimestamp) { this.completedTimestamp = completedTimestamp; }
+
+    public long getReceivedAt() { return receivedAt; }
+    public void setReceivedAt(long receivedAt) { this.receivedAt = receivedAt; }
+
+    public boolean isReceiveReportedNotYet() { return receiveReportedNotYet; }
+    public void setReceiveReportedNotYet(boolean receiveReportedNotYet) { this.receiveReportedNotYet = receiveReportedNotYet; }
+
+    public String getNotReceivedNote() { return notReceivedNote; }
+    public void setNotReceivedNote(String notReceivedNote) { this.notReceivedNote = notReceivedNote; }
+
+    public long getNotReceivedTimestamp() { return notReceivedTimestamp; }
+    public void setNotReceivedTimestamp(long notReceivedTimestamp) { this.notReceivedTimestamp = notReceivedTimestamp; }
 }

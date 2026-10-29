@@ -41,8 +41,14 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
+    implementation(libs.firebase.functions)
     implementation(libs.play.services.auth)
     implementation("com.google.android.gms:play-services-location:21.2.0")
+
+    // Credential Manager API
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     // THÊM THƯ VIỆN BẮT THÔNG BÁO FCM Ở ĐÂY:
     implementation("com.google.firebase:firebase-messaging")
