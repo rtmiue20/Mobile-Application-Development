@@ -105,6 +105,13 @@ public class ManageRequestsActivity extends AppCompatActivity {
             if (bottomNavContainer != null) {
                 bottomNavContainer.setVisibility(View.GONE);
             }
+        } else {
+            if (tvTabReceived != null) {
+                tvTabReceived.setText(R.string.tab_requests_received);
+            }
+            if (tvTabSent != null) {
+                tvTabSent.setText(R.string.tab_requests_sent);
+            }
         }
 
         if (ivAvatarSmall != null) {

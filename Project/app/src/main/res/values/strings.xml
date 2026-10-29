@@ -155,4 +155,9 @@
     <string name="msg_confirm_received_success">Đã xác nhận nhận sách thành công!</string>
     <string name="msg_report_not_received_success">Đã ghi nhận phản hồi chưa nhận được sách.</string>
     <string name="err_cannot_confirm_completed">Giao dịch này đã được hoàn tất trước đó.</string>
+
+    <!-- Strings for Request Management Tabs -->
+    <string name="title_manage_requests">Yêu Cầu Trao Đổi</string>
+    <string name="tab_requests_received">Thông báo yêu cầu đến</string>
+    <string name="tab_requests_sent">Đã gửi</string>
 </resources>
