@@ -64,6 +64,14 @@ public class UserRepository {
                         User user = documentSnapshot.toObject(User.class);
                         if (user != null) {
                             user.setUid(uid);
+                            if (documentSnapshot.contains("interests")) {
+                                try {
+                                    List<String> rawInterests = (List<String>) documentSnapshot.get("interests");
+                                    if (rawInterests != null) {
+                                        user.setInterests(rawInterests);
+                                    }
+                                } catch (Exception ignored) {}
+                            }
                             callback.onSuccess(user);
                         } else {
                             callback.onError("Không thể chuyển đổi dữ liệu hồ sơ.");
@@ -75,7 +83,7 @@ public class UserRepository {
                 .addOnFailureListener(e -> callback.onError("Lỗi khi tải hồ sơ: " + e.getLocalizedMessage()));
     }
 
-    public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, Double latitude, Double longitude, UpdateCallback callback) {
+    public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, Double latitude, Double longitude, List<String> interests, UpdateCallback callback) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("fullName", fullName);
         updates.put("nickname", nickname);
@@ -88,6 +96,7 @@ public class UserRepository {
         updates.put("favoriteSpotAddress", favoriteSpotAddress);
         if (latitude != null) updates.put("latitude", latitude);
         if (longitude != null) updates.put("longitude", longitude);
+        if (interests != null) updates.put("interests", interests);
 
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         if (firebaseUser != null) {
@@ -103,8 +112,12 @@ public class UserRepository {
                 .addOnFailureListener(e -> callback.onError("Cập nhật thông tin thất bại: " + e.getLocalizedMessage()));
     }
 
+    public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, Double latitude, Double longitude, UpdateCallback callback) {
+        updateUserProfile(uid, fullName, nickname, phoneNumber, bio, city, district, ward, favoriteSpotName, favoriteSpotAddress, latitude, longitude, null, callback);
+    }
+
     public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, UpdateCallback callback) {
-        updateUserProfile(uid, fullName, nickname, phoneNumber, bio, city, district, ward, favoriteSpotName, favoriteSpotAddress, null, null, callback);
+        updateUserProfile(uid, fullName, nickname, phoneNumber, bio, city, district, ward, favoriteSpotName, favoriteSpotAddress, null, null, null, callback);
     }
 
     public void updateUserLocation(String uid, double latitude, double longitude, UpdateCallback callback) {

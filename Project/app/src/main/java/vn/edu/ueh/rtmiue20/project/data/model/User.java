@@ -30,6 +30,9 @@ public class User {
     private String lockReason;
     private long createdAt;
 
+    @Ignore
+    private java.util.List<String> interests;
+
     // Default constructor required for Firestore
     public User() {
     }
@@ -199,6 +202,14 @@ public class User {
         this.longitude = longitude;
     }
 
+    public java.util.List<String> getInterests() {
+        return interests != null ? interests : new java.util.ArrayList<>();
+    }
+
+    public void setInterests(java.util.List<String> interests) {
+        this.interests = interests;
+    }
+
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("uid", uid);
@@ -219,6 +230,9 @@ public class User {
         map.put("status", status);
         map.put("lockReason", lockReason);
         map.put("createdAt", createdAt);
+        if (interests != null) {
+            map.put("interests", interests);
+        }
         return map;
     }
 }
