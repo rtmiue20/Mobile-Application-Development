@@ -301,6 +301,8 @@ public class BookDetailActivity extends AppCompatActivity {
             FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
             if (currentUser != null && currentUser.getUid().equals(book.getOwnerId())) {
                 if (layoutOwnerActions != null) layoutOwnerActions.setVisibility(View.VISIBLE);
+                // Ẩn nút "Yêu cầu nhận sách" nếu chính chủ đang xem sách của mình
+                if (btnRequestBook != null) btnRequestBook.setVisibility(View.GONE);
 
                 if (btnDelete != null) {
                     btnDelete.setOnClickListener(v -> {
@@ -333,6 +335,8 @@ public class BookDetailActivity extends AppCompatActivity {
                 }
             } else {
                 if (layoutOwnerActions != null) layoutOwnerActions.setVisibility(View.GONE);
+                // Hiện nút "Yêu cầu nhận sách" cho bạn đọc khác
+                if (btnRequestBook != null) btnRequestBook.setVisibility(View.VISIBLE);
             }
         } catch (Exception e) {
             android.util.Log.e("BookDetailActivity", "Lỗi bind dữ liệu sách: " + e.getMessage(), e);

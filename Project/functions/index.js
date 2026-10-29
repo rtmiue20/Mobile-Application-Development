@@ -123,3 +123,46 @@ exports.adminSetUserPassword = functions
       );
     }
   });
+
+/**
+ * Firestore Trigger: sendRequestNotification
+ * Tự động gửi thông báo FCM v1 qua Firebase Admin SDK khi có Yêu cầu nhận sách mới.
+ */
+exports.sendRequestNotification = functions
+  .region("us-central1")
+  .firestore.document("requests/{requestId}")
+  .onCreate(async (snap, context) => {
+    const requestData = snap.data();
+    if (!requestData) return;
+
+    const receiverId = requestData.ownerId || requestData.receiverId;
+    const senderName = requestData.requesterName || requestData.senderName || "Một thành viên";
+    const bookTitle = requestData.bookTitle || "cuốn sách";
+
+    if (!receiverId) return;
+
+    const receiverDoc = await admin.firestore().collection("users").document(receiverId).get();
+    if (!receiverDoc.exists) return;
+
+    const fcmToken = receiverDoc.data().fcmToken;
+    if (!fcmToken) return;
+
+    const message = {
+      token: fcmToken,
+      notification: {
+        title: "Yêu cầu nhận sách mới! 📚",
+        body: `${senderName} muốn nhận cuốn sách "${bookTitle}" của bạn.`,
+      },
+      data: {
+        click_action: "OPEN_REQUESTS_ACTIVITY",
+        requestId: context.params.requestId,
+      },
+    };
+
+    try {
+      await admin.messaging().send(message);
+      console.log("FCM v1 notification sent successfully for request:", context.params.requestId);
+    } catch (error) {
+      console.error("Error sending FCM v1 notification:", error);
+    }
+  });

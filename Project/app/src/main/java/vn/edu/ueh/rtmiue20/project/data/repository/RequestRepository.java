@@ -144,8 +144,8 @@ public class RequestRepository {
                     public void onFailure(@NonNull Exception e) {
                         String msg = e.getMessage() != null ? e.getMessage() : "";
                         if (msg.contains("PERMISSION_DENIED")) {
-                            android.util.Log.w("RequestRepository", "Firestore PERMISSION_DENIED cho 'requests', đang dùng dữ liệu cục bộ.");
-                            actionSuccess.setValue(true);
+                            android.util.Log.e("RequestRepository", "PERMISSION_DENIED: Firebase Rules chặn ghi vào bảng 'requests'!");
+                            actionError.setValue("Lỗi quyền Firebase (PERMISSION_DENIED): Cần cập nhật Firestore Rules trên Firebase Console!");
                         } else {
                             actionError.setValue("Gửi yêu cầu thất bại: " + msg);
                         }

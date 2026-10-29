@@ -45,10 +45,16 @@ service cloud.firestore {
     }
 
     // 4. Collection Requests (Yêu cầu nhận sách / trao đổi - FR10)
+    // Dùng requesterId (người gửi yêu cầu) và ownerId (chủ sách) theo model Request.java
     match /requests/{requestId} {
-      allow read, create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() &&
-        (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId || isAdmin());
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.requesterId;
+      allow update: if isAuthenticated() &&
+        (request.auth.uid == resource.data.requesterId ||
+         request.auth.uid == resource.data.ownerId ||
+         isAdmin());
+      allow delete: if isAuthenticated() &&
+        (request.auth.uid == resource.data.requesterId || isAdmin());
     }
   }
 }
