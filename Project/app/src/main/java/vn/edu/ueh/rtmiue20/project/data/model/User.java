@@ -45,6 +45,9 @@ public class User {
     @Ignore
     private Integer ratingCount = 0;
 
+    @Ignore
+    private Boolean mustChangePassword = false;
+
     // Default constructor required for Firestore
     public User() {
     }
@@ -262,6 +265,14 @@ public class User {
         this.ratingCount = ratingCount;
     }
 
+    public Boolean isMustChangePassword() {
+        return mustChangePassword != null ? mustChangePassword : false;
+    }
+
+    public void setMustChangePassword(Boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
+    }
+
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("uid", uid);
@@ -290,6 +301,7 @@ public class User {
         if (bookAlerts != null) map.put("bookAlerts", bookAlerts);
         if (ratingAverage != null) map.put("ratingAverage", ratingAverage);
         if (ratingCount != null) map.put("ratingCount", ratingCount);
+        if (mustChangePassword != null) map.put("mustChangePassword", mustChangePassword);
         return map;
     }
 }

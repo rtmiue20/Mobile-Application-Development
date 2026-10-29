@@ -615,35 +615,13 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
             pbLoading.setVisibility(View.VISIBLE);
             tvConfirmText.setText(R.string.btn_processing);
 
-            // Phương án B: Ghi nhận Firestore audit + Kích hoạt quy trình cấp lại mật khẩu an toàn
-            UserRepository.getInstance().recordAdminPasswordReset(user.getUid(), new UserRepository.UpdateCallback() {
+            // Gọi Callable Cloud Function 'adminSetUserPassword' qua UserRepository
+            UserRepository.getInstance().adminSetUserPassword(user.getUid(), newPass, new UserRepository.UpdateCallback() {
                 @Override
                 public void onSuccess() {
-                    AuthRepository.getInstance().sendPasswordResetEmail(email, new AuthRepository.ActionCallback() {
-                        @Override
-                        public void onSuccess() {
-                            if (isFinishing() || isDestroyed()) return;
-                            Toast.makeText(
-                                    UserManagementActivity.this,
-                                    getString(R.string.msg_reset_password_success, name),
-                                    Toast.LENGTH_LONG
-                            ).show();
-                            dialog.dismiss();
-                        }
-
-                        @Override
-                        public void onError(String errorMessage) {
-                            if (isFinishing() || isDestroyed()) return;
-                            btnConfirm.setEnabled(true);
-                            btnCancel.setEnabled(true);
-                            etNewPassword.setEnabled(true);
-                            etConfirmPassword.setEnabled(true);
-                            pbLoading.setVisibility(View.GONE);
-                            tvConfirmText.setText(R.string.btn_confirm);
-                            tilNewPassword.setError(errorMessage);
-                            Toast.makeText(UserManagementActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-                        }
-                    });
+                    if (isFinishing() || isDestroyed()) return;
+                    dialog.dismiss();
+                    showResetPasswordSuccessDialog(user, newPass);
                 }
 
                 @Override
@@ -656,12 +634,78 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
                     pbLoading.setVisibility(View.GONE);
                     tvConfirmText.setText(R.string.btn_confirm);
                     tilNewPassword.setError(errorMessage);
-                    Toast.makeText(UserManagementActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+
+                    if (errorMessage != null && errorMessage.contains("Chưa deploy Cloud Function")) {
+                        new MaterialAlertDialogBuilder(UserManagementActivity.this)
+                                .setTitle("Chưa Deploy Cloud Function")
+                                .setMessage("Hàm đổi mật khẩu trực tiếp 'adminSetUserPassword' chưa được deploy lên máy chủ Firebase (yêu cầu gói Blaze để chạy server function).\n\nBạn có muốn gửi email liên kết đặt lại mật khẩu trực tiếp tới hộp thư (" + email + ") của thành viên thay thế không?")
+                                .setPositiveButton("Gửi Email Khôi Phục", (d, which) -> {
+                                    Toast.makeText(UserManagementActivity.this, "Đang gửi email đặt lại mật khẩu...", Toast.LENGTH_SHORT).show();
+                                    AuthRepository.getInstance().sendPasswordResetEmail(email, new AuthRepository.ActionCallback() {
+                                        @Override
+                                        public void onSuccess() {
+                                            if (isFinishing() || isDestroyed()) return;
+                                            Toast.makeText(UserManagementActivity.this, "Đã gửi email đặt lại mật khẩu đến " + email + " thành công!", Toast.LENGTH_LONG).show();
+                                            dialog.dismiss();
+                                        }
+
+                                        @Override
+                                        public void onError(String sendErr) {
+                                            if (isFinishing() || isDestroyed()) return;
+                                            Toast.makeText(UserManagementActivity.this, "Lỗi gửi email: " + sendErr, Toast.LENGTH_LONG).show();
+                                        }
+                                    });
+                                })
+                                .setNegativeButton("Đóng", null)
+                                .show();
+                    } else {
+                        Toast.makeText(UserManagementActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                    }
                 }
             });
         });
 
         dialog.show();
+    }
+
+    private void showResetPasswordSuccessDialog(User user, String newPassword) {
+        if (isFinishing() || isDestroyed()) return;
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_reset_password_success, null);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+        builder.setView(dialogView);
+        builder.setCancelable(true);
+
+        AlertDialog successDialog = builder.create();
+        if (successDialog.getWindow() != null) {
+            successDialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        TextView tvUserInfo = dialogView.findViewById(R.id.tvSuccessDialogUserInfo);
+        TextView tvPassword = dialogView.findViewById(R.id.tvSuccessNewPassword);
+        TextView btnCopy = dialogView.findViewById(R.id.btnCopyPassword);
+        TextView btnDone = dialogView.findViewById(R.id.btnDoneResetPassword);
+
+        String name = (user.getFullName() != null && !user.getFullName().trim().isEmpty())
+                ? user.getFullName()
+                : (user.getEmail() != null ? user.getEmail() : "thành viên");
+        tvUserInfo.setText(getString(R.string.msg_reset_password_done_title, name));
+        tvPassword.setText(newPassword);
+
+        ViewPressEffectHelper.applyPressEffect(btnCopy, btnDone);
+
+        btnCopy.setOnClickListener(v -> {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            android.content.ClipData clip = android.content.ClipData.newPlainText("Member Password", newPassword);
+            if (clipboard != null) {
+                clipboard.setPrimaryClip(clip);
+                Toast.makeText(this, R.string.msg_password_copied, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        btnDone.setOnClickListener(v -> successDialog.dismiss());
+
+        successDialog.show();
     }
 
     private void showLockUserModal(User user) {

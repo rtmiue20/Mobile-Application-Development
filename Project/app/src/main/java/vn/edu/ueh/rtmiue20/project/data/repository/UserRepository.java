@@ -2,15 +2,19 @@ package vn.edu.ueh.rtmiue20.project.data.repository;
 
 import android.net.Uri;
 
+import androidx.annotation.NonNull;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.functions.FirebaseFunctions;
+import com.google.firebase.functions.FirebaseFunctionsException;
+import com.google.firebase.functions.HttpsCallableResult;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 
@@ -24,6 +28,7 @@ public class UserRepository {
     private static UserRepository instance;
     private final FirebaseFirestore firestore;
     private final FirebaseStorage storage;
+    private final FirebaseFunctions functions;
 
     public interface UserCallback {
         void onSuccess(User user);
@@ -48,6 +53,7 @@ public class UserRepository {
     private UserRepository() {
         firestore = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
+        functions = FirebaseFunctions.getInstance();
     }
 
     public static synchronized UserRepository getInstance() {
@@ -88,6 +94,9 @@ public class UserRepository {
                             if (documentSnapshot.contains("ratingCount")) {
                                 Long count = documentSnapshot.getLong("ratingCount");
                                 if (count != null) user.setRatingCount(count.intValue());
+                            }
+                            if (documentSnapshot.contains("mustChangePassword")) {
+                                user.setMustChangePassword(documentSnapshot.getBoolean("mustChangePassword"));
                             }
                             callback.onSuccess(user);
                         } else {
@@ -338,7 +347,6 @@ public class UserRepository {
                     firestore.collection("users").document(targetUserId)
                             .set(updates, com.google.firebase.firestore.SetOptions.merge())
                             .addOnSuccessListener(unused -> {
-                                // Lưu thêm bản ghi đánh giá chi tiết vào collection reviews
                                 Map<String, Object> reviewData = new HashMap<>();
                                 reviewData.put("targetUserId", targetUserId);
                                 reviewData.put("rating", ratingValue);
@@ -388,5 +396,91 @@ public class UserRepository {
                 .addOnFailureListener(e -> {
                     if (callback != null) callback.onError(e.getLocalizedMessage());
                 });
+    }
+
+    /**
+     * Quản trị viên đặt trực tiếp mật khẩu mới cho thành viên qua Callable Cloud Function
+     * 'adminSetUserPassword' (sử dụng Firebase Admin SDK).
+     */
+    public void adminSetUserPassword(String targetUid, String newPassword, UpdateCallback callback) {
+        if (targetUid == null || targetUid.trim().isEmpty()) {
+            if (callback != null) callback.onError("UID thành viên không hợp lệ.");
+            return;
+        }
+
+        if (newPassword == null || newPassword.length() < 8) {
+            if (callback != null) callback.onError("Mật khẩu mới phải có tối thiểu 8 ký tự.");
+            return;
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("targetUid", targetUid);
+        data.put("newPassword", newPassword);
+
+        functions.getHttpsCallable("adminSetUserPassword")
+                .call(data)
+                .addOnSuccessListener(httpsCallableResult -> {
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    String msg = formatFunctionsError(e);
+                    if (callback != null) callback.onError(msg);
+                });
+    }
+
+    /**
+     * Xóa cờ bắt buộc đổi mật khẩu sau khi thành viên tự thiết lập mật khẩu cá nhân thành công.
+     */
+    public void clearMustChangePasswordFlag(String uid, UpdateCallback callback) {
+        if (uid == null || uid.trim().isEmpty()) {
+            if (callback != null) callback.onError("UID người dùng không hợp lệ.");
+            return;
+        }
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("mustChangePassword", false);
+        updates.put("passwordChangedAt", System.currentTimeMillis());
+
+        firestore.collection("users").document(uid)
+                .set(updates, com.google.firebase.firestore.SetOptions.merge())
+                .addOnSuccessListener(unused -> {
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    if (callback != null) callback.onError(e.getLocalizedMessage());
+                });
+    }
+
+    private String formatFunctionsError(Exception e) {
+        if (e == null) return "Đã xảy ra lỗi không xác định.";
+
+        if (e instanceof FirebaseFunctionsException) {
+            FirebaseFunctionsException ffe = (FirebaseFunctionsException) e;
+            FirebaseFunctionsException.Code code = ffe.getCode();
+            switch (code) {
+                case PERMISSION_DENIED:
+                    return "Bạn không có quyền quản trị viên để thực hiện thao tác này.";
+                case UNAUTHENTICATED:
+                    return "Phiên đăng nhập quản trị viên đã hết hạn. Vui lòng đăng nhập lại.";
+                case NOT_FOUND:
+                    String ffeMsg = ffe.getMessage() != null ? ffe.getMessage().trim() : "";
+                    if (ffeMsg.isEmpty() || ffeMsg.equalsIgnoreCase("NOT FOUND") || ffeMsg.contains("NOT_FOUND")) {
+                        return "Chưa deploy Cloud Function 'adminSetUserPassword' lên Firebase (Yêu cầu gói Blaze để chạy server function).";
+                    }
+                    return ffeMsg;
+                case INVALID_ARGUMENT:
+                    return ffe.getMessage() != null ? ffe.getMessage() : "Dữ liệu mật khẩu không hợp lệ.";
+                case UNAVAILABLE:
+                    return "Dịch vụ Cloud Functions tạm thời không khả dụng. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau.";
+                default:
+                    return ffe.getMessage() != null ? ffe.getMessage() : "Lỗi Cloud Functions (" + code + ")";
+            }
+        }
+
+        String msg = e.getMessage() != null ? e.getMessage() : "";
+        if (msg.contains("UNAVAILABLE") || msg.contains("network") || msg.contains("NetworkError")) {
+            return "Không thể kết nối đến máy chủ Cloud Functions. Vui lòng kiểm tra Internet hoặc trạng thái deploy của Function.";
+        }
+        return !msg.isEmpty() ? msg : "Lỗi máy chủ không xác định.";
     }
 }

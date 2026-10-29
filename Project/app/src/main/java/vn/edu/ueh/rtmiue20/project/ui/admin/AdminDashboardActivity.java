@@ -683,20 +683,27 @@ public class AdminDashboardActivity extends AppCompatActivity {
             totalRequestsCount = requests.size();
             int pending = 0;
             int accepted = 0;
+            int completed = 0;
             for (Request r : requests) {
                 if (Request.STATUS_PENDING.equalsIgnoreCase(r.getStatus())) {
                     pending++;
-                } else if (Request.STATUS_ACCEPTED.equalsIgnoreCase(r.getStatus()) || Request.STATUS_COMPLETED.equalsIgnoreCase(r.getStatus())) {
+                } else if (Request.STATUS_COMPLETED.equalsIgnoreCase(r.getStatus())) {
+                    completed++;
+                } else if (Request.STATUS_ACCEPTED.equalsIgnoreCase(r.getStatus())) {
                     accepted++;
                 }
             }
             pendingRequestsCount = pending;
-            acceptedRequestsCount = accepted;
+            acceptedRequestsCount = completed + accepted;
             if (tvAdminPendingRequests != null) {
                 tvAdminPendingRequests.setText(String.valueOf(totalRequestsCount));
             }
             if (tvAdminRequestsSub != null) {
-                tvAdminRequestsSub.setText(pending + " chờ duyệt • " + accepted + " hoàn tất");
+                if (completed > 0) {
+                    tvAdminRequestsSub.setText(pending + " chờ duyệt • " + completed + " hoàn tất");
+                } else {
+                    tvAdminRequestsSub.setText(pending + " chờ duyệt • " + accepted + " chấp nhận");
+                }
             }
             updateFlaggedAndLogSummary();
         });
