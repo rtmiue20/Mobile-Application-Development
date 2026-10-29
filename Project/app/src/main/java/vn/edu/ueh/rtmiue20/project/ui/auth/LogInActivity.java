@@ -21,25 +21,31 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.credentials.Credential;
+import androidx.credentials.CredentialManager;
+import androidx.credentials.CredentialManagerCallback;
+import androidx.credentials.CustomCredential;
+import androidx.credentials.GetCredentialRequest;
+import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.exceptions.GetCredentialCancellationException;
+import androidx.credentials.exceptions.GetCredentialException;
 
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseUser;
+
+import android.os.CancellationSignal;
+import android.util.Log;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
@@ -47,7 +53,6 @@ import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
 import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
-import vn.edu.ueh.rtmiue20.project.ui.profile.EditProfileActivity;
 import vn.edu.ueh.rtmiue20.project.util.ViewPressEffectHelper;
 
 public class LogInActivity extends AppCompatActivity {
@@ -63,13 +68,13 @@ public class LogInActivity extends AppCompatActivity {
     private TextView tvForgotPassword;
     private LinearLayout btnLogin;
     private LinearLayout btnGoogleLogin;
+    private LinearLayout btnGuestLogin;
     private TextView tvRegisterNow;
     private View layoutCommunityGuidelines;
 
     private boolean isPasswordVisible = false;
     private AuthRepository authRepository;
-    private GoogleSignInClient googleSignInClient;
-    private ActivityResultLauncher<Intent> googleSignInLauncher;
+    private CredentialManager credentialManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,42 +114,80 @@ public class LogInActivity extends AppCompatActivity {
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         btnLogin = findViewById(R.id.btnLogin);
         btnGoogleLogin = findViewById(R.id.btnGoogleLogin);
+        btnGuestLogin = findViewById(R.id.btnGuestLogin);
         tvRegisterNow = findViewById(R.id.tvRegisterNow);
         layoutCommunityGuidelines = findViewById(R.id.layoutCommunityGuidelines);
     }
 
     private void setupGoogleSignIn() {
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id))
-                .requestEmail()
+        credentialManager = CredentialManager.create(this);
+    }
+
+    private void handleGoogleSignIn() {
+        String webClientId = getString(R.string.default_web_client_id);
+        if (webClientId.contains("exampleclientid") || webClientId.contains("1234567890")) {
+            Toast.makeText(this, "Lỗi cấu hình Google Sign-In: Bạn chưa thay thế Web Client ID thật từ Firebase Console!", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        GetSignInWithGoogleOption signInWithGoogleOption = new GetSignInWithGoogleOption.Builder(webClientId)
                 .build();
 
-        googleSignInClient = GoogleSignIn.getClient(this, gso);
+        GetCredentialRequest request = new GetCredentialRequest.Builder()
+                .addCredentialOption(signInWithGoogleOption)
+                .build();
 
-        googleSignInLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
-                        try {
-                            GoogleSignInAccount account = task.getResult(ApiException.class);
-                            if (account != null && account.getIdToken() != null) {
-                                performGoogleAuth(account.getIdToken());
-                            } else {
-                                Toast.makeText(this, "Không thể lấy thông tin xác thực từ Google.", Toast.LENGTH_SHORT).show();
-                            }
-                        } catch (ApiException e) {
-                            String msg;
-                            if (e.getStatusCode() == 10 || e.getStatusCode() == 12500) {
-                                msg = "Đăng nhập Google thất bại: Chưa cấu hình SHA-1 / Google Web Client ID trong Firebase Console.";
-                            } else {
-                                msg = "Đăng nhập Google thất bại (" + e.getStatusCode() + "): " + (e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Lỗi xác thực Google.");
-                            }
-                            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+        btnGoogleLogin.setEnabled(false);
+
+        credentialManager.getCredentialAsync(
+                this,
+                request,
+                new CancellationSignal(),
+                ContextCompat.getMainExecutor(this),
+                new CredentialManagerCallback<>() {
+                    @Override
+                    public void onResult(GetCredentialResponse result) {
+                        btnGoogleLogin.setEnabled(true);
+                        handleGoogleSignInResponse(result);
+                    }
+
+                    @Override
+                    public void onError(@NonNull GetCredentialException e) {
+                        btnGoogleLogin.setEnabled(true);
+                        if (e instanceof GetCredentialCancellationException) {
+                            return;
                         }
+                        Log.e("LogInActivity", "Google sign-in error", e);
+                        String msg = "Đăng nhập Google thất bại: " + (e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Lỗi xác thực Google.");
+                        Toast.makeText(LogInActivity.this, msg, Toast.LENGTH_LONG).show();
                     }
                 }
         );
+    }
+
+    private void handleGoogleSignInResponse(GetCredentialResponse result) {
+        Credential credential = result.getCredential();
+        if (credential instanceof CustomCredential) {
+            CustomCredential customCredential = (CustomCredential) credential;
+            if (GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(customCredential.getType())) {
+                try {
+                    GoogleIdTokenCredential googleIdTokenCredential = GoogleIdTokenCredential.createFrom(customCredential.getData());
+                    String idToken = googleIdTokenCredential.getIdToken();
+                    if (!idToken.isEmpty()) {
+                        performGoogleAuth(idToken);
+                    } else {
+                        Toast.makeText(this, "Không thể lấy ID token từ Google.", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Log.e("LogInActivity", "Parsing Google ID Token failed", e);
+                    Toast.makeText(this, "Lỗi phân tích thông tin xác thực Google.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(this, "Loại thông tin xác thực Google không hỗ trợ.", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(this, "Không nhận được phản hồi hợp lệ từ Google.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setupRegisterText() {
@@ -180,9 +223,10 @@ public class LogInActivity extends AppCompatActivity {
         btnTogglePassword.setOnClickListener(v -> togglePasswordVisibility());
         btnLogin.setOnClickListener(v -> handleLogin());
 
-        btnGoogleLogin.setOnClickListener(v -> {
-            Intent signInIntent = googleSignInClient.getSignInIntent();
-            googleSignInLauncher.launch(signInIntent);
+        btnGoogleLogin.setOnClickListener(v -> handleGoogleSignIn());
+        btnGuestLogin.setOnClickListener(v -> {
+            Toast.makeText(this, "Vào xem với tư cách Khách", Toast.LENGTH_SHORT).show();
+            proceedToNextScreen(null);
         });
 
         tvForgotPassword.setOnClickListener(v -> {
@@ -419,14 +463,20 @@ public class LogInActivity extends AppCompatActivity {
     }
 
     private void proceedToNextScreen(User userProfile) {
-        Intent intent;
-        if (userProfile != null && "admin".equalsIgnoreCase(userProfile.getRole())) {
-            intent = new Intent(LogInActivity.this, AdminDashboardActivity.class);
-        } else {
-            intent = new Intent(LogInActivity.this, HomeActivity.class);
+        try {
+            Intent intent;
+            if (userProfile != null && "admin".equalsIgnoreCase(userProfile.getRole())) {
+                intent = new Intent(LogInActivity.this, AdminDashboardActivity.class);
+            } else {
+                intent = new Intent(LogInActivity.this, HomeActivity.class);
+            }
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        } catch (Exception e) {
+            Log.e("LogInActivity", "Error navigating to dashboard", e);
+            btnLogin.setEnabled(true);
+            Toast.makeText(LogInActivity.this, "Lỗi chuyển màn hình: " + e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
         }
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
     }
 }
