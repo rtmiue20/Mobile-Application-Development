@@ -39,7 +39,6 @@ import vn.edu.ueh.rtmiue20.project.util.LocationHelper;
 public class ProfileActivity extends BaseActivity {
 
     private ImageView ivAvatar;
-    private ImageView ivHeaderAvatar;
     private TextView tvProfileFullName;
     private TextView tvProfileEmail;
     private TextView tvProfileRole;
@@ -107,7 +106,6 @@ public class ProfileActivity extends BaseActivity {
 
     private void initViews() {
         ivAvatar = findViewById(R.id.ivAvatar);
-        ivHeaderAvatar = findViewById(R.id.ivHeaderAvatar);
         tvProfileFullName = findViewById(R.id.tvProfileFullName);
         tvProfileEmail = findViewById(R.id.tvProfileEmail);
         tvProfileRole = findViewById(R.id.tvProfileRole);
@@ -282,7 +280,6 @@ public class ProfileActivity extends BaseActivity {
                         .putString("user_role", role)
                         .apply();
                 vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(ProfileActivity.this, ivAvatar, avatarToLoad, false);
-                vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(ProfileActivity.this, ivHeaderAvatar, avatarToLoad, false);
             }
 
             @Override
@@ -366,7 +363,6 @@ public class ProfileActivity extends BaseActivity {
                         .putString("user_avatar_url", avatarUrl != null ? avatarUrl : "")
                         .apply();
                 vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(ProfileActivity.this, ivAvatar, avatarUrl, false);
-                vn.edu.ueh.rtmiue20.project.util.ImageHelper.bindAvatar(ProfileActivity.this, ivHeaderAvatar, avatarUrl, false);
             }
 
             @Override
