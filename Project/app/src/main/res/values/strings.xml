@@ -72,6 +72,28 @@
     <string name="msg_comment_need_login">Bạn cần đăng nhập để bình luận</string>
     <string name="cd_favorite">Lưu sách yêu thích</string>
 
-    <!-- Strings for Comment Feature (FR012) -->
+    <!-- Strings for Offline Feature (FR012) -->
     <string name="offline_banner_message">Đang xem ngoại tuyến. Dữ liệu có thể không phải mới nhất.</string>
+
+    <!-- Strings for Admin Book Sorting Feature -->
+    <string name="title_sort_books">Sắp xếp bài đăng</string>
+    <string name="subtitle_sort_books">Chọn tiêu chí hiển thị danh sách bài đăng sách</string>
+    <string name="sort_newest">Mới nhất (mặc định)</string>
+    <string name="sort_oldest">Cũ nhất</string>
+    <string name="sort_views_desc">Nhiều lượt xem nhất</string>
+    <string name="sort_favs_desc">Nhiều lượt yêu thích nhất</string>
+    <string name="sort_title_az">Tên sách A → Z</string>
+    <string name="sort_pending_first">Chờ duyệt lên đầu</string>
+    <string name="btn_apply_sort">Áp dụng</string>
+    <string name="btn_reset_sort">Đặt lại</string>
+    <string name="sort_indicator_format">Sắp xếp: %1$s</string>
+    <string name="sort_label_newest">Mới nhất</string>
+    <string name="sort_label_oldest">Cũ nhất</string>
+    <string name="sort_label_views">Nhiều lượt xem</string>
+    <string name="sort_label_favs">Nhiều yêu thích</string>
+    <string name="sort_label_title">Tên sách A → Z</string>
+    <string name="sort_label_pending">Chờ duyệt lên đầu</string>
+    <string name="msg_apply_sort_success">Đã áp dụng sắp xếp bài đăng!</string>
+    <string name="msg_reset_sort_success">Đã đặt lại sắp xếp về Mới nhất!</string>
+    <string name="cd_btn_sort">Sắp xếp bài đăng sách</string>
 </resources>
