@@ -5,14 +5,17 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.ScrollView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -20,12 +23,14 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import vn.edu.ueh.rtmiue20.project.MainActivity;
@@ -48,6 +53,15 @@ import vn.edu.ueh.rtmiue20.project.util.ViewPressEffectHelper;
 
 public class AdminDashboardActivity extends AppCompatActivity {
 
+    // Tiêu chí sắp xếp danh sách sách trên Dashboard
+    public static final String SORT_NEWEST = "newest";             // Mới nhất (mặc định)
+    public static final String SORT_OLDEST = "oldest";             // Cũ nhất
+    public static final String SORT_VIEWS_DESC = "views_desc";     // Nhiều lượt xem nhất
+    public static final String SORT_FAVS_DESC = "favs_desc";       // Nhiều lượt yêu thích nhất
+    public static final String SORT_TITLE_AZ = "title_az";         // Tên sách A → Z
+    public static final String SORT_PENDING_FIRST = "pending_first";// Chờ duyệt lên đầu
+    private static final String PREF_SORT_MODE = "admin_book_sort_mode";
+
     private ImageView btnLog;
     private ImageView ivAdminAvatar;
     private TextView btnCheckNow;
@@ -58,6 +72,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
     private View cardFlaggedItems;
     private TextView tvAdminViewAllBooks;
     private TextView tvReviewTitle;
+    private TextView tvAdminSortIndicator;
     private androidx.core.widget.NestedScrollView adminScrollView;
     private View sectionManageBooks;
 
@@ -75,11 +90,21 @@ public class AdminDashboardActivity extends AppCompatActivity {
     private TextView tvAdminEmptyBooks;
     private RecyclerView rvAdminBooks;
 
+    // Pagination for Books
+    private static final int BOOKS_PAGE_SIZE = 4;
+    private int currentBookPage = 1;
+    private final List<Book> currentFilteredBooks = new ArrayList<>();
+    private LinearLayout layoutBookPagination;
+    private TextView btnPrevPage;
+    private TextView btnNextPage;
+    private TextView tvPageIndicator;
+
     private AuthRepository authRepository;
     private BookViewModel bookViewModel;
     private BookAdapter adminBookAdapter;
     private List<Book> allSystemBooks = new ArrayList<>();
-    private String currentBookFilterMode = "all"; // all, visible, hidden
+    private String currentBookFilterMode = "all"; // all, visible, hidden, pending
+    private String currentSortMode = SORT_NEWEST; // newest, oldest, views_desc, favs_desc, title_az, pending_first
 
     private int totalUsersCount = 0;
     private int bannedUsersCount = 0;
@@ -106,10 +131,13 @@ public class AdminDashboardActivity extends AppCompatActivity {
             });
         }
 
-        getSharedPreferences("BookSharePrefs", MODE_PRIVATE)
-                .edit()
+        SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        prefs.edit()
                 .putString("user_role", "admin")
                 .apply();
+
+        // Khôi phục tiêu chí sắp xếp đã lưu (nếu có)
+        currentSortMode = prefs.getString(PREF_SORT_MODE, SORT_NEWEST);
 
         authRepository = AuthRepository.getInstance();
         bookViewModel = new ViewModelProvider(this).get(BookViewModel.class);
@@ -117,6 +145,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
         initViews();
         setupRecyclerView();
         setupListeners();
+        updateSortVisualIndicators();
         observeRealTimeMetrics();
         loadAdminAvatar();
     }
@@ -168,6 +197,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
         cardFlaggedItems = findViewById(R.id.cardFlaggedItems);
         tvAdminViewAllBooks = findViewById(R.id.tvAdminViewAllBooks);
         tvReviewTitle = findViewById(R.id.tvReviewTitle);
+        tvAdminSortIndicator = findViewById(R.id.tvAdminSortIndicator);
         adminScrollView = findViewById(R.id.adminScrollView);
         sectionManageBooks = findViewById(R.id.sectionManageBooks);
 
@@ -184,6 +214,10 @@ public class AdminDashboardActivity extends AppCompatActivity {
         pbCommunityHealth = findViewById(R.id.pbCommunityHealth);
         tvAdminEmptyBooks = findViewById(R.id.tvAdminEmptyBooks);
         rvAdminBooks = findViewById(R.id.rvAdminBooks);
+        layoutBookPagination = findViewById(R.id.layoutBookPagination);
+        btnPrevPage = findViewById(R.id.btnPrevPage);
+        btnNextPage = findViewById(R.id.btnNextPage);
+        tvPageIndicator = findViewById(R.id.tvPageIndicator);
     }
 
     private void setupRecyclerView() {
@@ -194,24 +228,80 @@ public class AdminDashboardActivity extends AppCompatActivity {
         rvAdminBooks.setAdapter(adminBookAdapter);
     }
 
+    /**
+     * Sắp xếp danh sách sách theo tiêu chí người dùng chọn
+     */
+    private void sortBooks(List<Book> list, String sortMode) {
+        if (list == null || list.size() <= 1) return;
+        Collections.sort(list, (a, b) -> {
+            if (SORT_OLDEST.equals(sortMode)) {
+                // Cũ nhất: createdAt ASC
+                int cmp = Long.compare(a.getCreatedAt(), b.getCreatedAt());
+                if (cmp != 0) return cmp;
+                return compareTitle(a, b);
+            } else if (SORT_VIEWS_DESC.equals(sortMode)) {
+                // Nhiều lượt xem nhất: viewCount DESC
+                int cmp = Integer.compare(b.getViewCount(), a.getViewCount());
+                if (cmp != 0) return cmp;
+                return Long.compare(b.getCreatedAt(), a.getCreatedAt());
+            } else if (SORT_FAVS_DESC.equals(sortMode)) {
+                // Nhiều lượt yêu thích nhất: favoriteCount DESC
+                int cmp = Integer.compare(b.getFavoriteCount(), a.getFavoriteCount());
+                if (cmp != 0) return cmp;
+                return Long.compare(b.getCreatedAt(), a.getCreatedAt());
+            } else if (SORT_TITLE_AZ.equals(sortMode)) {
+                // Tên sách A → Z
+                int cmp = compareTitle(a, b);
+                if (cmp != 0) return cmp;
+                return Long.compare(b.getCreatedAt(), a.getCreatedAt());
+            } else if (SORT_PENDING_FIRST.equals(sortMode)) {
+                // Chờ duyệt lên đầu: ưu tiên sách isPendingReview
+                int cmp = Boolean.compare(Book.isPendingReview(b), Book.isPendingReview(a));
+                if (cmp != 0) return cmp;
+                return Long.compare(b.getCreatedAt(), a.getCreatedAt());
+            } else {
+                // Mặc định: Mới nhất (createdAt DESC)
+                int cmp = Long.compare(b.getCreatedAt(), a.getCreatedAt());
+                if (cmp != 0) return cmp;
+                return compareTitle(a, b);
+            }
+        });
+    }
+
+    private int compareTitle(Book a, Book b) {
+        String tA = (a != null && a.getTitle() != null) ? a.getTitle().trim() : "";
+        String tB = (b != null && b.getTitle() != null) ? b.getTitle().trim() : "";
+        return String.CASE_INSENSITIVE_ORDER.compare(tA, tB);
+    }
+
+    /**
+     * Lọc & Sắp xếp toàn bộ sách, sau đó cập nhật phân trang
+     */
     private void applyAdminBookFilter() {
         if (adminBookAdapter == null) return;
-        List<Book> filtered = new ArrayList<>();
+        currentFilteredBooks.clear();
         for (Book b : allSystemBooks) {
             boolean isHidden = "hidden".equalsIgnoreCase(b.getStatus());
             boolean isPending = Book.isPendingReview(b);
             if ("visible".equals(currentBookFilterMode) && (isHidden || isPending)) continue;
             if ("hidden".equals(currentBookFilterMode) && !isHidden) continue;
             if ("pending".equals(currentBookFilterMode) && !isPending) continue;
-            filtered.add(b);
+            currentFilteredBooks.add(b);
         }
-        // TC-ADMIN-06: Đưa sách "Chờ duyệt" lên đầu để Admin xử lý trước
-        java.util.Collections.sort(filtered, (a, b) ->
-                Boolean.compare(Book.isPendingReview(b), Book.isPendingReview(a)));
-        adminBookAdapter.update(filtered);
-        if (rvAdminBooks != null) {
-            rvAdminBooks.post(rvAdminBooks::requestLayout);
+
+        // Áp dụng sắp xếp trên TOÀN BỘ danh sách kết quả đã lọc
+        sortBooks(currentFilteredBooks, currentSortMode);
+
+        int totalItems = currentFilteredBooks.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / BOOKS_PAGE_SIZE));
+        if (currentBookPage > totalPages) {
+            currentBookPage = totalPages;
         }
+        if (currentBookPage < 1) {
+            currentBookPage = 1;
+        }
+
+        displayCurrentBookPage(false);
 
         if (tvReviewTitle != null) {
             if ("hidden".equals(currentBookFilterMode)) {
@@ -225,10 +315,10 @@ public class AdminDashboardActivity extends AppCompatActivity {
             }
         }
         if (tvAdminRecentCountBadge != null) {
-            tvAdminRecentCountBadge.setText(String.valueOf(filtered.size()));
+            tvAdminRecentCountBadge.setText(String.valueOf(totalItems));
         }
         if (tvAdminEmptyBooks != null) {
-            if (filtered.isEmpty()) {
+            if (currentFilteredBooks.isEmpty()) {
                 tvAdminEmptyBooks.setText("hidden".equals(currentBookFilterMode)
                         ? "Không có bài đăng nào đang bị ẩn."
                         : "pending".equals(currentBookFilterMode)
@@ -239,6 +329,214 @@ public class AdminDashboardActivity extends AppCompatActivity {
                 tvAdminEmptyBooks.setVisibility(View.GONE);
             }
         }
+    }
+
+    private void displayCurrentBookPage(boolean shouldScroll) {
+        if (adminBookAdapter == null) return;
+        int totalItems = currentFilteredBooks.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / BOOKS_PAGE_SIZE));
+
+        if (currentBookPage > totalPages) currentBookPage = totalPages;
+        if (currentBookPage < 1) currentBookPage = 1;
+
+        if (totalItems == 0) {
+            adminBookAdapter.update(new ArrayList<>());
+            if (layoutBookPagination != null) {
+                layoutBookPagination.setVisibility(View.GONE);
+            }
+            return;
+        }
+
+        int fromIndex = (currentBookPage - 1) * BOOKS_PAGE_SIZE;
+        int toIndex = Math.min(fromIndex + BOOKS_PAGE_SIZE, totalItems);
+        List<Book> pageBooks = new ArrayList<>(currentFilteredBooks.subList(fromIndex, toIndex));
+        adminBookAdapter.update(pageBooks);
+
+        if (rvAdminBooks != null) {
+            rvAdminBooks.post(rvAdminBooks::requestLayout);
+        }
+
+        if (layoutBookPagination != null) {
+            if (totalItems <= BOOKS_PAGE_SIZE) {
+                layoutBookPagination.setVisibility(View.GONE);
+            } else {
+                layoutBookPagination.setVisibility(View.VISIBLE);
+
+                if (tvPageIndicator != null) {
+                    tvPageIndicator.setText("Trang " + currentBookPage + " / " + totalPages + " (" + totalItems + " sách)");
+                }
+
+                boolean hasPrev = currentBookPage > 1;
+                boolean hasNext = currentBookPage < totalPages;
+
+                if (btnPrevPage != null) {
+                    btnPrevPage.setEnabled(hasPrev);
+                    btnPrevPage.setAlpha(hasPrev ? 1.0f : 0.35f);
+                }
+                if (btnNextPage != null) {
+                    btnNextPage.setEnabled(hasNext);
+                    btnNextPage.setAlpha(hasNext ? 1.0f : 0.35f);
+                }
+            }
+        }
+
+        if (shouldScroll && adminScrollView != null && sectionManageBooks != null) {
+            adminScrollView.post(() -> adminScrollView.smoothScrollTo(0, sectionManageBooks.getTop()));
+        }
+    }
+
+    private void showPagePickerDialog() {
+        int totalItems = currentFilteredBooks.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / BOOKS_PAGE_SIZE));
+        if (totalPages <= 1) return;
+
+        String[] pages = new String[totalPages];
+        for (int i = 0; i < totalPages; i++) {
+            int start = i * BOOKS_PAGE_SIZE + 1;
+            int end = Math.min((i + 1) * BOOKS_PAGE_SIZE, totalItems);
+            pages[i] = "Trang " + (i + 1) + " (Sách " + start + " - " + end + ")";
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Chọn trang bài đăng sách")
+                .setSingleChoiceItems(pages, currentBookPage - 1, (dialog, which) -> {
+                    currentBookPage = which + 1;
+                    displayCurrentBookPage(true);
+                    dialog.dismiss();
+                })
+                .setNegativeButton("Đóng", null)
+                .show();
+    }
+
+    /**
+     * Mở BottomSheet "Sắp xếp bài đăng" (Nút Custom Sort)
+     */
+    private void showSortBottomSheet() {
+        BottomSheetDialog sheet = new BottomSheetDialog(this);
+        sheet.setContentView(R.layout.bottom_sheet_admin_sort);
+
+        ImageView btnCloseSortSheet = sheet.findViewById(R.id.btnCloseSortSheet);
+        RadioGroup rgSortOptions = sheet.findViewById(R.id.rgSortOptions);
+        TextView btnResetSort = sheet.findViewById(R.id.btnResetSort);
+        TextView btnApplySort = sheet.findViewById(R.id.btnApplySort);
+
+        if (rgSortOptions == null) return;
+
+        // Chọn RadioButton theo tiêu chí sort hiện tại
+        if (SORT_OLDEST.equals(currentSortMode)) {
+            rgSortOptions.check(R.id.rbSortOldest);
+        } else if (SORT_VIEWS_DESC.equals(currentSortMode)) {
+            rgSortOptions.check(R.id.rbSortViews);
+        } else if (SORT_FAVS_DESC.equals(currentSortMode)) {
+            rgSortOptions.check(R.id.rbSortFavs);
+        } else if (SORT_TITLE_AZ.equals(currentSortMode)) {
+            rgSortOptions.check(R.id.rbSortTitle);
+        } else if (SORT_PENDING_FIRST.equals(currentSortMode)) {
+            rgSortOptions.check(R.id.rbSortPending);
+        } else {
+            rgSortOptions.check(R.id.rbSortNewest);
+        }
+
+        final String[] tempSort = new String[]{currentSortMode};
+        rgSortOptions.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.rbSortOldest) {
+                tempSort[0] = SORT_OLDEST;
+            } else if (checkedId == R.id.rbSortViews) {
+                tempSort[0] = SORT_VIEWS_DESC;
+            } else if (checkedId == R.id.rbSortFavs) {
+                tempSort[0] = SORT_FAVS_DESC;
+            } else if (checkedId == R.id.rbSortTitle) {
+                tempSort[0] = SORT_TITLE_AZ;
+            } else if (checkedId == R.id.rbSortPending) {
+                tempSort[0] = SORT_PENDING_FIRST;
+            } else {
+                tempSort[0] = SORT_NEWEST;
+            }
+        });
+
+        if (btnCloseSortSheet != null) {
+            btnCloseSortSheet.setOnClickListener(v -> sheet.dismiss());
+        }
+
+        if (btnResetSort != null) {
+            btnResetSort.setOnClickListener(v -> {
+                rgSortOptions.check(R.id.rbSortNewest);
+                tempSort[0] = SORT_NEWEST;
+                applySelectedSort(SORT_NEWEST);
+                sheet.dismiss();
+                Toast.makeText(AdminDashboardActivity.this, R.string.msg_reset_sort_success, Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        if (btnApplySort != null) {
+            btnApplySort.setOnClickListener(v -> {
+                applySelectedSort(tempSort[0]);
+                sheet.dismiss();
+                Toast.makeText(AdminDashboardActivity.this, R.string.msg_apply_sort_success, Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        ViewPressEffectHelper.applyPressEffect(btnCloseSortSheet, btnResetSort, btnApplySort);
+        sheet.show();
+    }
+
+    /**
+     * Cập nhật lựa chọn sắp xếp và lưu vào SharedPreferences
+     */
+    private void applySelectedSort(String sortMode) {
+        currentSortMode = sortMode != null ? sortMode : SORT_NEWEST;
+        getSharedPreferences("BookSharePrefs", MODE_PRIVATE)
+                .edit()
+                .putString(PREF_SORT_MODE, currentSortMode)
+                .apply();
+
+        // Reset về trang 1 khi đổi tiêu chí sắp xếp
+        currentBookPage = 1;
+        updateSortVisualIndicators();
+        applyAdminBookFilter();
+        if (adminScrollView != null && sectionManageBooks != null) {
+            adminScrollView.post(() -> adminScrollView.smoothScrollTo(0, sectionManageBooks.getTop()));
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái hiển thị của Icon Sort trên Header và Chip Sort cạnh tiêu đề
+     */
+    private void updateSortVisualIndicators() {
+        boolean isDefault = SORT_NEWEST.equals(currentSortMode);
+
+        // Đổi màu & nền icon nút custom khi khác mặc định
+        if (btnLog != null) {
+            if (isDefault) {
+                btnLog.setColorFilter(ContextCompat.getColor(this, R.color.text_primary));
+                btnLog.setBackgroundResource(android.R.color.transparent);
+            } else {
+                btnLog.setColorFilter(ContextCompat.getColor(this, R.color.on_secondary_container));
+                btnLog.setBackgroundResource(R.drawable.bg_tag_secondary);
+            }
+        }
+
+        // Cập nhật text hiển thị tiêu chí đang chọn
+        if (tvAdminSortIndicator != null) {
+            String label = getSortLabel(currentSortMode);
+            tvAdminSortIndicator.setText(getString(R.string.sort_indicator_format, label));
+            if (isDefault) {
+                tvAdminSortIndicator.setBackgroundResource(R.drawable.bg_pill_inactive);
+                tvAdminSortIndicator.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+            } else {
+                tvAdminSortIndicator.setBackgroundResource(R.drawable.bg_tag_secondary);
+                tvAdminSortIndicator.setTextColor(ContextCompat.getColor(this, R.color.on_secondary_container));
+            }
+        }
+    }
+
+    private String getSortLabel(String sortMode) {
+        if (SORT_OLDEST.equals(sortMode)) return getString(R.string.sort_label_oldest);
+        if (SORT_VIEWS_DESC.equals(sortMode)) return getString(R.string.sort_label_views);
+        if (SORT_FAVS_DESC.equals(sortMode)) return getString(R.string.sort_label_favs);
+        if (SORT_TITLE_AZ.equals(sortMode)) return getString(R.string.sort_label_title);
+        if (SORT_PENDING_FIRST.equals(sortMode)) return getString(R.string.sort_label_pending);
+        return getString(R.string.sort_label_newest);
     }
 
     private void showAdminBookModerationDialog(Book book) {
@@ -260,7 +558,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
                         intent.putExtra("bookId", book.getId());
                         startActivity(intent);
                     } else if (which == 1) {
-                        // Khôi phục đúng hình thức Member đã chọn: "available" (Miễn phí) / "exchanging" (Đang trao đổi)
                         final String approvedStatus = Book.resolveApprovedStatus(book);
                         book.setStatus(approvedStatus);
                         bookViewModel.saveBook(book, new BookRepository.ActionCallback() {
@@ -368,7 +665,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
                 tvAdminBooksSub.setText(visibleCount + " hiển thị • " + pendingCount + " chờ duyệt");
             }
             if (btnCheckNow != null) {
-                btnCheckNow.setText("Quản lý tin (" + totalBooksCount + ")");
+                btnCheckNow.setText("Quản lý bài đăng (" + totalBooksCount + ")");
             }
 
             applyAdminBookFilter();
@@ -386,20 +683,27 @@ public class AdminDashboardActivity extends AppCompatActivity {
             totalRequestsCount = requests.size();
             int pending = 0;
             int accepted = 0;
+            int completed = 0;
             for (Request r : requests) {
                 if (Request.STATUS_PENDING.equalsIgnoreCase(r.getStatus())) {
                     pending++;
+                } else if (Request.STATUS_COMPLETED.equalsIgnoreCase(r.getStatus())) {
+                    completed++;
                 } else if (Request.STATUS_ACCEPTED.equalsIgnoreCase(r.getStatus())) {
                     accepted++;
                 }
             }
             pendingRequestsCount = pending;
-            acceptedRequestsCount = accepted;
+            acceptedRequestsCount = completed + accepted;
             if (tvAdminPendingRequests != null) {
                 tvAdminPendingRequests.setText(String.valueOf(totalRequestsCount));
             }
             if (tvAdminRequestsSub != null) {
-                tvAdminRequestsSub.setText(pending + " chờ duyệt • " + accepted + " hoàn tất");
+                if (completed > 0) {
+                    tvAdminRequestsSub.setText(pending + " chờ duyệt • " + completed + " hoàn tất");
+                } else {
+                    tvAdminRequestsSub.setText(pending + " chờ duyệt • " + accepted + " chấp nhận");
+                }
             }
             updateFlaggedAndLogSummary();
         });
@@ -448,7 +752,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
                 .setTitle("Báo cáo Trạng thái Cơ sở dữ liệu")
                 .setMessage(msg)
                 .setPositiveButton("Làm mới dữ liệu ngay", (d, w) -> refreshDatabaseMetricsNow())
-                .setNeutralButton("Tùy chỉnh kiểm duyệt", (d, w) -> showSystemStatusDialog())
                 .setNegativeButton("Đóng", null)
                 .show();
     }
@@ -485,55 +788,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
         loadAdminAvatar();
         Toast.makeText(this, "Đã làm mới và đồng bộ dữ liệu Firestore & Room SQLite!", Toast.LENGTH_SHORT).show();
     }
-    private void showSystemStatusDialog() {
-        int activeUsers = Math.max(0, totalUsersCount - bannedUsersCount);
-        int visibleBooks = Math.max(0, totalBooksCount - hiddenBooksCount);
-        String msg = "• Kết nối Cloud: Firebase Firestore & Room SQLite (Trực tuyến)\n"
-                + "• Tổng thành viên: " + totalUsersCount + " (" + activeUsers + " hoạt động, " + bannedUsersCount + " bị khóa)\n"
-                + "• Tổng bài đăng sách: " + totalBooksCount + " (" + visibleBooks + " hiển thị, " + hiddenBooksCount + " đã ẩn)\n"
-                + "• Giao dịch trao đổi: " + totalRequestsCount + " (" + pendingRequestsCount + " chờ duyệt, " + acceptedRequestsCount + " hoàn tất)\n"
-                + "• Điểm hẹn mặc định: UEH Cơ sở B (279 Nguyễn Tri Phương, Q.10)\n\n"
-                + "Tùy chỉnh chế độ lọc danh sách bài đăng trên Dashboard:";
-
-        String[] filterChoices = new String[]{
-                "Tất cả bài đăng sách (" + totalBooksCount + ")",
-                "Chỉ sách đang hiển thị (" + Math.max(0, visibleBooks - pendingBooksCount) + ")",
-                "Chỉ sách đã ẩn cần kiểm duyệt (" + hiddenBooksCount + ")",
-                "Chỉ sách Member mới đăng chờ duyệt (" + pendingBooksCount + ")"
-        };
-
-        new AlertDialog.Builder(this)
-                .setTitle("Bảng Thông tin & Tùy chỉnh Kiểm duyệt")
-                .setMessage(msg)
-                .setPositiveButton("Lọc bài đăng sách", (d, w) -> showBookFilterModeDialog(filterChoices))
-                .setNeutralButton("Quản lý thành viên", (d, w) ->
-                        startActivity(new Intent(AdminDashboardActivity.this, UserManagementActivity.class)))
-                .setNegativeButton("Đóng", null)
-                .show();
-    }
-
-    private void showBookFilterModeDialog(String[] filterChoices) {
-        int checked = 0;
-        if ("visible".equals(currentBookFilterMode)) checked = 1;
-        else if ("hidden".equals(currentBookFilterMode)) checked = 2;
-        else if ("pending".equals(currentBookFilterMode)) checked = 3;
-
-        new AlertDialog.Builder(this)
-                .setTitle("Chế độ hiển thị sách trên Dashboard")
-                .setSingleChoiceItems(filterChoices, checked, (dialog, which) -> {
-                    if (which == 0) currentBookFilterMode = "all";
-                    else if (which == 1) currentBookFilterMode = "visible";
-                    else if (which == 2) currentBookFilterMode = "hidden";
-                    else currentBookFilterMode = "pending";
-                    applyAdminBookFilter();
-                    dialog.dismiss();
-                    if (adminScrollView != null && sectionManageBooks != null) {
-                        adminScrollView.smoothScrollTo(0, sectionManageBooks.getTop());
-                    }
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
-    }
 
     /** TC-ADMIN-07: Mở màn hình Quản lý & Kiểm duyệt Giao dịch chuẩn đồ án (ManageRequestsActivity) */
     private void openManageRequests() {
@@ -557,12 +811,14 @@ public class AdminDashboardActivity extends AppCompatActivity {
                         startActivity(intent);
                     } else if (which == 1) {
                         currentBookFilterMode = "hidden";
+                        currentBookPage = 1;
                         applyAdminBookFilter();
                         if (adminScrollView != null && sectionManageBooks != null) {
                             adminScrollView.smoothScrollTo(0, sectionManageBooks.getTop());
                         }
                     } else {
                         currentBookFilterMode = "all";
+                        currentBookPage = 1;
                         applyAdminBookFilter();
                         if (adminScrollView != null && sectionManageBooks != null) {
                             adminScrollView.smoothScrollTo(0, sectionManageBooks.getTop());
@@ -584,8 +840,14 @@ public class AdminDashboardActivity extends AppCompatActivity {
             btnLogoutAdmin.setOnClickListener(v -> handleLogout());
         }
 
+        // Bấm nút custom trên Header: Mở BottomSheet Sắp xếp bài đăng sách
         if (btnLog != null) {
-            btnLog.setOnClickListener(v -> showSystemStatusDialog());
+            btnLog.setOnClickListener(v -> showSortBottomSheet());
+        }
+
+        // Bấm chip tiêu chí sắp xếp cạnh tiêu đề: Cũng mở BottomSheet Sắp xếp
+        if (tvAdminSortIndicator != null) {
+            tvAdminSortIndicator.setOnClickListener(v -> showSortBottomSheet());
         }
 
         if (cardSystemLog != null) {
@@ -609,6 +871,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
         View.OnClickListener scrollToBooksListener = v -> {
             currentBookFilterMode = "all";
+            currentBookPage = 1;
             applyAdminBookFilter();
             if (adminScrollView != null && sectionManageBooks != null) {
                 adminScrollView.smoothScrollTo(0, sectionManageBooks.getTop());
@@ -676,10 +939,34 @@ public class AdminDashboardActivity extends AppCompatActivity {
             );
         }
 
+        if (btnPrevPage != null) {
+            btnPrevPage.setOnClickListener(v -> {
+                if (currentBookPage > 1) {
+                    currentBookPage--;
+                    displayCurrentBookPage(true);
+                }
+            });
+        }
+
+        if (btnNextPage != null) {
+            btnNextPage.setOnClickListener(v -> {
+                int totalPages = Math.max(1, (int) Math.ceil((double) currentFilteredBooks.size() / BOOKS_PAGE_SIZE));
+                if (currentBookPage < totalPages) {
+                    currentBookPage++;
+                    displayCurrentBookPage(true);
+                }
+            });
+        }
+
+        if (tvPageIndicator != null) {
+            tvPageIndicator.setOnClickListener(v -> showPagePickerDialog());
+        }
+
         ViewPressEffectHelper.applyPressEffect(
                 btnLogoutAdmin, ivAdminAvatar, btnLog, cardSystemLog,
                 cardFlaggedItems, cardTotalRequests, tvAdminViewAllBooks,
-                cardTotalMembers, cardTotalBooks, btnManageMembers, btnCheckNow, btnViewMemberFeed
+                cardTotalMembers, cardTotalBooks, btnManageMembers, btnCheckNow, btnViewMemberFeed,
+                btnPrevPage, btnNextPage, tvPageIndicator, tvAdminSortIndicator
         );
     }
 

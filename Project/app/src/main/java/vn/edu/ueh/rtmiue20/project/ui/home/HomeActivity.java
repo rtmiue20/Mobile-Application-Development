@@ -204,7 +204,7 @@ public class HomeActivity extends AppCompatActivity {
             int accepted = 0;
             if (list != null) {
                 for (Request r : list) {
-                    if (Request.STATUS_ACCEPTED.equalsIgnoreCase(r.getStatus())) {
+                    if (Request.STATUS_ACCEPTED.equalsIgnoreCase(r.getStatus()) || Request.STATUS_COMPLETED.equalsIgnoreCase(r.getStatus())) {
                         accepted++;
                     }
                 }

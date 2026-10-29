@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_login_card"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Header with Icon & Title -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_pill_inactive"
+            android:contentDescription="Handshake Icon"
+            android:padding="9dp"
+            android:src="@drawable/ic_handshake"
+            app:tint="@color/secondary" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvConfirmDialogTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/title_dialog_confirm_receive"
+                android:textColor="@color/primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvConfirmDialogDesc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/desc_dialog_confirm_receive"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Thông tin ngắn về giao dịch -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_tips_card"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvConfirmBookTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawableStart="@drawable/ic_bookshare_logo"
+            android:drawablePadding="6dp"
+            android:drawableTint="@color/secondary"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Sách: Chiếc Lá Cuối Cùng"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvConfirmOwnerName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:drawableStart="@drawable/ic_person"
+            android:drawablePadding="6dp"
+            android:drawableTint="@color/outline"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Chủ sách: Nguyễn Văn A"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tvConfirmAppointment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:drawableStart="@drawable/ic_near_me"
+            android:drawablePadding="6dp"
+            android:drawableTint="@color/secondary_green"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:text="Điểm hẹn: UEH Cơ sở B (279 Nguyễn Tri Phương, Q.10)"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Hai lựa chọn xác nhận -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Chọn trạng thái hiện tại:"
+        android:textColor="@color/text_primary"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/rgReceiveOptions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp">
+
+        <!-- Lựa chọn A: Đã nhận sách -->
+        <LinearLayout
+            android:id="@+id/layoutOptionReceived"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_badge_active"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <RadioButton
+                android:id="@+id/rbOptionReceived"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:buttonTint="@color/secondary"
+                android:checked="true" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/opt_received_book"
+                    android:textColor="@color/primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/opt_received_book_sub"
+                    android:textColor="@color/secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Lựa chọn B: Chưa nhận được -->
+        <LinearLayout
+            android:id="@+id/layoutOptionNotReceived"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_pill_inactive"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <RadioButton
+                android:id="@+id/rbOptionNotReceived"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:buttonTint="@color/outline"
+                android:checked="false" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/opt_not_received_book"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/opt_not_received_book_sub"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </RadioGroup>
+
+    <!-- Ô ghi chú tùy chọn khi chọn Chưa nhận được -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilNotReceivedNote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:visibility="gone"
+        app:boxBackgroundMode="outline"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxStrokeColor="@color/secondary">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etNotReceivedNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_not_received_note"
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxLines="3"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Vòng xoay tải -->
+    <ProgressBar
+        android:id="@+id/pbConfirmReceiveLoading"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:indeterminateTint="@color/secondary"
+        android:visibility="gone" />
+
+    <!-- Hàng nút thao tác -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btnCancelConfirmReceive"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_inactive"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="@string/btn_close"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/btnSubmitConfirmReceive"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1.2"
+            android:background="@drawable/bg_btn_primary"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvSubmitConfirmText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/btn_confirm_receive_action"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

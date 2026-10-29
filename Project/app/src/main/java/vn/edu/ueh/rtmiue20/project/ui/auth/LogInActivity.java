@@ -16,12 +16,14 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -34,13 +36,19 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseUser;
 
 import vn.edu.ueh.rtmiue20.project.R;
+import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
+import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
 import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
 import vn.edu.ueh.rtmiue20.project.ui.profile.EditProfileActivity;
+import vn.edu.ueh.rtmiue20.project.util.ViewPressEffectHelper;
 
 public class LogInActivity extends AppCompatActivity {
 
@@ -282,36 +290,143 @@ public class LogInActivity extends AppCompatActivity {
                 SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                 prefs.edit().putString("user_fullname", user.getDisplayName()).apply();
             }
-            vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.getInstance().getUserProfile(
+            UserRepository.getInstance().getUserProfile(
                     user.getUid(),
-                    new vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.UserCallback() {
+                    new UserRepository.UserCallback() {
                         @Override
-                        public void onSuccess(vn.edu.ueh.rtmiue20.project.data.model.User userProfile) {
-                            Intent intent;
-                            if (userProfile != null && "admin".equalsIgnoreCase(userProfile.getRole())) {
-                                intent = new Intent(LogInActivity.this, AdminDashboardActivity.class);
-                            } else {
-                                intent = new Intent(LogInActivity.this, HomeActivity.class);
+                        public void onSuccess(User userProfile) {
+                            if (userProfile != null && Boolean.TRUE.equals(userProfile.isMustChangePassword())) {
+                                showForceChangePasswordDialog(user, userProfile);
+                                return;
                             }
-                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            startActivity(intent);
-                            finish();
+                            proceedToNextScreen(userProfile);
                         }
 
                         @Override
                         public void onError(String errorMessage) {
-                            Intent intent = new Intent(LogInActivity.this, HomeActivity.class);
-                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            startActivity(intent);
-                            finish();
+                            proceedToNextScreen(null);
                         }
                     }
             );
         } else {
-            Intent intent = new Intent(LogInActivity.this, HomeActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
+            proceedToNextScreen(null);
         }
+    }
+
+    /**
+     * Bắt buộc thành viên đổi mật khẩu cá nhân khi tài khoản vừa được Admin cấp lại mật khẩu.
+     */
+    private void showForceChangePasswordDialog(FirebaseUser user, User userProfile) {
+        if (isFinishing() || isDestroyed()) return;
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_force_change_password, null);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+        builder.setView(dialogView);
+        builder.setCancelable(false);
+
+        AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        TextInputLayout tilForceNewPassword = dialogView.findViewById(R.id.tilForceNewPassword);
+        TextInputEditText etForceNewPassword = dialogView.findViewById(R.id.etForceNewPassword);
+        TextInputLayout tilForceConfirmPassword = dialogView.findViewById(R.id.tilForceConfirmPassword);
+        TextInputEditText etForceConfirmPassword = dialogView.findViewById(R.id.etForceConfirmPassword);
+        ProgressBar pbLoading = dialogView.findViewById(R.id.pbForceChangeLoading);
+        TextView btnCancel = dialogView.findViewById(R.id.btnForceCancel);
+        View btnSubmit = dialogView.findViewById(R.id.btnForceSubmit);
+        TextView tvForceSubmitText = dialogView.findViewById(R.id.tvForceSubmitText);
+
+        ViewPressEffectHelper.applyPressEffect(btnCancel, btnSubmit);
+
+        btnCancel.setOnClickListener(v -> {
+            authRepository.logout();
+            dialog.dismiss();
+            btnLogin.setEnabled(true);
+            Toast.makeText(this, "Đã đăng xuất tài khoản.", Toast.LENGTH_SHORT).show();
+        });
+
+        btnSubmit.setOnClickListener(v -> {
+            String newPass = etForceNewPassword.getText() != null ? etForceNewPassword.getText().toString().trim() : "";
+            String confirmPass = etForceConfirmPassword.getText() != null ? etForceConfirmPassword.getText().toString().trim() : "";
+
+            if (newPass.isEmpty()) {
+                tilForceNewPassword.setError(getString(R.string.err_password_empty));
+                etForceNewPassword.requestFocus();
+                return;
+            }
+
+            if (newPass.length() < 8) {
+                tilForceNewPassword.setError(getString(R.string.err_password_min_length));
+                etForceNewPassword.requestFocus();
+                return;
+            }
+
+            if (confirmPass.isEmpty()) {
+                tilForceConfirmPassword.setError(getString(R.string.err_confirm_password_empty));
+                etForceConfirmPassword.requestFocus();
+                return;
+            }
+
+            if (!newPass.equals(confirmPass)) {
+                tilForceConfirmPassword.setError(getString(R.string.err_password_mismatch));
+                etForceConfirmPassword.requestFocus();
+                return;
+            }
+
+            btnSubmit.setEnabled(false);
+            btnCancel.setEnabled(false);
+            etForceNewPassword.setEnabled(false);
+            etForceConfirmPassword.setEnabled(false);
+            pbLoading.setVisibility(View.VISIBLE);
+            tvForceSubmitText.setText(R.string.btn_processing);
+
+            user.updatePassword(newPass)
+                    .addOnSuccessListener(unused -> {
+                        UserRepository.getInstance().clearMustChangePasswordFlag(user.getUid(), new UserRepository.UpdateCallback() {
+                            @Override
+                            public void onSuccess() {
+                                if (isFinishing() || isDestroyed()) return;
+                                dialog.dismiss();
+                                Toast.makeText(LogInActivity.this, R.string.msg_force_change_password_success, Toast.LENGTH_LONG).show();
+                                proceedToNextScreen(userProfile);
+                            }
+
+                            @Override
+                            public void onError(String errorMsg) {
+                                if (isFinishing() || isDestroyed()) return;
+                                dialog.dismiss();
+                                Toast.makeText(LogInActivity.this, R.string.msg_force_change_password_success, Toast.LENGTH_LONG).show();
+                                proceedToNextScreen(userProfile);
+                            }
+                        });
+                    })
+                    .addOnFailureListener(e -> {
+                        if (isFinishing() || isDestroyed()) return;
+                        btnSubmit.setEnabled(true);
+                        btnCancel.setEnabled(true);
+                        etForceNewPassword.setEnabled(true);
+                        etForceConfirmPassword.setEnabled(true);
+                        pbLoading.setVisibility(View.GONE);
+                        tvForceSubmitText.setText(R.string.btn_force_change_password);
+                        tilForceNewPassword.setError(e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Không thể cập nhật mật khẩu.");
+                        Toast.makeText(LogInActivity.this, "Lỗi: " + e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                    });
+        });
+
+        dialog.show();
+    }
+
+    private void proceedToNextScreen(User userProfile) {
+        Intent intent;
+        if (userProfile != null && "admin".equalsIgnoreCase(userProfile.getRole())) {
+            intent = new Intent(LogInActivity.this, AdminDashboardActivity.class);
+        } else {
+            intent = new Intent(LogInActivity.this, HomeActivity.class);
+        }
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }

@@ -27,6 +27,7 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage" }
+firebase-functions = { group = "com.google.firebase", name = "firebase-functions" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 
 # Image Loading
@@ -36,5 +37,3 @@ glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "gl
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
-
-

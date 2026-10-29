@@ -76,7 +76,7 @@
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Nhật ký"
+            android:contentDescription="@string/cd_btn_sort"
             android:padding="8dp"
             android:src="@drawable/ic_tune"
             app:tint="@color/text_primary" />
@@ -607,29 +607,59 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="22dp">
 
-                <TextView
-                    android:id="@+id/tvReviewTitle"
+                <LinearLayout
+                    android:id="@+id/layoutReviewTitleContainer"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Quản lý bài đăng sách"
-                    android:textColor="@color/primary"
-                    android:textSize="17sp"
-                    android:textStyle="bold" />
+                    android:layout_alignParentStart="true"
+                    android:layout_toStartOf="@id/tvAdminViewAllBooks"
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tvAdminRecentCountBadge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerVertical="true"
-                    android:layout_marginStart="8dp"
-                    android:layout_toEndOf="@id/tvReviewTitle"
-                    android:background="@drawable/bg_tag_secondary"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="2dp"
-                    android:text="0"
-                    android:textColor="@color/on_secondary_container"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvReviewTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Quản lý bài đăng sách"
+                            android:textColor="@color/primary"
+                            android:textSize="17sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvAdminRecentCountBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/bg_tag_secondary"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="2dp"
+                            android:text="0"
+                            android:textColor="@color/on_secondary_container"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Chip/Badge hiển thị tiêu chí Sắp xếp bài đăng đang kích hoạt -->
+                    <TextView
+                        android:id="@+id/tvAdminSortIndicator"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:background="@drawable/bg_pill_inactive"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp"
+                        android:text="Sắp xếp: Mới nhất"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvAdminViewAllBooks"
@@ -667,6 +697,61 @@
                 android:layout_marginTop="12dp"
                 android:nestedScrollingEnabled="false"
                 tools:listitem="@layout/item_book" />
+
+            <!-- Thanh Phân Trang Quản lý sách (Pagination) -->
+            <LinearLayout
+                android:id="@+id/layoutBookPagination"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/btnPrevPage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_pill_inactive"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingHorizontal="14dp"
+                    android:text="‹ Trang trước"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvPageIndicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="12dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
+                    android:text="Trang 1 / 1"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btnNextPage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_pill_inactive"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingHorizontal="14dp"
+                    android:text="Trang sau ›"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <!-- 6. Bottom Log Activity Micro-widget -->
             <LinearLayout
