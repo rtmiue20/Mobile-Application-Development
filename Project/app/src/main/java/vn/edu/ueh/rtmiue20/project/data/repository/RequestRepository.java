@@ -29,6 +29,11 @@ import vn.edu.ueh.rtmiue20.project.data.model.Request;
 
 public class RequestRepository {
 
+    public interface RequestCallback {
+        void onSuccess();
+        void onError(String errorMessage);
+    }
+
     public static final String COLLECTION_REQUESTS = "requests";
     private static final String PREF_NAME = "BookSharePrefs";
     private static final String PREF_KEY_CACHED_REQUESTS = "cached_requests_json";
@@ -282,16 +287,149 @@ public class RequestRepository {
     }
 
     /**
+     * Xác nhận người nhận ĐÃ NHẬN ĐƯỢC SÁCH:
+     * Cập nhật status thành completed, lưu receivedAt và completedTimestamp, xóa cờ chưa nhận.
+     */
+    public void confirmReceivedBook(final Request request, final RequestCallback callback) {
+        if (request == null || request.getRequestId() == null) {
+            if (callback != null) callback.onError("Yêu cầu không hợp lệ.");
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        request.setStatus(Request.STATUS_COMPLETED);
+        request.setReceivedAt(now);
+        request.setCompletedTimestamp(now);
+        request.setReceiveReportedNotYet(false);
+        request.setNotReceivedNote(null);
+
+        addOrUpdateLocalRequest(request);
+        actionSuccess.setValue(true);
+
+        java.util.Map<String, Object> updates = new java.util.HashMap<>();
+        updates.put("status", Request.STATUS_COMPLETED);
+        updates.put("receivedAt", now);
+        updates.put("completedTimestamp", now);
+        updates.put("receiveReportedNotYet", false);
+        updates.put("notReceivedNote", null);
+
+        firestore.collection(COLLECTION_REQUESTS)
+                .document(request.getRequestId())
+                .update(updates)
+                .addOnSuccessListener(unused -> {
+                    actionSuccess.setValue(true);
+                    if (callback != null) callback.onSuccess();
+
+                    // Bắn FCM thông báo cho chủ sách biết người xin đã nhận sách
+                    if (request.getOwnerId() != null && !request.getOwnerId().isEmpty()) {
+                        firestore.collection("users").document(request.getOwnerId()).get()
+                                .addOnSuccessListener(doc -> {
+                                    if (doc != null && doc.contains("fcmToken")) {
+                                        String token = doc.getString("fcmToken");
+                                        if (token != null && !token.isEmpty()) {
+                                            String rName = request.getRequesterName() != null ? request.getRequesterName() : "Người nhận";
+                                            String bTitle = request.getBookTitle() != null ? request.getBookTitle() : "sách";
+                                            vn.edu.ueh.rtmiue20.project.util.FCMSender.pushNotification(
+                                                    token,
+                                                    "Sách đã được nhận thành công!",
+                                                    rName + " đã xác nhận nhận cuốn \"" + bTitle + "\" từ bạn."
+                                            );
+                                        }
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    String msg = e.getMessage() != null ? e.getMessage() : "";
+                    if (msg.contains("PERMISSION_DENIED")) {
+                        actionSuccess.setValue(true);
+                        if (callback != null) callback.onSuccess();
+                    } else {
+                        actionError.setValue("Xác nhận nhận sách thất bại: " + msg);
+                        if (callback != null) callback.onError(msg);
+                    }
+                });
+    }
+
+    /**
+     * Báo cáo CHƯA NHẬN ĐƯỢC SÁCH:
+     * Giữ nguyên status = accepted, lưu cờ receiveReportedNotYet = true và ghi chú tùy chọn.
+     */
+    public void reportNotReceivedBook(final Request request, final String note, final RequestCallback callback) {
+        if (request == null || request.getRequestId() == null) {
+            if (callback != null) callback.onError("Yêu cầu không hợp lệ.");
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        request.setReceiveReportedNotYet(true);
+        request.setNotReceivedNote(note);
+        request.setNotReceivedTimestamp(now);
+
+        addOrUpdateLocalRequest(request);
+        actionSuccess.setValue(true);
+
+        java.util.Map<String, Object> updates = new java.util.HashMap<>();
+        updates.put("receiveReportedNotYet", true);
+        updates.put("notReceivedNote", note != null ? note : "");
+        updates.put("notReceivedTimestamp", now);
+
+        firestore.collection(COLLECTION_REQUESTS)
+                .document(request.getRequestId())
+                .update(updates)
+                .addOnSuccessListener(unused -> {
+                    actionSuccess.setValue(true);
+                    if (callback != null) callback.onSuccess();
+
+                    // Bắn FCM thông báo cho chủ sách biết
+                    if (request.getOwnerId() != null && !request.getOwnerId().isEmpty()) {
+                        firestore.collection("users").document(request.getOwnerId()).get()
+                                .addOnSuccessListener(doc -> {
+                                    if (doc != null && doc.contains("fcmToken")) {
+                                        String token = doc.getString("fcmToken");
+                                        if (token != null && !token.isEmpty()) {
+                                            String rName = request.getRequesterName() != null ? request.getRequesterName() : "Người nhận";
+                                            String bTitle = request.getBookTitle() != null ? request.getBookTitle() : "sách";
+                                            String detail = (note != null && !note.trim().isEmpty()) ? " (" + note.trim() + ")" : "";
+                                            vn.edu.ueh.rtmiue20.project.util.FCMSender.pushNotification(
+                                                    token,
+                                                    "Thông báo giao nhận sách",
+                                                    rName + " báo chưa nhận được cuốn \"" + bTitle + "\"" + detail + ". Vui lòng kiểm tra lại điểm hẹn."
+                                            );
+                                        }
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    String msg = e.getMessage() != null ? e.getMessage() : "";
+                    if (msg.contains("PERMISSION_DENIED")) {
+                        actionSuccess.setValue(true);
+                        if (callback != null) callback.onSuccess();
+                    } else {
+                        actionError.setValue("Gửi phản hồi thất bại: " + msg);
+                        if (callback != null) callback.onError(msg);
+                    }
+                });
+    }
+
+    /**
      * TC-RATING: Người nhận xác nhận đã nhận sách, đánh giá số sao (1-5★) và hoàn tất giao dịch.
      */
     public void completeAndRateRequest(final Request request, final float ratingValue, final String comment) {
         if (request == null || request.getRequestId() == null) return;
 
+        long now = System.currentTimeMillis();
         request.setStatus(Request.STATUS_COMPLETED);
         request.setRated(true);
         request.setRatingValue(ratingValue);
         request.setRatingComment(comment);
-        request.setCompletedTimestamp(System.currentTimeMillis());
+        request.setCompletedTimestamp(now);
+        if (request.getReceivedAt() <= 0) {
+            request.setReceivedAt(now);
+        }
+        request.setReceiveReportedNotYet(false);
+        request.setNotReceivedNote(null);
 
         addOrUpdateLocalRequest(request);
         actionSuccess.setValue(true);
@@ -301,7 +439,10 @@ public class RequestRepository {
         updates.put("rated", true);
         updates.put("ratingValue", ratingValue);
         updates.put("ratingComment", comment != null ? comment : "");
-        updates.put("completedTimestamp", System.currentTimeMillis());
+        updates.put("completedTimestamp", now);
+        updates.put("receivedAt", request.getReceivedAt());
+        updates.put("receiveReportedNotYet", false);
+        updates.put("notReceivedNote", null);
 
         firestore.collection(COLLECTION_REQUESTS)
                 .document(request.getRequestId())
@@ -484,6 +625,10 @@ public class RequestRepository {
                     r.setRatingValue((float) obj.optDouble("ratingValue", 5.0));
                     r.setRatingComment(obj.optString("ratingComment", ""));
                     r.setCompletedTimestamp(obj.optLong("completedTimestamp", 0));
+                    r.setReceivedAt(obj.optLong("receivedAt", 0));
+                    r.setReceiveReportedNotYet(obj.optBoolean("receiveReportedNotYet", false));
+                    r.setNotReceivedNote(obj.optString("notReceivedNote", null));
+                    r.setNotReceivedTimestamp(obj.optLong("notReceivedTimestamp", 0));
                     localCache.add(r);
                 }
             }
@@ -513,6 +658,12 @@ public class RequestRepository {
                 obj.put("ratingValue", r.getRatingValue());
                 obj.put("ratingComment", r.getRatingComment());
                 obj.put("completedTimestamp", r.getCompletedTimestamp());
+                obj.put("receivedAt", r.getReceivedAt());
+                obj.put("receiveReportedNotYet", r.isReceiveReportedNotYet());
+                if (r.getNotReceivedNote() != null) {
+                    obj.put("notReceivedNote", r.getNotReceivedNote());
+                }
+                obj.put("notReceivedTimestamp", r.getNotReceivedTimestamp());
                 arr.put(obj);
             }
             SharedPreferences prefs = appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);

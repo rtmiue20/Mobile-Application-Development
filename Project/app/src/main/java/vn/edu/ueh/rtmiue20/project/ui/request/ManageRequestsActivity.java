@@ -5,6 +5,9 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,6 +19,8 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -29,6 +34,7 @@ import vn.edu.ueh.rtmiue20.project.ui.book.BookDetailActivity;
 import vn.edu.ueh.rtmiue20.project.ui.book.CreatePostActivity;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
 import vn.edu.ueh.rtmiue20.project.ui.profile.ProfileActivity;
+import vn.edu.ueh.rtmiue20.project.util.ViewPressEffectHelper;
 
 public class ManageRequestsActivity extends AppCompatActivity {
 
@@ -99,6 +105,13 @@ public class ManageRequestsActivity extends AppCompatActivity {
             if (bottomNavContainer != null) {
                 bottomNavContainer.setVisibility(View.GONE);
             }
+        } else {
+            if (tvTabReceived != null) {
+                tvTabReceived.setText(R.string.tab_requests_received);
+            }
+            if (tvTabSent != null) {
+                tvTabSent.setText(R.string.tab_requests_sent);
+            }
         }
 
         if (ivAvatarSmall != null) {
@@ -157,6 +170,11 @@ public class ManageRequestsActivity extends AppCompatActivity {
                         })
                         .setNegativeButton("Chưa", null)
                         .show();
+            }
+
+            @Override
+            public void onConfirmReceive(Request request) {
+                showConfirmReceiveDialog(request);
             }
         });
         adapter.setAdminMode(isAdminMode);
@@ -344,6 +362,147 @@ public class ManageRequestsActivity extends AppCompatActivity {
     }
 
     /**
+     * Mini window xác nhận đã nhận sách hay chưa dành cho người gửi yêu cầu (Tab Đã gửi).
+     */
+    private void showConfirmReceiveDialog(final Request request) {
+        if (isFinishing() || isDestroyed() || request == null) return;
+
+        if (Request.STATUS_COMPLETED.equalsIgnoreCase(request.getStatus())) {
+            Toast.makeText(this, R.string.err_cannot_confirm_completed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_confirm_receive, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(true)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        TextView tvConfirmBookTitle = dialogView.findViewById(R.id.tvConfirmBookTitle);
+        TextView tvConfirmOwnerName = dialogView.findViewById(R.id.tvConfirmOwnerName);
+        TextView tvConfirmAppointment = dialogView.findViewById(R.id.tvConfirmAppointment);
+
+        View layoutOptionReceived = dialogView.findViewById(R.id.layoutOptionReceived);
+        RadioButton rbOptionReceived = dialogView.findViewById(R.id.rbOptionReceived);
+        View layoutOptionNotReceived = dialogView.findViewById(R.id.layoutOptionNotReceived);
+        RadioButton rbOptionNotReceived = dialogView.findViewById(R.id.rbOptionNotReceived);
+
+        TextInputLayout tilNotReceivedNote = dialogView.findViewById(R.id.tilNotReceivedNote);
+        TextInputEditText etNotReceivedNote = dialogView.findViewById(R.id.etNotReceivedNote);
+
+        ProgressBar pbLoading = dialogView.findViewById(R.id.pbConfirmReceiveLoading);
+        TextView btnCancel = dialogView.findViewById(R.id.btnCancelConfirmReceive);
+        View btnSubmit = dialogView.findViewById(R.id.btnSubmitConfirmReceive);
+        TextView tvSubmitText = dialogView.findViewById(R.id.tvSubmitConfirmText);
+
+        String bTitle = request.getBookTitle() != null ? request.getBookTitle() : "sách";
+        String oName = request.getOwnerName() != null ? request.getOwnerName() : "Chủ sách";
+        tvConfirmBookTitle.setText(getString(R.string.label_confirm_book_title, bTitle));
+        tvConfirmOwnerName.setText(getString(R.string.label_confirm_owner_name, oName));
+        tvConfirmAppointment.setText(getString(R.string.label_confirm_appointment, "UEH Cơ sở B (279 Nguyễn Tri Phương, Q.10)"));
+
+        Runnable updateOptionVisuals = () -> {
+            boolean isReceived = rbOptionReceived.isChecked();
+            rbOptionReceived.setChecked(isReceived);
+            rbOptionNotReceived.setChecked(!isReceived);
+
+            if (isReceived) {
+                layoutOptionReceived.setBackgroundResource(R.drawable.bg_badge_active);
+                layoutOptionNotReceived.setBackgroundResource(R.drawable.bg_pill_inactive);
+                tilNotReceivedNote.setVisibility(View.GONE);
+            } else {
+                layoutOptionReceived.setBackgroundResource(R.drawable.bg_pill_inactive);
+                layoutOptionNotReceived.setBackgroundResource(R.drawable.bg_reason_box);
+                tilNotReceivedNote.setVisibility(View.VISIBLE);
+                etNotReceivedNote.requestFocus();
+            }
+        };
+
+        layoutOptionReceived.setOnClickListener(v -> {
+            rbOptionReceived.setChecked(true);
+            rbOptionNotReceived.setChecked(false);
+            updateOptionVisuals.run();
+        });
+        rbOptionReceived.setOnClickListener(v -> {
+            rbOptionReceived.setChecked(true);
+            rbOptionNotReceived.setChecked(false);
+            updateOptionVisuals.run();
+        });
+
+        layoutOptionNotReceived.setOnClickListener(v -> {
+            rbOptionReceived.setChecked(false);
+            rbOptionNotReceived.setChecked(true);
+            updateOptionVisuals.run();
+        });
+        rbOptionNotReceived.setOnClickListener(v -> {
+            rbOptionReceived.setChecked(false);
+            rbOptionNotReceived.setChecked(true);
+            updateOptionVisuals.run();
+        });
+
+        ViewPressEffectHelper.applyPressEffect(btnCancel, btnSubmit);
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSubmit.setOnClickListener(v -> {
+            btnSubmit.setEnabled(false);
+            btnCancel.setEnabled(false);
+            pbLoading.setVisibility(View.VISIBLE);
+            tvSubmitText.setText(R.string.btn_processing);
+
+            if (rbOptionReceived.isChecked()) {
+                // Lựa chọn A: Đã nhận sách -> chuyển sang hoàn tất và mở rating
+                viewModel.confirmReceivedBook(request, new RequestRepository.RequestCallback() {
+                    @Override
+                    public void onSuccess() {
+                        if (isFinishing() || isDestroyed()) return;
+                        Toast.makeText(ManageRequestsActivity.this, R.string.msg_confirm_received_success, Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                        showRatingDialog(request);
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        if (isFinishing() || isDestroyed()) return;
+                        btnSubmit.setEnabled(true);
+                        btnCancel.setEnabled(true);
+                        pbLoading.setVisibility(View.GONE);
+                        tvSubmitText.setText(R.string.btn_confirm_receive_action);
+                        Toast.makeText(ManageRequestsActivity.this, "Lỗi: " + errorMessage, Toast.LENGTH_LONG).show();
+                    }
+                });
+            } else {
+                // Lựa chọn B: Chưa nhận được -> giữ nguyên accepted, lưu cờ và ghi chú
+                String note = etNotReceivedNote.getText() != null ? etNotReceivedNote.getText().toString().trim() : "";
+                viewModel.reportNotReceivedBook(request, note, new RequestRepository.RequestCallback() {
+                    @Override
+                    public void onSuccess() {
+                        if (isFinishing() || isDestroyed()) return;
+                        Toast.makeText(ManageRequestsActivity.this, R.string.msg_report_not_received_success, Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        if (isFinishing() || isDestroyed()) return;
+                        btnSubmit.setEnabled(true);
+                        btnCancel.setEnabled(true);
+                        pbLoading.setVisibility(View.GONE);
+                        tvSubmitText.setText(R.string.btn_confirm_receive_action);
+                        Toast.makeText(ManageRequestsActivity.this, "Lỗi: " + errorMessage, Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+        });
+
+        dialog.show();
+    }
+
+    /**
      * TC-RATING: Hiển thị dialog đánh giá trao đổi sách khi người nhận bấm "Đã nhận sách"
      */
     private void showRatingDialog(Request request) {
@@ -361,7 +520,7 @@ public class ManageRequestsActivity extends AppCompatActivity {
 
         TextView tvRatingDialogSubtitle = dialogView.findViewById(R.id.tvRatingDialogSubtitle);
         TextView tvRatingFeedback = dialogView.findViewById(R.id.tvRatingFeedback);
-        com.google.android.material.textfield.TextInputEditText etRatingComment = dialogView.findViewById(R.id.etRatingComment);
+        TextInputEditText etRatingComment = dialogView.findViewById(R.id.etRatingComment);
         TextView btnCancelRating = dialogView.findViewById(R.id.btnCancelRating);
         TextView btnSubmitRating = dialogView.findViewById(R.id.btnSubmitRating);
 

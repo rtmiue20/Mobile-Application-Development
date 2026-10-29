@@ -33,9 +33,16 @@ public class RequestViewModel extends ViewModel {
         repository.cancelRequest(requestId);
     }
 
-    // Đã đổi tên hàm thành updateRequestStatus
     public void updateRequestStatus(String requestId, String newStatus) {
         repository.updateRequestStatus(requestId, newStatus);
+    }
+
+    public void confirmReceivedBook(Request request, RequestRepository.RequestCallback callback) {
+        repository.confirmReceivedBook(request, callback);
+    }
+
+    public void reportNotReceivedBook(Request request, String note, RequestRepository.RequestCallback callback) {
+        repository.reportNotReceivedBook(request, note, callback);
     }
 
     public void completeAndRateRequest(Request request, float ratingValue, String comment) {
@@ -46,12 +53,10 @@ public class RequestViewModel extends ViewModel {
         return repository.getActionSuccess();
     }
 
-    // Đã đổi tên hàm thành getError()
     public LiveData<String> getError() {
         return repository.getActionError();
     }
 
-    // Đã đổi tên hàm thành resetStatus()
     public void resetStatus() {
         repository.clearActionStatus();
     }
