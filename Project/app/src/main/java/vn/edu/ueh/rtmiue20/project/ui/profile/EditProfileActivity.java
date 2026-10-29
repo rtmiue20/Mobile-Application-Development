@@ -42,6 +42,7 @@ import java.util.Locale;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.util.TypedValue;
@@ -86,6 +87,11 @@ public class EditProfileActivity extends AppCompatActivity {
     private ChipGroup chipGroupInterests;
     private Chip chipAddInterest;
     private TextView tvSelectedInterestsCount;
+
+    private SwitchMaterial swShowPhone;
+    private SwitchMaterial swDirectRequest;
+    private SwitchMaterial swBookAlerts;
+    private TextView tvBookAlertsDesc;
 
     private static final String[] DEFAULT_CATEGORIES = {
         "Văn học Việt Nam",
@@ -165,6 +171,16 @@ public class EditProfileActivity extends AppCompatActivity {
         chipAddInterest = findViewById(R.id.chipAddInterest);
         tvSelectedInterestsCount = findViewById(R.id.tvSelectedInterestsCount);
         setupInterests(null);
+
+        swShowPhone = findViewById(R.id.swShowPhone);
+        swDirectRequest = findViewById(R.id.swDirectRequest);
+        swBookAlerts = findViewById(R.id.swBookAlerts);
+        tvBookAlertsDesc = findViewById(R.id.tvBookAlertsDesc);
+
+        SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        if (swShowPhone != null) swShowPhone.setChecked(prefs.getBoolean("pref_show_phone", true));
+        if (swDirectRequest != null) swDirectRequest.setChecked(prefs.getBoolean("pref_direct_request", true));
+        if (swBookAlerts != null) swBookAlerts.setChecked(prefs.getBoolean("pref_book_alerts", true));
     }
 
     private void setupSpinners() {
@@ -219,6 +235,13 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void updateWardsForDistrict(String district, String targetWard) {
+        if (tvBookAlertsDesc != null) {
+            if (district != null && !district.trim().isEmpty() && !district.equalsIgnoreCase("Chọn Quận/Huyện")) {
+                tvBookAlertsDesc.setText("Cập nhật tự động khi có đầu sách mới tại " + district);
+            } else {
+                tvBookAlertsDesc.setText("Cập nhật tự động khi có đầu sách mới tại khu vực của bạn");
+            }
+        }
         List<String> wards = LocationHelper.getWardsForDistrict(district);
         ArrayAdapter<String> wardAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, wards);
         wardAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -406,6 +429,13 @@ public class EditProfileActivity extends AppCompatActivity {
                 }
 
                 setupInterests(user.getInterests());
+
+                if (swShowPhone != null) swShowPhone.setChecked(user.isShowPhone());
+                if (swDirectRequest != null) swDirectRequest.setChecked(user.isDirectRequest());
+                if (swBookAlerts != null) swBookAlerts.setChecked(user.isBookAlerts());
+                if (user.getDistrict() != null && !user.getDistrict().isEmpty() && tvBookAlertsDesc != null) {
+                    tvBookAlertsDesc.setText("Cập nhật tự động khi có đầu sách mới tại " + user.getDistrict());
+                }
             }
 
             @Override
@@ -661,15 +691,21 @@ public class EditProfileActivity extends AppCompatActivity {
         }
 
         List<String> selectedInterests = getSelectedInterests();
+        boolean isShowPhone = swShowPhone != null && swShowPhone.isChecked();
+        boolean isDirectRequest = swDirectRequest != null && swDirectRequest.isChecked();
+        boolean isBookAlerts = swBookAlerts != null && swBookAlerts.isChecked();
 
-        userRepository.updateUserProfile(currentUser.getUid(), fullName, nickname, phone, bio, city, district, ward, selectedFavoriteSpotName, selectedFavoriteSpotAddress, currentLatitude, currentLongitude, selectedInterests, new UserRepository.UpdateCallback() {
+        userRepository.updateUserProfile(currentUser.getUid(), fullName, nickname, phone, bio, city, district, ward, selectedFavoriteSpotName, selectedFavoriteSpotAddress, currentLatitude, currentLongitude, selectedInterests, isShowPhone, isDirectRequest, isBookAlerts, new UserRepository.UpdateCallback() {
             @Override
             public void onSuccess() {
                 String displayNameFormatted = User.getDisplayNameFormatted(fullName, nickname);
                 android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
                 android.content.SharedPreferences.Editor editor = prefs.edit()
                         .putString("user_fullname", !displayNameFormatted.isEmpty() ? displayNameFormatted : fullName)
-                        .putString("user_nickname", nickname);
+                        .putString("user_nickname", nickname)
+                        .putBoolean("pref_show_phone", isShowPhone)
+                        .putBoolean("pref_direct_request", isDirectRequest)
+                        .putBoolean("pref_book_alerts", isBookAlerts);
                 if (currentLatitude != null && currentLongitude != null) {
                     editor.putFloat("user_lat", currentLatitude.floatValue());
                     editor.putFloat("user_lng", currentLongitude.floatValue());

@@ -806,8 +806,8 @@
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
                         android:checked="true"
-                        app:thumbTint="@color/secondary_green"
-                        app:trackTint="#A7F3D0" />
+                        app:thumbTint="@color/switch_thumb_selector"
+                        app:trackTint="@color/switch_track_selector" />
                 </RelativeLayout>
 
                 <!-- Toggle 2: Direct loan requests -->
@@ -848,8 +848,8 @@
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
                         android:checked="true"
-                        app:thumbTint="@color/secondary_green"
-                        app:trackTint="#A7F3D0" />
+                        app:thumbTint="@color/switch_thumb_selector"
+                        app:trackTint="@color/switch_track_selector" />
                 </RelativeLayout>
 
                 <!-- Toggle 3: Neighborhood Book Alerts -->
@@ -874,10 +874,11 @@
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvBookAlertsDesc"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="Cập nhật tự động khi có đầu sách mới tại Cầu Giấy"
+                            android:text="Cập nhật tự động khi có đầu sách mới tại khu vực của bạn"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -889,8 +890,8 @@
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
                         android:checked="true"
-                        app:thumbTint="@color/secondary_green"
-                        app:trackTint="#A7F3D0" />
+                        app:thumbTint="@color/switch_thumb_selector"
+                        app:trackTint="@color/switch_track_selector" />
                 </RelativeLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

@@ -33,6 +33,13 @@ public class User {
     @Ignore
     private java.util.List<String> interests;
 
+    @Ignore
+    private Boolean showPhone = true;
+    @Ignore
+    private Boolean directRequest = true;
+    @Ignore
+    private Boolean bookAlerts = true;
+
     // Default constructor required for Firestore
     public User() {
     }
@@ -210,6 +217,30 @@ public class User {
         this.interests = interests;
     }
 
+    public Boolean isShowPhone() {
+        return showPhone != null ? showPhone : true;
+    }
+
+    public void setShowPhone(Boolean showPhone) {
+        this.showPhone = showPhone;
+    }
+
+    public Boolean isDirectRequest() {
+        return directRequest != null ? directRequest : true;
+    }
+
+    public void setDirectRequest(Boolean directRequest) {
+        this.directRequest = directRequest;
+    }
+
+    public Boolean isBookAlerts() {
+        return bookAlerts != null ? bookAlerts : true;
+    }
+
+    public void setBookAlerts(Boolean bookAlerts) {
+        this.bookAlerts = bookAlerts;
+    }
+
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("uid", uid);
@@ -233,6 +264,9 @@ public class User {
         if (interests != null) {
             map.put("interests", interests);
         }
+        if (showPhone != null) map.put("showPhone", showPhone);
+        if (directRequest != null) map.put("directRequest", directRequest);
+        if (bookAlerts != null) map.put("bookAlerts", bookAlerts);
         return map;
     }
 }

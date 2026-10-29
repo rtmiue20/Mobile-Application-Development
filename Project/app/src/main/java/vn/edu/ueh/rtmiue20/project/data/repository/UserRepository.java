@@ -72,6 +72,15 @@ public class UserRepository {
                                     }
                                 } catch (Exception ignored) {}
                             }
+                            if (documentSnapshot.contains("showPhone")) {
+                                user.setShowPhone(documentSnapshot.getBoolean("showPhone"));
+                            }
+                            if (documentSnapshot.contains("directRequest")) {
+                                user.setDirectRequest(documentSnapshot.getBoolean("directRequest"));
+                            }
+                            if (documentSnapshot.contains("bookAlerts")) {
+                                user.setBookAlerts(documentSnapshot.getBoolean("bookAlerts"));
+                            }
                             callback.onSuccess(user);
                         } else {
                             callback.onError("Không thể chuyển đổi dữ liệu hồ sơ.");
@@ -83,7 +92,7 @@ public class UserRepository {
                 .addOnFailureListener(e -> callback.onError("Lỗi khi tải hồ sơ: " + e.getLocalizedMessage()));
     }
 
-    public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, Double latitude, Double longitude, List<String> interests, UpdateCallback callback) {
+    public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, Double latitude, Double longitude, List<String> interests, Boolean showPhone, Boolean directRequest, Boolean bookAlerts, UpdateCallback callback) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("fullName", fullName);
         updates.put("nickname", nickname);
@@ -97,6 +106,9 @@ public class UserRepository {
         if (latitude != null) updates.put("latitude", latitude);
         if (longitude != null) updates.put("longitude", longitude);
         if (interests != null) updates.put("interests", interests);
+        if (showPhone != null) updates.put("showPhone", showPhone);
+        if (directRequest != null) updates.put("directRequest", directRequest);
+        if (bookAlerts != null) updates.put("bookAlerts", bookAlerts);
 
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
         if (firebaseUser != null) {
@@ -110,6 +122,10 @@ public class UserRepository {
         firestore.collection("users").document(uid).set(updates, com.google.firebase.firestore.SetOptions.merge())
                 .addOnSuccessListener(unused -> callback.onSuccess())
                 .addOnFailureListener(e -> callback.onError("Cập nhật thông tin thất bại: " + e.getLocalizedMessage()));
+    }
+
+    public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, Double latitude, Double longitude, List<String> interests, UpdateCallback callback) {
+        updateUserProfile(uid, fullName, nickname, phoneNumber, bio, city, district, ward, favoriteSpotName, favoriteSpotAddress, latitude, longitude, interests, null, null, null, callback);
     }
 
     public void updateUserProfile(String uid, String fullName, String nickname, String phoneNumber, String bio, String city, String district, String ward, String favoriteSpotName, String favoriteSpotAddress, Double latitude, Double longitude, UpdateCallback callback) {
