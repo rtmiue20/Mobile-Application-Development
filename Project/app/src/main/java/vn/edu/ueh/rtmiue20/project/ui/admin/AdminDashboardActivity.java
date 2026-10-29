@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -74,6 +75,15 @@ public class AdminDashboardActivity extends AppCompatActivity {
     private ProgressBar pbCommunityHealth;
     private TextView tvAdminEmptyBooks;
     private RecyclerView rvAdminBooks;
+
+    // Pagination for Books
+    private static final int BOOKS_PAGE_SIZE = 4;
+    private int currentBookPage = 1;
+    private final List<Book> currentFilteredBooks = new ArrayList<>();
+    private LinearLayout layoutBookPagination;
+    private TextView btnPrevPage;
+    private TextView btnNextPage;
+    private TextView tvPageIndicator;
 
     private AuthRepository authRepository;
     private BookViewModel bookViewModel;
@@ -184,6 +194,10 @@ public class AdminDashboardActivity extends AppCompatActivity {
         pbCommunityHealth = findViewById(R.id.pbCommunityHealth);
         tvAdminEmptyBooks = findViewById(R.id.tvAdminEmptyBooks);
         rvAdminBooks = findViewById(R.id.rvAdminBooks);
+        layoutBookPagination = findViewById(R.id.layoutBookPagination);
+        btnPrevPage = findViewById(R.id.btnPrevPage);
+        btnNextPage = findViewById(R.id.btnNextPage);
+        tvPageIndicator = findViewById(R.id.tvPageIndicator);
     }
 
     private void setupRecyclerView() {
@@ -196,22 +210,29 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
     private void applyAdminBookFilter() {
         if (adminBookAdapter == null) return;
-        List<Book> filtered = new ArrayList<>();
+        currentFilteredBooks.clear();
         for (Book b : allSystemBooks) {
             boolean isHidden = "hidden".equalsIgnoreCase(b.getStatus());
             boolean isPending = Book.isPendingReview(b);
             if ("visible".equals(currentBookFilterMode) && (isHidden || isPending)) continue;
             if ("hidden".equals(currentBookFilterMode) && !isHidden) continue;
             if ("pending".equals(currentBookFilterMode) && !isPending) continue;
-            filtered.add(b);
+            currentFilteredBooks.add(b);
         }
         // TC-ADMIN-06: Đưa sách "Chờ duyệt" lên đầu để Admin xử lý trước
-        java.util.Collections.sort(filtered, (a, b) ->
+        java.util.Collections.sort(currentFilteredBooks, (a, b) ->
                 Boolean.compare(Book.isPendingReview(b), Book.isPendingReview(a)));
-        adminBookAdapter.update(filtered);
-        if (rvAdminBooks != null) {
-            rvAdminBooks.post(rvAdminBooks::requestLayout);
+
+        int totalItems = currentFilteredBooks.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / BOOKS_PAGE_SIZE));
+        if (currentBookPage > totalPages) {
+            currentBookPage = totalPages;
         }
+        if (currentBookPage < 1) {
+            currentBookPage = 1;
+        }
+
+        displayCurrentBookPage(false);
 
         if (tvReviewTitle != null) {
             if ("hidden".equals(currentBookFilterMode)) {
@@ -225,10 +246,10 @@ public class AdminDashboardActivity extends AppCompatActivity {
             }
         }
         if (tvAdminRecentCountBadge != null) {
-            tvAdminRecentCountBadge.setText(String.valueOf(filtered.size()));
+            tvAdminRecentCountBadge.setText(String.valueOf(totalItems));
         }
         if (tvAdminEmptyBooks != null) {
-            if (filtered.isEmpty()) {
+            if (currentFilteredBooks.isEmpty()) {
                 tvAdminEmptyBooks.setText("hidden".equals(currentBookFilterMode)
                         ? "Không có bài đăng nào đang bị ẩn."
                         : "pending".equals(currentBookFilterMode)
@@ -239,6 +260,83 @@ public class AdminDashboardActivity extends AppCompatActivity {
                 tvAdminEmptyBooks.setVisibility(View.GONE);
             }
         }
+    }
+
+    private void displayCurrentBookPage(boolean shouldScroll) {
+        if (adminBookAdapter == null) return;
+        int totalItems = currentFilteredBooks.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / BOOKS_PAGE_SIZE));
+
+        if (currentBookPage > totalPages) currentBookPage = totalPages;
+        if (currentBookPage < 1) currentBookPage = 1;
+
+        if (totalItems == 0) {
+            adminBookAdapter.update(new ArrayList<>());
+            if (layoutBookPagination != null) {
+                layoutBookPagination.setVisibility(View.GONE);
+            }
+            return;
+        }
+
+        int fromIndex = (currentBookPage - 1) * BOOKS_PAGE_SIZE;
+        int toIndex = Math.min(fromIndex + BOOKS_PAGE_SIZE, totalItems);
+        List<Book> pageBooks = new ArrayList<>(currentFilteredBooks.subList(fromIndex, toIndex));
+        adminBookAdapter.update(pageBooks);
+
+        if (rvAdminBooks != null) {
+            rvAdminBooks.post(rvAdminBooks::requestLayout);
+        }
+
+        if (layoutBookPagination != null) {
+            if (totalItems <= BOOKS_PAGE_SIZE) {
+                layoutBookPagination.setVisibility(View.GONE);
+            } else {
+                layoutBookPagination.setVisibility(View.VISIBLE);
+
+                if (tvPageIndicator != null) {
+                    tvPageIndicator.setText("Trang " + currentBookPage + " / " + totalPages + " (" + totalItems + " sách)");
+                }
+
+                boolean hasPrev = currentBookPage > 1;
+                boolean hasNext = currentBookPage < totalPages;
+
+                if (btnPrevPage != null) {
+                    btnPrevPage.setEnabled(hasPrev);
+                    btnPrevPage.setAlpha(hasPrev ? 1.0f : 0.35f);
+                }
+                if (btnNextPage != null) {
+                    btnNextPage.setEnabled(hasNext);
+                    btnNextPage.setAlpha(hasNext ? 1.0f : 0.35f);
+                }
+            }
+        }
+
+        if (shouldScroll && adminScrollView != null && sectionManageBooks != null) {
+            adminScrollView.post(() -> adminScrollView.smoothScrollTo(0, sectionManageBooks.getTop()));
+        }
+    }
+
+    private void showPagePickerDialog() {
+        int totalItems = currentFilteredBooks.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalItems / BOOKS_PAGE_SIZE));
+        if (totalPages <= 1) return;
+
+        String[] pages = new String[totalPages];
+        for (int i = 0; i < totalPages; i++) {
+            int start = i * BOOKS_PAGE_SIZE + 1;
+            int end = Math.min((i + 1) * BOOKS_PAGE_SIZE, totalItems);
+            pages[i] = "Trang " + (i + 1) + " (Sách " + start + " - " + end + ")";
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Chọn trang bài đăng sách")
+                .setSingleChoiceItems(pages, currentBookPage - 1, (dialog, which) -> {
+                    currentBookPage = which + 1;
+                    displayCurrentBookPage(true);
+                    dialog.dismiss();
+                })
+                .setNegativeButton("Đóng", null)
+                .show();
     }
 
     private void showAdminBookModerationDialog(Book book) {
@@ -525,6 +623,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
                     else if (which == 1) currentBookFilterMode = "visible";
                     else if (which == 2) currentBookFilterMode = "hidden";
                     else currentBookFilterMode = "pending";
+                    currentBookPage = 1;
                     applyAdminBookFilter();
                     dialog.dismiss();
                     if (adminScrollView != null && sectionManageBooks != null) {
@@ -557,12 +656,14 @@ public class AdminDashboardActivity extends AppCompatActivity {
                         startActivity(intent);
                     } else if (which == 1) {
                         currentBookFilterMode = "hidden";
+                        currentBookPage = 1;
                         applyAdminBookFilter();
                         if (adminScrollView != null && sectionManageBooks != null) {
                             adminScrollView.smoothScrollTo(0, sectionManageBooks.getTop());
                         }
                     } else {
                         currentBookFilterMode = "all";
+                        currentBookPage = 1;
                         applyAdminBookFilter();
                         if (adminScrollView != null && sectionManageBooks != null) {
                             adminScrollView.smoothScrollTo(0, sectionManageBooks.getTop());
@@ -609,6 +710,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
         View.OnClickListener scrollToBooksListener = v -> {
             currentBookFilterMode = "all";
+            currentBookPage = 1;
             applyAdminBookFilter();
             if (adminScrollView != null && sectionManageBooks != null) {
                 adminScrollView.smoothScrollTo(0, sectionManageBooks.getTop());
@@ -676,10 +778,34 @@ public class AdminDashboardActivity extends AppCompatActivity {
             );
         }
 
+        if (btnPrevPage != null) {
+            btnPrevPage.setOnClickListener(v -> {
+                if (currentBookPage > 1) {
+                    currentBookPage--;
+                    displayCurrentBookPage(true);
+                }
+            });
+        }
+
+        if (btnNextPage != null) {
+            btnNextPage.setOnClickListener(v -> {
+                int totalPages = Math.max(1, (int) Math.ceil((double) currentFilteredBooks.size() / BOOKS_PAGE_SIZE));
+                if (currentBookPage < totalPages) {
+                    currentBookPage++;
+                    displayCurrentBookPage(true);
+                }
+            });
+        }
+
+        if (tvPageIndicator != null) {
+            tvPageIndicator.setOnClickListener(v -> showPagePickerDialog());
+        }
+
         ViewPressEffectHelper.applyPressEffect(
                 btnLogoutAdmin, ivAdminAvatar, btnLog, cardSystemLog,
                 cardFlaggedItems, cardTotalRequests, tvAdminViewAllBooks,
-                cardTotalMembers, cardTotalBooks, btnManageMembers, btnCheckNow, btnViewMemberFeed
+                cardTotalMembers, cardTotalBooks, btnManageMembers, btnCheckNow, btnViewMemberFeed,
+                btnPrevPage, btnNextPage, tvPageIndicator
         );
     }
 
