@@ -332,7 +332,15 @@
                     android:textColor="@color/text_primary"
                     android:textSize="14sp" />
 
-                <!-- Vị trí & Khu vực giao lưu -->
+            </LinearLayout>
+
+            <!-- Vị trí & Khu vực sách (Luôn hiển thị cho mọi hình thức chia sẻ) -->
+            <LinearLayout
+                android:id="@+id/layoutLocationContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp">
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

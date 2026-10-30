@@ -82,6 +82,8 @@ public class CreatePostActivity extends AppCompatActivity {
     private Book existingBook = null;
     private boolean hasLoadedExistingBook = false;
     private boolean isRestoringLocation = false;
+    private Double postLatitude = null;
+    private Double postLongitude = null;
 
     // Quản lý việc chọn ảnh và hiển thị preview
     private final ActivityResultLauncher<String[]> pickImageLauncher = registerForActivityResult(
@@ -275,6 +277,13 @@ public class CreatePostActivity extends AppCompatActivity {
                 } else {
                     rgSharingType.check(R.id.rbShareFree);
                 }
+                if (book.getCity() != null && !book.getCity().trim().isEmpty()) {
+                    restoreLocationSelection(book.getCity(), book.getDistrict(), book.getWard());
+                } else if (book.getDistrict() != null && !book.getDistrict().trim().isEmpty()) {
+                    restoreLocationSelection("Hồ Chí Minh", book.getDistrict(), book.getWard());
+                }
+                if (book != null) {
+                }
             }
         });
     }
@@ -323,6 +332,24 @@ public class CreatePostActivity extends AppCompatActivity {
         ArrayAdapter<String> cityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, cities);
         cityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         if (spCity != null) spCity.setAdapter(cityAdapter);
+        updateDistrictsForCity(cities.get(0), "Quận 10", "Phường Diên Hồng");
+
+        com.google.firebase.auth.FirebaseUser cu = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        if (cu != null) {
+            vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.getInstance().getUserProfile(cu.getUid(), new vn.edu.ueh.rtmiue20.project.data.repository.UserRepository.UserCallback() {
+                @Override
+                public void onSuccess(vn.edu.ueh.rtmiue20.project.data.model.User user) {
+                    if (isFinishing() || isDestroyed()) return;
+                    if (editBookId == null && user != null && user.getCity() != null && !user.getCity().trim().isEmpty()) {
+                        restoreLocationSelection(user.getCity(), user.getDistrict(), user.getWard());
+                    }
+                }
+                @Override
+                public void onError(String errorMessage) {}
+            });
+        }
+        if (true) {
+        if (spCity != null) spCity.setAdapter(cityAdapter);
 
         if (spCity != null) {
             spCity.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -337,6 +364,8 @@ public class CreatePostActivity extends AppCompatActivity {
                 public void onNothingSelected(AdapterView<?> parent) {}
             });
         }
+    }
+
     }
 
     private void restoreLocationSelection(String targetCity, String targetDistrict, String targetWard) {
@@ -461,6 +490,8 @@ public class CreatePostActivity extends AppCompatActivity {
                 if (location != null) {
                     double safeLat = LocationHelper.normalizeLatitude(location.getLatitude(), location.getLongitude());
                     double safeLng = LocationHelper.normalizeLongitude(location.getLatitude(), location.getLongitude());
+                    postLatitude = safeLat;
+                    postLongitude = safeLng;
                     Geocoder geocoder = new Geocoder(this, new Locale("vi", "VN"));
                     try {
                         List<Address> addresses = geocoder.getFromLocation(safeLat, safeLng, 1);
@@ -664,6 +695,22 @@ public class CreatePostActivity extends AppCompatActivity {
         if (existingBook != null) {
             book.setViewCount(existingBook.getViewCount());
             book.setFavoriteCount(existingBook.getFavoriteCount());
+        }
+
+        String city = spCity != null && spCity.getSelectedItem() != null ? spCity.getSelectedItem().toString() : "Hồ Chí Minh";
+        String district = spDistrict != null && spDistrict.getSelectedItem() != null ? spDistrict.getSelectedItem().toString() : "Quận 10";
+        String ward = spWard != null && spWard.getSelectedItem() != null ? spWard.getSelectedItem().toString() : "Phường Diên Hồng";
+
+        double[] coords = LocationHelper.getCoordinatesForLocation(city, district);
+        double lat = (postLatitude != null && postLatitude != 0.0) ? postLatitude : coords[0];
+        double lng = (postLongitude != null && postLongitude != 0.0) ? postLongitude : coords[1];
+
+        book.setCity(city);
+        book.setDistrict(district);
+        book.setWard(ward);
+        book.setLatitude(lat);
+        book.setLongitude(lng);
+        if (book != null) {
         }
 
         bookViewModel.saveBook(book, new BookRepository.ActionCallback() {

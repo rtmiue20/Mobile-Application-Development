@@ -433,9 +433,10 @@ public class HomeActivity extends AppCompatActivity {
                             .putFloat("user_lat", (float) safeLat)
                             .putFloat("user_lng", (float) safeLng)
                             .apply();
-                    String dist = LocationHelper.getDistanceToUEHCampusB(safeLat, safeLng);
+                    String dist = LocationHelper.getDistanceToUEHCampusB(safeLat, safeLng); double uLat = safeLat; double uLng = safeLng;
                     if (bookAdapter != null) {
                         bookAdapter.setUserDistanceToExchange(dist);
+                                bookAdapter.setCurrentUserCoordinates(uLat, uLng);
                     }
                 }
             });
@@ -449,6 +450,9 @@ public class HomeActivity extends AppCompatActivity {
 
         if (lat != 0f && lng != 0f) {
             String dist = vn.edu.ueh.rtmiue20.project.util.LocationHelper.getDistanceToUEHCampusB(lat, lng);
+            if (bookAdapter != null) {
+                bookAdapter.setCurrentUserCoordinates(lat, lng);
+            }
             if (bookAdapter != null) {
                 bookAdapter.setUserDistanceToExchange(dist);
             }
@@ -465,6 +469,7 @@ public class HomeActivity extends AppCompatActivity {
                             String dist = vn.edu.ueh.rtmiue20.project.util.LocationHelper.getDistanceToUEHCampusB(uLat, uLng);
                             if (bookAdapter != null) {
                                 bookAdapter.setUserDistanceToExchange(dist);
+                                bookAdapter.setCurrentUserCoordinates(uLat, uLng);
                             }
                         }
                     }
