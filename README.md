@@ -78,10 +78,10 @@ Mobile-Application-Development/
 
 | STT | Họ và tên | Mã sinh viên | Vai trò chính |
 | :---: | :--- | :---: | :--- |
-| 1 | Nguyễn Văn Minh Triều | 31241027455 | Nhóm trưởng, thiết kế UI/UX, Auth, thông báo |
-| 2 | Triệu Nguyễn Huỳnh Khang | 31241022785 | Xác thực, hồ sơ người dùng, giao diện chính |
-| 3 | Nguyễn Phúc Vượng | 31241025017 | Bình luận, yêu cầu, đánh giá, Firestore |
-| 4 | Ngô Trọng Phúc | 31241020074 | Trang chủ, đăng bài, admin dashboard |
+| 1 | Nguyễn Văn Minh Triều | 31241027455 | Nhóm trưởng, thiết kế UI/UX - Architecture, Post, Thông báo, GuestView, Firestore |
+| 2 | Triệu Nguyễn Huỳnh Khang | 31241022785 | Hồ sơ người dùng, giao diện chính |
+| 3 | Nguyễn Phúc Vương | 31241025017 | Xác thực Google, Bình luận, Yêu cầu, Đánh giá, API Google, FCM |
+| 4 | Ngô Trọng Phúc | 31241020074 | Trang chủ Members, Đăng bài, Admin dashboard, Tìm kiếm, Xử lý phân quyền, UI-UX |
 
 ## 6. Tài liệu và báo cáo
 
