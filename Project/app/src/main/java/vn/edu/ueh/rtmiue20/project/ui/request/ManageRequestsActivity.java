@@ -176,6 +176,11 @@ public class ManageRequestsActivity extends AppCompatActivity {
             public void onConfirmReceive(Request request) {
                 showConfirmReceiveDialog(request);
             }
+
+            @Override
+            public void onOwnerRate(Request request) {
+                showOwnerRatingDialog(request);
+            }
         });
         adapter.setAdminMode(isAdminMode);
         rvRequests.setLayoutManager(new LinearLayoutManager(this));
@@ -607,6 +612,118 @@ public class ManageRequestsActivity extends AppCompatActivity {
                 Toast.makeText(ManageRequestsActivity.this,
                         "Cảm ơn bạn! Đã xác nhận nhận sách và đánh giá " + score + "★ thành công.",
                         Toast.LENGTH_LONG).show();
+            });
+        }
+
+        dialog.show();
+    }
+
+    private void showOwnerRatingDialog(Request request) {
+        if (request == null) return;
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_rating, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        TextView tvRatingDialogTitle = dialogView.findViewById(R.id.tvRatingDialogTitle);
+        TextView tvRatingDialogSubtitle = dialogView.findViewById(R.id.tvRatingDialogSubtitle);
+        TextView tvRatingFeedback = dialogView.findViewById(R.id.tvRatingFeedback);
+        TextInputEditText etRatingComment = dialogView.findViewById(R.id.etRatingComment);
+        TextView btnCancelRating = dialogView.findViewById(R.id.btnCancelRating);
+        TextView btnSubmitRating = dialogView.findViewById(R.id.btnSubmitRating);
+
+        if (tvRatingDialogTitle != null) tvRatingDialogTitle.setText("Đánh giá người nhận");
+        String reqName = request.getRequesterName() != null ? request.getRequesterName() : "Bạn đọc";
+        String bookTitle = request.getBookTitle() != null ? request.getBookTitle() : "sách";
+        if (tvRatingDialogSubtitle != null) {
+            tvRatingDialogSubtitle.setText("Đánh giá trải nghiệm giao dịch với " + reqName + " cho cuốn \"" + bookTitle + "\".\n(Ví dụ: đúng giờ, thân thiện, bùng kèo, trễ hẹn, v.v.)");
+        }
+        if (btnSubmitRating != null) btnSubmitRating.setText("Gửi đánh giá người nhận");
+
+        ImageView[] starViews = new ImageView[]{
+                dialogView.findViewById(R.id.ivStar1),
+                dialogView.findViewById(R.id.ivStar2),
+                dialogView.findViewById(R.id.ivStar3),
+                dialogView.findViewById(R.id.ivStar4),
+                dialogView.findViewById(R.id.ivStar5)
+        };
+
+        final int[] selectedStars = {5};
+
+        Runnable updateStarDisplay = () -> {
+            int score = selectedStars[0];
+            int activeColor = android.graphics.Color.parseColor("#FFB300");
+            int inactiveColor = android.graphics.Color.parseColor("#CBD5E1");
+            for (int i = 0; i < starViews.length; i++) {
+                if (starViews[i] != null) {
+                    if (i < score) {
+                        starViews[i].setImageResource(R.drawable.ic_star);
+                        starViews[i].setColorFilter(activeColor);
+                    } else {
+                        starViews[i].setImageResource(R.drawable.ic_star);
+                        starViews[i].setColorFilter(inactiveColor);
+                    }
+                }
+            }
+            if (tvRatingFeedback != null) {
+                if (score == 1) {
+                    tvRatingFeedback.setText("1.0 ★ • Bùng kèo / Trễ hẹn nặng");
+                    tvRatingFeedback.setTextColor(android.graphics.Color.parseColor("#EF4444"));
+                } else if (score == 2) {
+                    tvRatingFeedback.setText("2.0 ★ • Chưa đúng hẹn");
+                    tvRatingFeedback.setTextColor(android.graphics.Color.parseColor("#F97316"));
+                } else if (score == 3) {
+                    tvRatingFeedback.setText("3.0 ★ • Bình thường");
+                    tvRatingFeedback.setTextColor(android.graphics.Color.parseColor("#EAB308"));
+                } else if (score == 4) {
+                    tvRatingFeedback.setText("4.0 ★ • Khá tốt & Đúng giờ");
+                    tvRatingFeedback.setTextColor(android.graphics.Color.parseColor("#10B981"));
+                } else {
+                    tvRatingFeedback.setText("5.0 ★ • Tuyệt vời & Uy tín!");
+                    tvRatingFeedback.setTextColor(android.graphics.Color.parseColor("#059669"));
+                }
+            }
+        };
+
+        for (int i = 0; i < starViews.length; i++) {
+            final int starIndex = i + 1;
+            if (starViews[i] != null) {
+                starViews[i].setOnClickListener(v -> {
+                    selectedStars[0] = starIndex;
+                    updateStarDisplay.run();
+                });
+            }
+        }
+
+        updateStarDisplay.run();
+
+        if (btnCancelRating != null) {
+            btnCancelRating.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        if (btnSubmitRating != null) {
+            btnSubmitRating.setOnClickListener(v -> {
+                String comment = etRatingComment != null && etRatingComment.getText() != null
+                        ? etRatingComment.getText().toString().trim()
+                        : "";
+                float score = (float) selectedStars[0];
+
+                viewModel.ownerRateRequester(request, score, comment, new RequestRepository.RequestCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(ManageRequestsActivity.this, "Đã gửi đánh giá uy tín cho người nhận!", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Toast.makeText(ManageRequestsActivity.this, "Lỗi: " + error, Toast.LENGTH_SHORT).show();
+                    }
+                });
             });
         }
 

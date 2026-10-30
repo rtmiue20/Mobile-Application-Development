@@ -901,9 +901,9 @@ public class HomeActivity extends AppCompatActivity {
         String currentUidForFilter = currentUserForFilter != null ? currentUserForFilter.getUid() : null;
 
         for (Book b : allBooksList) {
-            // 1. Check status hidden
+            // 1. Check status hidden, given, or exchanged
             String status = b.getStatus();
-            if ("hidden".equalsIgnoreCase(status)) {
+            if ("hidden".equalsIgnoreCase(status) || "given".equalsIgnoreCase(status) || "exchanged".equalsIgnoreCase(status)) {
                 continue;
             }
 

@@ -614,23 +614,12 @@ public class CreatePostActivity extends AppCompatActivity {
 
         String sharingType = "Tặng miễn phí";
         String bookStatus = "available";
-        final String finalDesc;
+        long price = 0L;
         int checkedShareId = rgSharingType.getCheckedRadioButtonId();
 
-        String descPrefix = description.isEmpty() ? "" : description + "\n\n";
-
         if (checkedShareId == R.id.rbShareExchange) {
-            String exTitle = etExchangeBookTitle != null ? etExchangeBookTitle.getText().toString().trim() : "";
-            String exAuthor = etExchangeBookAuthor != null ? etExchangeBookAuthor.getText().toString().trim() : "";
-            if (exTitle.isEmpty()) {
-                exTitle = "Sách cùng thể loại";
-            }
-            if (exAuthor.isEmpty()) {
-                exAuthor = "Tùy chọn";
-            }
             sharingType = "Trao đổi sách khác";
             bookStatus = "exchanging";
-            finalDesc = descPrefix + "Hình thức: " + sharingType + "\n- Sách muốn đổi: " + exTitle + " (Tác giả: " + exAuthor + ")";
         } else if (checkedShareId == R.id.rbShareFee) {
             String priceStr = etPrice.getText().toString().trim();
             if (priceStr.isEmpty()) {
@@ -638,15 +627,19 @@ public class CreatePostActivity extends AppCompatActivity {
                 etPrice.requestFocus();
                 return;
             }
-            String city = spCity != null && spCity.getSelectedItem() != null ? spCity.getSelectedItem().toString() : "";
-            String district = spDistrict != null && spDistrict.getSelectedItem() != null ? spDistrict.getSelectedItem().toString() : "";
-            String ward = spWard != null && spWard.getSelectedItem() != null ? spWard.getSelectedItem().toString() : "";
+            try {
+                price = Long.parseLong(priceStr.replaceAll("[^0-9]", ""));
+            } catch (Exception e) {
+                price = 0L;
+            }
             sharingType = "Phí tượng trưng / Giá rẻ";
             bookStatus = "available";
-            finalDesc = descPrefix + "Hình thức: " + sharingType + "\n- Giá: " + priceStr + " VNĐ\n- Vị trí: " + ward + ", " + district + ", " + city;
         } else {
-            finalDesc = descPrefix + "Hình thức: " + sharingType;
+            sharingType = "Tặng miễn phí";
+            bookStatus = "available";
         }
+
+        final String finalDesc = description;
 
         String finalCondition = condition;
         // TC-ADMIN-06: Bài đăng mới của Member phải chờ Admin kiểm duyệt trước khi lên Trang chủ.
@@ -705,13 +698,30 @@ public class CreatePostActivity extends AppCompatActivity {
         double lat = (postLatitude != null && postLatitude != 0.0) ? postLatitude : coords[0];
         double lng = (postLongitude != null && postLongitude != 0.0) ? postLongitude : coords[1];
 
+        String sharingType = "Tặng miễn phí";
+        long price = 0L;
+        int checkedShareId = rgSharingType != null ? rgSharingType.getCheckedRadioButtonId() : -1;
+        if (checkedShareId == R.id.rbShareExchange) {
+            sharingType = "Trao đổi sách khác";
+        } else if (checkedShareId == R.id.rbShareFee) {
+            sharingType = "Phí tượng trưng / Giá rẻ";
+            String priceStr = etPrice != null ? etPrice.getText().toString().trim() : "0";
+            try {
+                price = Long.parseLong(priceStr.replaceAll("[^0-9]", ""));
+            } catch (Exception e) {
+                price = 0L;
+            }
+        } else {
+            sharingType = "Tặng miễn phí";
+        }
+
+        book.setSharingType(sharingType);
+        book.setPrice(price);
         book.setCity(city);
         book.setDistrict(district);
         book.setWard(ward);
         book.setLatitude(lat);
         book.setLongitude(lng);
-        if (book != null) {
-        }
 
         bookViewModel.saveBook(book, new BookRepository.ActionCallback() {
             @Override

@@ -42,6 +42,7 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
         void onCompleteAndRate(Request request);
         void onOwnerComplete(Request request);
         void onConfirmReceive(Request request);
+        void onOwnerRate(Request request);
     }
 
     private final List<Request> requests = new ArrayList<>();
@@ -307,14 +308,43 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
 
                 if (holder.layoutRatingCompleted != null) {
                     holder.layoutRatingCompleted.setVisibility(View.VISIBLE);
+                    StringBuilder ratingText = new StringBuilder();
                     if (request.isRated()) {
-                        holder.tvRatingCompletedTitle.setText(String.format(Locale.US, "Đánh giá từ bạn đọc: %.1f ★", request.getRatingValue()));
-                        if (request.getRatingComment() != null && !request.getRatingComment().trim().isEmpty()) {
-                            holder.tvRatingCompletedComment.setText("Nhận xét: \"" + request.getRatingComment().trim() + "\"");
-                            holder.tvRatingCompletedComment.setVisibility(View.VISIBLE);
-                        }
+                        ratingText.append(String.format(Locale.US, "Đánh giá từ bạn đọc: %.1f ★", request.getRatingValue()));
                     } else {
-                        holder.tvRatingCompletedTitle.setText("Giao dịch hoàn tất • Chờ bạn đọc đánh giá");
+                        ratingText.append("Giao dịch hoàn tất • Chờ bạn đọc đánh giá");
+                    }
+
+                    if (request.isOwnerRated()) {
+                        ratingText.append(String.format(Locale.US, " | Bạn đã đánh giá: %.1f ★", request.getOwnerRatingValue()));
+                    }
+
+                    holder.tvRatingCompletedTitle.setText(ratingText.toString());
+
+                    String commentToShow = "";
+                    if (request.getRatingComment() != null && !request.getRatingComment().trim().isEmpty()) {
+                        commentToShow += "Bạn đọc: \"" + request.getRatingComment().trim() + "\"";
+                    }
+                    if (request.getOwnerRatingComment() != null && !request.getOwnerRatingComment().trim().isEmpty()) {
+                        if (!commentToShow.isEmpty()) commentToShow += "\n";
+                        commentToShow += "Bạn (Chủ sách): \"" + request.getOwnerRatingComment().trim() + "\"";
+                    }
+
+                    if (!commentToShow.isEmpty()) {
+                        holder.tvRatingCompletedComment.setText(commentToShow);
+                        holder.tvRatingCompletedComment.setVisibility(View.VISIBLE);
+                    } else {
+                        holder.tvRatingCompletedComment.setVisibility(View.GONE);
+                    }
+
+                    if (!request.isOwnerRated() && holder.btnRateNow != null) {
+                        holder.btnRateNow.setVisibility(View.VISIBLE);
+                        holder.btnRateNow.setText("⭐ Đánh giá người nhận ngay");
+                        holder.btnRateNow.setOnClickListener(v -> {
+                            if (listener != null) listener.onOwnerRate(request);
+                        });
+                    } else if (holder.btnRateNow != null) {
+                        holder.btnRateNow.setVisibility(View.GONE);
                     }
                 }
             } else {

@@ -11,6 +11,8 @@ public class Book {
     public static final String STATUS_EXCHANGING = "exchanging";      // Đã duyệt - Đang trao đổi
     public static final String STATUS_PENDING_REVIEW = "pending_review"; // Member mới đăng, chờ Admin duyệt
     public static final String STATUS_HIDDEN = "hidden";              // Admin ẩn bài vi phạm
+    public static final String STATUS_GIVEN = "given";                // Đã tặng
+    public static final String STATUS_EXCHANGED = "exchanged";        // Đã đổi
 
     /** Sách đang chờ Admin kiểm duyệt (dùng static để Firestore/Room không coi là field). */
     public static boolean isPendingReview(Book b) {
@@ -40,6 +42,10 @@ public class Book {
     private String status = "available";
     private int viewCount = 0;
     private int favoriteCount = 0;
+
+    // Hình thức và Giá độc lập
+    private String sharingType;
+    private long price = 0L;
 
     // Tọa độ & địa chỉ thực tế của sách để tính khoảng cách chính xác đến người tìm sách
     private String city;
@@ -115,6 +121,12 @@ public class Book {
 
     public Double getLongitude() { return longitude; }
     public void setLongitude(Double longitude) { this.longitude = longitude; }
+
+    public String getSharingType() { return sharingType; }
+    public void setSharingType(String sharingType) { this.sharingType = sharingType; }
+
+    public long getPrice() { return price; }
+    public void setPrice(long price) { this.price = price; }
 
     public String getLocationAddressFormatted() {
         StringBuilder sb = new StringBuilder();
