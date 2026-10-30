@@ -41,6 +41,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
+        // Kiểm tra cài đặt bật/tắt thông báo từ SharedPreferences
+        android.content.SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        boolean notifEnabled = prefs.getBoolean("pref_notifications_enabled", true);
+        if (!notifEnabled) {
+            return;
+        }
+
         String title = "BookShare";
         String body = "Bạn có một thông báo mới";
 

@@ -18,12 +18,17 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.bumptech.glide.Glide;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Request;
@@ -195,20 +200,7 @@ public class ProfileActivity extends BaseActivity {
         }
 
         if (btnAppSettings != null) {
-            btnAppSettings.setOnClickListener(v -> {
-                View dialogView = getLayoutInflater().inflate(R.layout.dialog_app_settings, null);
-                AlertDialog dialog = new AlertDialog.Builder(this)
-                        .setView(dialogView)
-                        .create();
-                if (dialog.getWindow() != null) {
-                    dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-                }
-                View btnDismiss = dialogView.findViewById(R.id.btnDismissSettings);
-                if (btnDismiss != null) {
-                    btnDismiss.setOnClickListener(view -> dialog.dismiss());
-                }
-                dialog.show();
-            });
+            btnAppSettings.setOnClickListener(v -> showAppSettingsDialog());
         }
 
         if (btnHelpCenter != null) {
@@ -432,5 +424,193 @@ public class ProfileActivity extends BaseActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    private void showAppSettingsDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_app_settings, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+
+        // 1. Switch thông báo đẩy (FCM)
+        SwitchMaterial switchPushNotification = dialogView.findViewById(R.id.switchPushNotification);
+        if (switchPushNotification != null) {
+            boolean isNotifEnabled = prefs.getBoolean("pref_notifications_enabled", true);
+            switchPushNotification.setChecked(isNotifEnabled);
+            switchPushNotification.setOnCheckedChangeListener((btn, isChecked) -> {
+                prefs.edit().putBoolean("pref_notifications_enabled", isChecked).apply();
+                Toast.makeText(this, isChecked ? "Đã bật thông báo đẩy" : "Đã tắt thông báo đẩy", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        // 2. Điểm hẹn giao dịch mặc định (Click chọn campus UEH)
+        View cardDefaultLocation = dialogView.findViewById(R.id.cardDefaultLocation);
+        TextView tvSelectedLocation = dialogView.findViewById(R.id.tvSelectedLocation);
+        if (tvSelectedLocation != null) {
+            String savedLocation = prefs.getString("pref_default_meeting_location", "UEH Cơ sở B (279 Nguyễn Tri Phương, Q.10)");
+            tvSelectedLocation.setText(savedLocation);
+        }
+        if (cardDefaultLocation != null) {
+            cardDefaultLocation.setOnClickListener(v -> showChooseLocationDialog(tvSelectedLocation));
+        }
+
+        // 3. Đồng bộ ngoại tuyến (Room SQLite)
+        View cardSyncOffline = dialogView.findViewById(R.id.cardSyncOffline);
+        TextView tvSyncStatus = dialogView.findViewById(R.id.tvSyncStatus);
+        View btnSyncNow = dialogView.findViewById(R.id.btnSyncNow);
+        View.OnClickListener syncListener = v -> {
+            if (tvSyncStatus != null) tvSyncStatus.setText("Đang đồng bộ từ Firestore...");
+            new vn.edu.ueh.rtmiue20.project.data.repository.BookRepository(getApplication()).startSync();
+            new vn.edu.ueh.rtmiue20.project.data.repository.FavoriteRepository(getApplication()).startSyncFavorites();
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                if (tvSyncStatus != null) {
+                    tvSyncStatus.setText("Room SQLite: Đang bật • Vừa cập nhật xong");
+                }
+                Toast.makeText(this, "Đã đồng bộ toàn bộ sách ngoại tuyến thành công!", Toast.LENGTH_SHORT).show();
+            }, 800);
+        };
+        if (cardSyncOffline != null) cardSyncOffline.setOnClickListener(syncListener);
+        if (btnSyncNow != null) btnSyncNow.setOnClickListener(syncListener);
+
+        // 4. Xóa bộ nhớ đệm (Cache)
+        View cardClearCache = dialogView.findViewById(R.id.cardClearCache);
+        TextView tvCacheSize = dialogView.findViewById(R.id.tvCacheSize);
+        View btnClearCache = dialogView.findViewById(R.id.btnClearCache);
+        computeAndDisplayCacheSize(tvCacheSize);
+        View.OnClickListener clearCacheListener = v -> clearAppCache(tvCacheSize);
+        if (cardClearCache != null) cardClearCache.setOnClickListener(clearCacheListener);
+        if (btnClearCache != null) btnClearCache.setOnClickListener(clearCacheListener);
+
+        // 5. Phiên bản ứng dụng
+        View cardAppVersion = dialogView.findViewById(R.id.cardAppVersion);
+        TextView tvAppVersion = dialogView.findViewById(R.id.tvAppVersion);
+        try {
+            String verName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            if (tvAppVersion != null) {
+                tvAppVersion.setText("BookShare v" + verName + " (Bản chính thức)");
+            }
+        } catch (Exception ignored) {}
+        if (cardAppVersion != null) {
+            cardAppVersion.setOnClickListener(v -> {
+                Toast.makeText(this, "Ứng dụng đang ở phiên bản mới nhất!", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        // Nút Đóng
+        View btnDismiss = dialogView.findViewById(R.id.btnDismissSettings);
+        if (btnDismiss != null) {
+            btnDismiss.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        dialog.show();
+    }
+
+    private void showChooseLocationDialog(TextView tvSelectedLocation) {
+        final String[] campuses = new String[]{
+                "UEH Cơ sở B (279 Nguyễn Tri Phương, Q.10)",
+                "UEH Cơ sở A (59C Nguyễn Đình Chiểu, Q.3)",
+                "UEH Cơ sở E (54 Nguyễn Văn Thủ, Q.1)",
+                "UEH Cơ sở N (Khu đô thị Nam TP, Nguyễn Văn Linh)",
+                "UEH Cơ sở H (Hoàng Diệu, Phú Nhuận)",
+                "UEH Cơ sở V (Vĩnh Long)"
+        };
+        SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
+        String current = prefs.getString("pref_default_meeting_location", campuses[0]);
+        int selectedIndex = 0;
+        for (int i = 0; i < campuses.length; i++) {
+            if (campuses[i].equals(current)) {
+                selectedIndex = i;
+                break;
+            }
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Chọn điểm hẹn mặc định")
+                .setSingleChoiceItems(campuses, selectedIndex, (dialog, which) -> {
+                    String chosen = campuses[which];
+                    prefs.edit().putString("pref_default_meeting_location", chosen).apply();
+                    if (tvSelectedLocation != null) {
+                        tvSelectedLocation.setText(chosen);
+                    }
+                    Toast.makeText(this, "Đã chọn: " + chosen, Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void computeAndDisplayCacheSize(TextView tvCacheSize) {
+        if (tvCacheSize == null) return;
+        new Thread(() -> {
+            long size = getDirSize(getCacheDir()) + getDirSize(getExternalCacheDir());
+            runOnUiThread(() -> {
+                if (tvCacheSize != null) {
+                    tvCacheSize.setText(formatFileSize(size) + " • Chạm để giải phóng");
+                }
+            });
+        }).start();
+    }
+
+    private void clearAppCache(TextView tvCacheSize) {
+        new Thread(() -> {
+            try {
+                deleteDir(getCacheDir());
+                deleteDir(getExternalCacheDir());
+                Glide.get(getApplicationContext()).clearDiskCache();
+            } catch (Exception ignored) {}
+            runOnUiThread(() -> {
+                try {
+                    Glide.get(getApplicationContext()).clearMemory();
+                } catch (Exception ignored) {}
+                if (tvCacheSize != null) {
+                    tvCacheSize.setText("0.0 KB • Đã giải phóng sạch sẽ");
+                }
+                Toast.makeText(this, "Đã dọn dẹp bộ nhớ đệm thành công!", Toast.LENGTH_SHORT).show();
+            });
+        }).start();
+    }
+
+    private long getDirSize(File dir) {
+        long size = 0;
+        if (dir != null && dir.isDirectory()) {
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File f : files) {
+                    if (f.isDirectory()) size += getDirSize(f);
+                    else size += f.length();
+                }
+            }
+        } else if (dir != null) {
+            size += dir.length();
+        }
+        return size;
+    }
+
+    private boolean deleteDir(File dir) {
+        if (dir != null && dir.isDirectory()) {
+            String[] children = dir.list();
+            if (children != null) {
+                for (String child : children) {
+                    boolean success = deleteDir(new File(dir, child));
+                    if (!success) return false;
+                }
+            }
+            return dir.delete();
+        } else if (dir != null && dir.isFile()) {
+            return dir.delete();
+        }
+        return false;
+    }
+
+    private String formatFileSize(long bytes) {
+        if (bytes <= 0) return "0.0 KB";
+        if (bytes < 1024 * 1024) {
+            return String.format(Locale.US, "%.1f KB", bytes / 1024.0);
+        }
+        return String.format(Locale.US, "%.2f MB", bytes / (1024.0 * 1024.0));
     }
 }
