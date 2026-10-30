@@ -207,6 +207,19 @@ service cloud.firestore {
         )
       );
     }
+
+    // =========================================================================
+    // 8. Collection Feedbacks (Góp ý & Báo lỗi từ người dùng)
+    // =========================================================================
+    match /feedbacks/{feedbackId} {
+      allow read: if isAdmin();
+      allow create: if isNotLocked() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.content is string &&
+        request.resource.data.content.size() > 0 &&
+        request.resource.data.content.size() <= 2000;
+      allow update, delete: if isAdmin();
+    }
   }
 }
 
