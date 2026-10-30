@@ -1123,7 +1123,6 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
     private void handleLogout() {
         getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit()
-                .putBoolean("remember_me", false)
                 .remove("user_fullname")
                 .remove("user_avatar_url")
                 .remove("user_role")
