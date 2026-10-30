@@ -101,15 +101,7 @@ public class BookRepository {
                 }
             }
             io.execute(() -> {
-                database.runInTransaction(new Runnable() {
-                    @Override
-                    public void run() {
-                        dao.deleteAll();
-                        if (!list.isEmpty()) {
-                            dao.insertAll(list);
-                        }
-                    }
-                });
+                dao.insertAll(list);
             });
         });
     }
