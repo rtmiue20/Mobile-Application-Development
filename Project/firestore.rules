@@ -19,21 +19,34 @@ service cloud.firestore {
 
     // 1. Collection Users (Quản lý người dùng)
     match /users/{userId} {
-      allow read: if true; // Cho phép cả khách xem thông tin người đăng sách
+      allow read: if true; // Cho phép xem thông tin hồ sơ/chủ sách cả khi chưa đăng nhập
       allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
+      // Cho phép chủ tài khoản, Admin, hoặc cập nhật uy tín/FCM token sau giao dịch
+      allow update: if isOwner(userId) || isAdmin() || 
+        (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['ratingAverage', 'ratingCount', 'reputationScore', 'fcmToken']));
       allow delete: if isAdmin();
     }
 
     // 2. Collection Books (Quản lý bài đăng sách)
     match /books/{bookId} {
-      allow read: if true; // Cho phép cả khách chưa đăng nhập xem sách
+      allow read: if true; // Cho phép khách chưa đăng nhập duyệt danh sách sách
       allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || request.auth.uid == resource.data.ownerId || isAdmin());
+      // Cho phép chủ sách/admin sửa/xóa; cho phép người đọc cập nhật lượt xem và yêu thích
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.ownerId || 
+        request.auth.uid == resource.data.userId || 
+        isAdmin() || 
+        request.resource.data.diff(resource.data).affectedKeys().hasAny(['viewCount', 'favoriteCount'])
+      );
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.ownerId || 
+        request.auth.uid == resource.data.userId || 
+        isAdmin()
+      );
 
       // Sub-collection Comments (Bình luận sách - FR08)
       match /comments/{commentId} {
-        allow read: if true; // Cho phép khách đọc bình luận
+        allow read: if true; // Cho phép đọc bình luận
         allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
         allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
       }
@@ -44,17 +57,24 @@ service cloud.firestore {
       allow read, create, delete: if isAuthenticated();
     }
 
-    // 4. Collection Requests (Yêu cầu nhận sách / trao đổi - FR10)
-    // Dùng requesterId (người gửi yêu cầu) và ownerId (chủ sách) theo model Request.java
+    // 4. Collection Requests (Quản lý yêu cầu nhận sách / trao đổi - FR10)
+    // Sửa đúng field name trong code: requesterId (người gửi yêu cầu) và ownerId (chủ sách)
     match /requests/{requestId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.requesterId;
-      allow update: if isAuthenticated() &&
-        (request.auth.uid == resource.data.requesterId ||
-         request.auth.uid == resource.data.ownerId ||
-         isAdmin());
-      allow delete: if isAuthenticated() &&
-        (request.auth.uid == resource.data.requesterId || isAdmin());
+      allow read, create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.requesterId || 
+        request.auth.uid == resource.data.ownerId || 
+        isAdmin()
+      );
+    }
+
+    // 5. Collection Reviews (Đánh giá uy tín thành viên)
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.reviewerId;
+      allow update, delete: if isAuthenticated() && (request.auth.uid == resource.data.reviewerId || isAdmin());
     }
   }
 }
+
+
