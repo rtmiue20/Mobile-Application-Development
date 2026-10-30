@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.widget.Toast;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -53,6 +54,11 @@ import java.util.Set;
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.data.model.Request;
+import vn.edu.ueh.rtmiue20.project.data.model.NotificationItem;
+import vn.edu.ueh.rtmiue20.project.data.repository.NotificationRepository;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Collections;
 import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
 import vn.edu.ueh.rtmiue20.project.ui.book.BookDetailActivity;
@@ -112,6 +118,10 @@ public class HomeActivity extends AppCompatActivity {
     // Real-time notification state
     private int pendingReceivedCount = 0;
     private int acceptedSentCount = 0;
+    private final List<Request> rawReceivedRequests = new ArrayList<>();
+    private final List<Request> rawSentRequests = new ArrayList<>();
+    private final List<NotificationItem> firestoreNotifications = new ArrayList<>();
+    private int unreadNotificationsCount = 0;
     private int previousTotalBooksCount = -1;
     private ListenerRegistration userStatusListener;
 
@@ -264,10 +274,27 @@ public class HomeActivity extends AppCompatActivity {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) return;
 
+        // 1. Lắng nghe Notifications thời gian thực từ Firestore collection "notifications"
+        NotificationRepository.getInstance().getNotifications(user.getUid()).observe(this, list -> {
+            firestoreNotifications.clear();
+            if (list != null) {
+                firestoreNotifications.addAll(list);
+            }
+            updateNotificationBadge();
+        });
+
+        NotificationRepository.getInstance().getUnreadCount(user.getUid()).observe(this, count -> {
+            unreadNotificationsCount = count != null ? count : 0;
+            updateNotificationBadge();
+        });
+
+        // 2. Lắng nghe các Request hiện có làm nguồn đối chiếu/fallback
         RequestViewModel requestViewModel = new ViewModelProvider(this).get(RequestViewModel.class);
         requestViewModel.getReceivedRequests(user.getUid()).observe(this, list -> {
+            rawReceivedRequests.clear();
             int pending = 0;
             if (list != null) {
+                rawReceivedRequests.addAll(list);
                 for (Request r : list) {
                     if (Request.STATUS_PENDING.equalsIgnoreCase(r.getStatus())) {
                         pending++;
@@ -279,8 +306,10 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         requestViewModel.getSentRequests(user.getUid()).observe(this, list -> {
+            rawSentRequests.clear();
             int accepted = 0;
             if (list != null) {
+                rawSentRequests.addAll(list);
                 for (Request r : list) {
                     if (Request.STATUS_ACCEPTED.equalsIgnoreCase(r.getStatus()) || Request.STATUS_COMPLETED.equalsIgnoreCase(r.getStatus())) {
                         accepted++;
@@ -292,11 +321,192 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
+    private List<NotificationItem> buildNotificationList() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        String currentUid = currentUser != null ? currentUser.getUid() : "";
+
+        // Ưu tiên danh sách đồng bộ từ Firestore collection "notifications"
+        Map<String, NotificationItem> merged = new LinkedHashMap<>();
+        for (NotificationItem item : firestoreNotifications) {
+            if (item != null && item.getId() != null) {
+                merged.put(item.getId(), item);
+            }
+        }
+
+        // Bổ sung các thông báo từ yêu cầu nhận sách (fallback nếu Firestore notifications đang load)
+        for (Request r : rawReceivedRequests) {
+            if (r == null || r.getRequestId() == null) continue;
+            String fallbackId = "req_recv_" + r.getRequestId();
+            if (merged.containsKey(fallbackId) || merged.containsKey(r.getRequestId())) continue;
+
+            String status = r.getStatus() != null ? r.getStatus() : "";
+            String rName = (r.getRequesterName() != null && !r.getRequesterName().trim().isEmpty())
+                    ? r.getRequesterName().trim()
+                    : "Một bạn đọc";
+            String bTitle = r.getBookTitle() != null ? r.getBookTitle() : "sách";
+            String avatar = (r.getRequesterAvatar() != null && !r.getRequesterAvatar().trim().isEmpty())
+                    ? r.getRequesterAvatar()
+                    : r.getBookImageUrl();
+            String subMsg = (r.getMessage() != null && !r.getMessage().trim().isEmpty())
+                    ? "\"" + r.getMessage().trim() + "\""
+                    : null;
+
+            if (Request.STATUS_PENDING.equalsIgnoreCase(status)) {
+                merged.put(fallbackId, new NotificationItem(
+                        fallbackId,
+                        currentUid,
+                        r.getRequesterId(),
+                        rName,
+                        NotificationItem.TYPE_REQUEST_RECEIVED,
+                        "Yêu cầu nhận sách mới",
+                        rName + " đã gửi yêu cầu nhận cuốn \"" + bTitle + "\"",
+                        subMsg,
+                        r.getTimestamp(),
+                        avatar,
+                        "Chờ phản hồi",
+                        true,
+                        false,
+                        "REQUESTS",
+                        "received",
+                        r.getRequestId(),
+                        r.getBookId()
+                ));
+            }
+        }
+
+        // Bổ sung các yêu cầu người dùng đi xin sách
+        for (Request r : rawSentRequests) {
+            if (r == null || r.getRequestId() == null) continue;
+            String fallbackId = "req_sent_" + r.getRequestId();
+            if (merged.containsKey("req_acc_" + r.getRequestId())
+                    || merged.containsKey("req_rej_" + r.getRequestId())
+                    || merged.containsKey("req_comp_r_" + r.getRequestId())
+                    || merged.containsKey(fallbackId)) {
+                continue;
+            }
+
+            String status = r.getStatus() != null ? r.getStatus() : "";
+            String oName = (r.getOwnerName() != null && !r.getOwnerName().trim().isEmpty())
+                    ? r.getOwnerName().trim()
+                    : "Chủ sách";
+            String bTitle = r.getBookTitle() != null ? r.getBookTitle() : "sách";
+            String cover = (r.getBookImageUrl() != null && !r.getBookImageUrl().trim().isEmpty())
+                    ? r.getBookImageUrl()
+                    : r.getRequesterAvatar();
+
+            if (Request.STATUS_ACCEPTED.equalsIgnoreCase(status)) {
+                merged.put(fallbackId, new NotificationItem(
+                        fallbackId,
+                        currentUid,
+                        r.getOwnerId(),
+                        oName,
+                        NotificationItem.TYPE_REQUEST_ACCEPTED,
+                        "Yêu cầu được chấp nhận! 🎉",
+                        oName + " đã đồng ý tặng cuốn \"" + bTitle + "\" cho bạn. Hãy liên hệ hẹn nhận sách!",
+                        "Điểm hẹn: Đại học Kinh Tế TP.HCM (UEH Cơ sở B)",
+                        r.getTimestamp(),
+                        cover,
+                        "Đã chấp nhận",
+                        true,
+                        false,
+                        "REQUESTS",
+                        "sent",
+                        r.getRequestId(),
+                        r.getBookId()
+                ));
+            } else if (Request.STATUS_COMPLETED.equalsIgnoreCase(status)) {
+                merged.put(fallbackId, new NotificationItem(
+                        fallbackId,
+                        currentUid,
+                        r.getOwnerId(),
+                        oName,
+                        NotificationItem.TYPE_REQUEST_COMPLETED,
+                        "Đã nhận sách thành công ✅",
+                        "Bạn đã nhận thành công cuốn \"" + bTitle + "\" từ " + oName + ".",
+                        !r.isRated() ? "Chạm để đánh giá uy tín cho chủ sách" : null,
+                        r.getCompletedTimestamp() > 0 ? r.getCompletedTimestamp() : r.getTimestamp(),
+                        cover,
+                        "Đã nhận",
+                        !r.isRated(),
+                        false,
+                        "REQUESTS",
+                        "sent",
+                        r.getRequestId(),
+                        r.getBookId()
+                ));
+            }
+        }
+
+        // Bổ sung thông báo kiểm duyệt bài đăng cá nhân
+        if (allBooksList != null && !currentUid.isEmpty()) {
+            for (Book b : allBooksList) {
+                if (b == null || b.getOwnerId() == null || !b.getOwnerId().equals(currentUid)) continue;
+                String notifId = "book_status_" + b.getId();
+                if (merged.containsKey(notifId)) continue;
+
+                if (Book.isPendingReview(b)) {
+                    merged.put(notifId, new NotificationItem(
+                            notifId,
+                            currentUid,
+                            "admin",
+                            "Quản trị viên",
+                            NotificationItem.TYPE_BOOK_PENDING,
+                            "Bài đăng chờ duyệt",
+                            "Cuốn \"" + b.getTitle() + "\" của bạn đang chờ Quản trị viên duyệt để lên trang chủ.",
+                            null,
+                            b.getCreatedAt(),
+                            b.getImageUrl(),
+                            "Chờ duyệt",
+                            false,
+                            false,
+                            "BOOK_DETAIL",
+                            "",
+                            null,
+                            b.getId()
+                    ));
+                } else if (Book.STATUS_HIDDEN.equalsIgnoreCase(b.getStatus())) {
+                    merged.put(notifId, new NotificationItem(
+                            notifId,
+                            currentUid,
+                            "admin",
+                            "Quản trị viên",
+                            NotificationItem.TYPE_BOOK_HIDDEN,
+                            "Bài đăng đã bị ẩn",
+                            "Cuốn \"" + b.getTitle() + "\" đã bị Quản trị viên ẩn do vi phạm quy chuẩn cộng đồng.",
+                            null,
+                            b.getCreatedAt(),
+                            b.getImageUrl(),
+                            "Đã ẩn",
+                            false,
+                            false,
+                            "BOOK_DETAIL",
+                            "",
+                            null,
+                            b.getId()
+                    ));
+                }
+            }
+        }
+
+        List<NotificationItem> result = new ArrayList<>(merged.values());
+        Collections.sort(result, (n1, n2) -> {
+            if (n1.isActionRequired() != n2.isActionRequired()) {
+                return n1.isActionRequired() ? -1 : 1;
+            }
+            return Long.compare(n2.getTimestamp(), n1.getTimestamp());
+        });
+
+        return result;
+    }
+
     private void updateNotificationBadge() {
         if (tvNotificationBadge == null) return;
-        int total = pendingReceivedCount + acceptedSentCount;
+        int total = unreadNotificationsCount;
+        if (total <= 0 && firestoreNotifications.isEmpty()) {
+            total = pendingReceivedCount + acceptedSentCount;
+        }
         if (total > 0) {
-            tvNotificationBadge.setText(String.valueOf(total));
+            tvNotificationBadge.setText(total > 99 ? "99+" : String.valueOf(total));
             tvNotificationBadge.setVisibility(View.VISIBLE);
         } else {
             tvNotificationBadge.setVisibility(View.GONE);
@@ -541,7 +751,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private boolean checkGuestLogin() {
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
-            android.widget.Toast.makeText(this, "Vui lòng đăng nhập để thực hiện tính năng này!", android.widget.Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Vui lòng đăng nhập để thực hiện tính năng này!", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, LogInActivity.class));
             return false;
         }
@@ -718,41 +928,107 @@ public class HomeActivity extends AppCompatActivity {
         View sheetView = getLayoutInflater().inflate(R.layout.dialog_notifications, null);
         dialog.setContentView(sheetView);
 
-        TextView tvTitle = sheetView.findViewById(R.id.tvNotificationTitle);
-        TextView tvMsg = sheetView.findViewById(R.id.tvNotificationMessage);
-        TextView btnViewRequests = sheetView.findViewById(R.id.btnViewRequestsFromNotification);
-
-        int totalActiveNotifs = pendingReceivedCount + acceptedSentCount;
-        if (totalActiveNotifs > 0) {
-            if (tvTitle != null) {
-                tvTitle.setText("Bạn có " + totalActiveNotifs + " thông báo giao dịch sách!");
-            }
-            if (tvMsg != null) {
-                StringBuilder sb = new StringBuilder();
-                if (pendingReceivedCount > 0) {
-                    sb.append("• ").append(pendingReceivedCount).append(" yêu cầu nhận sách đang chờ bạn phản hồi.\n");
-                }
-                if (acceptedSentCount > 0) {
-                    sb.append("• ").append(acceptedSentCount).append(" yêu cầu xin sách của bạn đã được chủ sách đồng ý! Hãy xem mã QR hẹn nhận tại UEH Cơ sở B.");
-                }
-                tvMsg.setText(sb.toString().trim());
-            }
-            if (btnViewRequests != null) {
-                btnViewRequests.setText("Mở quản lý yêu cầu (" + totalActiveNotifs + ")");
-            }
-        }
-
+        TextView tvHeaderBadge = sheetView.findViewById(R.id.tvHeaderNotificationCount);
+        TextView btnMarkAllRead = sheetView.findViewById(R.id.btnMarkAllRead);
         ImageView btnClose = sheetView.findViewById(R.id.btnCloseNotifications);
-        if (btnClose != null) btnClose.setOnClickListener(v -> dialog.dismiss());
 
-        if (btnViewRequests != null) {
-            btnViewRequests.setOnClickListener(v -> {
-                dialog.dismiss();
-                startActivity(new Intent(HomeActivity.this, ManageRequestsActivity.class));
+        if (btnMarkAllRead != null) {
+            btnMarkAllRead.setOnClickListener(v -> {
+                FirebaseUser u = FirebaseAuth.getInstance().getCurrentUser();
+                if (u != null) {
+                    NotificationRepository.getInstance().markAllAsRead(u.getUid());
+                    Toast.makeText(HomeActivity.this, "Đã đánh dấu tất cả thông báo là đã đọc", Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                }
             });
         }
+        View layoutEmpty = sheetView.findViewById(R.id.layoutEmptyNotifications);
+        View layoutContent = sheetView.findViewById(R.id.layoutNotificationsContent);
+        TextView tvSummary = sheetView.findViewById(R.id.tvNotificationSummary);
+        RecyclerView rvNotifications = sheetView.findViewById(R.id.rvNotifications);
+        TextView btnViewRequests = sheetView.findViewById(R.id.btnViewRequestsFromNotification);
+        View scrollContainer = sheetView.findViewById(R.id.scrollNotificationsList);
 
-        ViewPressEffectHelper.applyPressEffect(btnClose, btnViewRequests);
+        if (btnClose != null) btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        List<NotificationItem> notifications = buildNotificationList();
+        int totalActiveNotifs = pendingReceivedCount + acceptedSentCount;
+
+        if (notifications.isEmpty()) {
+            if (layoutEmpty != null) layoutEmpty.setVisibility(View.VISIBLE);
+            if (layoutContent != null) layoutContent.setVisibility(View.GONE);
+            if (tvHeaderBadge != null) tvHeaderBadge.setVisibility(View.GONE);
+        } else {
+            if (layoutEmpty != null) layoutEmpty.setVisibility(View.GONE);
+            if (layoutContent != null) layoutContent.setVisibility(View.VISIBLE);
+
+            if (totalActiveNotifs > 0 && tvHeaderBadge != null) {
+                tvHeaderBadge.setText(totalActiveNotifs + " mới");
+                tvHeaderBadge.setVisibility(View.VISIBLE);
+            } else if (tvHeaderBadge != null) {
+                tvHeaderBadge.setText(notifications.size() + " tin");
+                tvHeaderBadge.setVisibility(View.VISIBLE);
+            }
+
+            if (tvSummary != null) {
+                if (pendingReceivedCount > 0 && acceptedSentCount > 0) {
+                    tvSummary.setText("Bạn có " + pendingReceivedCount + " yêu cầu chờ phản hồi và " + acceptedSentCount + " yêu cầu đã được chấp nhận:");
+                } else if (pendingReceivedCount > 0) {
+                    tvSummary.setText("Bạn có " + pendingReceivedCount + " yêu cầu nhận sách đang chờ phản hồi:");
+                } else if (acceptedSentCount > 0) {
+                    tvSummary.setText("Bạn có " + acceptedSentCount + " yêu cầu xin sách đã được chủ sách đồng ý:");
+                } else {
+                    tvSummary.setText("Danh sách thông báo hoạt động của bạn:");
+                }
+            }
+
+            // Giới hạn chiều cao danh sách thông báo tối đa 48% màn hình để trải nghiệm cuộn thuận tiện
+            if (scrollContainer != null) {
+                int screenHeight = getResources().getDisplayMetrics().heightPixels;
+                android.view.ViewGroup.LayoutParams params = scrollContainer.getLayoutParams();
+                if (params != null) {
+                    params.height = (int) (screenHeight * 0.48);
+                    scrollContainer.setLayoutParams(params);
+                }
+            }
+
+            NotificationAdapter adapter = new NotificationAdapter(item -> {
+                dialog.dismiss();
+                // TC-NOTIF: Đánh dấu đã đọc trên Firestore khi người dùng bấm vào thông báo
+                if (item.getId() != null) {
+                    NotificationRepository.getInstance().markAsRead(item.getId());
+                }
+
+                if ("BOOK_DETAIL".equalsIgnoreCase(item.getTargetScreen()) && item.getBookId() != null) {
+                    Intent bookIntent = new Intent(HomeActivity.this, BookDetailActivity.class);
+                    bookIntent.putExtra("bookId", item.getBookId());
+                    startActivity(bookIntent);
+                } else {
+                    Intent reqIntent = new Intent(HomeActivity.this, ManageRequestsActivity.class);
+                    reqIntent.putExtra("target_tab", item.getTargetTab());
+                    reqIntent.putExtra("show_sent", "sent".equalsIgnoreCase(item.getTargetTab()));
+                    if (item.getRequestId() != null) {
+                        reqIntent.putExtra("highlight_request_id", item.getRequestId());
+                    }
+                    startActivity(reqIntent);
+                }
+            });
+
+            adapter.setItems(notifications);
+            if (rvNotifications != null) {
+                rvNotifications.setAdapter(adapter);
+            }
+
+            if (btnViewRequests != null) {
+                btnViewRequests.setText("Mở Quản lý yêu cầu (" + notifications.size() + ")");
+                btnViewRequests.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    startActivity(new Intent(HomeActivity.this, ManageRequestsActivity.class));
+                });
+            }
+        }
+
+        ViewPressEffectHelper.applyPressEffect(btnClose, btnViewRequests, btnMarkAllRead);
         dialog.show();
     }
 

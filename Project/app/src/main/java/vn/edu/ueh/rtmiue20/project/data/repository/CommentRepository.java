@@ -129,6 +129,16 @@ public class CommentRepository {
                         String bookTitle = bookSnap.getString("title");
                         if (bookTitle == null) bookTitle = "sách của bạn";
                         if (ownerId != null && !ownerId.equals(comment.getUserId())) {
+                            // Tạo Notification Document trong Firestore cho chủ sách
+                            NotificationRepository.getInstance().createCommentNotification(
+                                    ownerId,
+                                    bookId,
+                                    bookTitle,
+                                    comment.getUserId(),
+                                    comment.getUserName(),
+                                    comment.getContent()
+                            );
+
                             final String title = bookTitle;
                             db.collection("users").document(ownerId).get()
                                     .addOnSuccessListener(userSnap -> {
