@@ -9,9 +9,9 @@ Dự án được triển khai bởi nhóm 4 thành viên với sự phân đị
 
 | Thành viên | Vai trò chính | Trách nhiệm & Module đảm nhiệm | Tỷ lệ đóng góp |
 | :--- | :--- | :--- | :---: |
-| **Nguyễn Văn Minh Triều**<br>(MSSV: 31241027455) | **Nhóm trưởng (Leader)** | - Khởi tạo dự án, thiết kế khung kiến trúc MVVM, cấu hình Firebase và quản lý repo.<br>- Quản lý và duyệt toàn bộ Pull Request (#22 - #69), kiểm thử hợp nhất mã nguồn.<br>- Xây dựng Chế độ xem cho Khách (Guest mode) và Luồng chuông thông báo trong app.<br>- Xây dựng kiểm duyệt bài đăng sách (Admin Posts) và tối ưu hóa logic yêu cầu Request. | **100% (Hoàn thành)** |
+| **Nguyễn Văn Minh Triều**<br>(MSSV: 31241027455) | **Nhóm trưởng (Leader)** | - Khởi tạo dự án, thiết kế khung kiến trúc MVVM, cấu hình Firebase và quản lý repo.<br>- Kiểm duyệt bài đăng, quản trị logic request và review pull request.<br>- Xây dựng Guest mode, chuông thông báo và quy trình admin. | **100% (Hoàn thành)** |
 | **Triệu Nguyễn Huỳnh Khang**<br>(MSSV: 31241022785) | **Thành viên (Member)** | - Phát triển Module Xác thực (Auth: Đăng ký, Đăng nhập, Google Sign-In Credential Manager).<br>- Phát triển Màn hình Quên mật khẩu và Hồ sơ cá nhân (Edit Profile) theo bản thiết kế chuẩn.<br>- Thiết kế hệ thống Vector Icons chuẩn Material (`ic_lock_reset`, huy hiệu thư).<br>- Triển khai cơ chế Tự động đăng nhập Remember Me & đồng bộ xóa sách trong Room. | **100% (Hoàn thành)** |
-| **Nguyễn Phúc Vượng**<br>(MSSV: 31241025017) | **Thành viên (Member)** | - Phát triển tính năng Bình luận cộng đồng (thêm, sửa, xóa comments) & Sách yêu thích.<br>- Phát triển Quản lý yêu cầu mượn/đổi sách, Hộp thoại xác nhận & Đánh giá Rating.<br>- Tích hợp thông báo đẩy Firebase Cloud Messaging (FCM Push) & token trigger.<br>- Lập trình tính toán khoảng cách động GPS Haversine và giao diện xoay ngang (`layout-land`). | **100% (Hoàn thành)** |
+| **Nguyễn Phúc Vương**<br>(MSSV: 31241025017) | **Thành viên (Member)** | - Phát triển tính năng Bình luận cộng đồng (thêm, sửa, xóa comments) & Sách yêu thích.<br>- Phát triển Quản lý yêu cầu mượn/đổi sách, Hộp thoại xác nhận & Đánh giá Rating.<br>- Tích hợp thông báo đẩy Firebase Cloud Messaging (FCM Push) & token trigger.<br>- Lập trình tính toán khoảng cách động GPS Haversine và giao diện xoay ngang (`layout-land`). | **100% (Hoàn thành)** |
 | **Ngô Trọng Phúc**<br>(MSSV: 31241020074) | **Thành viên (Member)** | - Phát triển Trang chủ, Tìm kiếm thời gian thực & Lọc danh mục trượt ngang.<br>- Phát triển Màn hình Đăng bài chia sẻ sách (`CreatePostActivity`) & Chi tiết sách.<br>- Xây dựng Bảng điều khiển Quản trị viên (Admin Dashboard, Quản lý & Khóa tài khoản, DB Health).<br>- Thiết lập & chuẩn hóa hệ thống phân quyền Cloud Firestore Security Rules v2 (8 collections).<br>- Phát triển Cài đặt ứng dụng (`AppSettingsDialog`), Trung tâm trợ giúp FAQ & Toàn bộ tài liệu đồ án. | **100% (Hoàn thành)** |
 
 ---
@@ -29,10 +29,10 @@ Dự án được triển khai bởi nhóm 4 thành viên với sự phân đị
 ### 2.2. Cấu hình Dịch vụ Backend (Firebase Cloud Platform)
 - **Firebase Authentication**:
   - Hỗ trợ đăng nhập Email/Password với quy trình xác thực mạnh mẽ.
-  - Tích hợp **Google Sign-In** thông qua `androidx.credentials:credentials:1.3.0` và `GetSignInWithGoogleOption`, cấu hình đầy đủ mã băm chứng chỉ SHA-1 và SHA-256 từ keystore phát triển vào Firebase Console.
+  - Tích hợp **Google Sign-In** thông qua `androidx.credentials:credentials:1.3.0` và `GetSignInWithGoogleOption`, cấu hình đầy đủ mã băm chứng chỉ SHA-1 và SHA-256 từ keystore.
 - **Cloud Firestore NoSQL Database**:
   - Tổ chức 8 collections gốc chuẩn hóa: `users`, `books`, `requests`, `comments`, `favorites`, `notifications`, `reviews`, `feedbacks`.
-  - Bộ quy tắc bảo mật **Firestore Security Rules v2** được kiểm thử nghiêm ngặt, ngăn chặn leo quyền Admin, bảo vệ dữ liệu người dùng bị khóa và kiểm soát quyền xóa bài viết/bình luận.
+  - Bộ quy tắc bảo mật **Firestore Security Rules v2** được kiểm thử nghiêm ngặt, ngăn chặn leo quyền Admin, bảo vệ dữ liệu người dùng bị khóa và kiểm soát quyền truy cập.
 - **Firebase Cloud Messaging (FCM)**:
   - Cấu hình Service nền `MyFirebaseMessagingService` tiếp nhận và phân phối thông báo đẩy tức thì.
 
@@ -50,7 +50,7 @@ Dự án được triển khai bởi nhóm 4 thành viên với sự phân đị
 ## 3. Nhật ký Tối ưu & Tinh gọn Mã nguồn (Refactoring & Quality Assurance)
 
 ### 3.1. Dọn dẹp tài nguyên dư thừa (Dead Code & Asset Cleanup)
-Trong quá trình rà soát dự án, nhóm đã thực hiện kiểm tra đối chiếu toàn bộ thư viện tài nguyên và xóa bỏ 9 tệp tin dư thừa không còn sử dụng để giảm kích thước file APK:
+Trong quá trình rà soát dự án, nhóm đã thực hiện kiểm tra đối chiếu toàn bộ thư viện tài nguyên và xóa bỏ 9 tệp tin dư thừa không còn sử dụng để giảm kích thước project và loại bỏ rủi ro lỗi không cần thiết:
 1. `activity_main.xml`: Đã thay thế bằng điều hướng Splash động trong `MainActivity.java`.
 2. `bg_fav_btn.xml` & `bg_favorite_btn.xml`: Trùng lặp, thống nhất dùng `bg_favorite_button.xml`.
 3. `bg_distance.xml` & `bg_image_overlay.xml`: Các drawable cũ đã được thay thế bằng Material CardView và thuộc tính `strokeColor`.
