@@ -107,6 +107,10 @@ public class RequestViewModel extends AndroidViewModel {
         repository.completeAndRateRequest(request, ratingValue, comment);
     }
 
+    public void ownerRateRequester(Request request, float ratingValue, String comment, RequestRepository.RequestCallback callback) {
+        repository.ownerRateRequester(request, ratingValue, comment, callback);
+    }
+
     public LiveData<Boolean> getActionSuccess() {
         return repository.getActionSuccess();
     }

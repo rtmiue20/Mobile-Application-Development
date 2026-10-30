@@ -269,16 +269,28 @@ public class BookDetailActivity extends AppCompatActivity {
             if (tvDescription != null) tvDescription.setText(book.getDescription() != null ? book.getDescription() : "Chưa có mô tả.");
 
             if (tvSharingType != null) {
+                String st = book.getSharingType();
                 String desc = book.getDescription() != null ? book.getDescription() : "";
                 String status = book.getStatus() != null ? book.getStatus() : "available";
-                if ("exchanging".equalsIgnoreCase(status) || desc.contains("Trao đổi sách khác")) {
-                    tvSharingType.setText("Trao đổi sách");
-                } else if (desc.contains("Phí tượng trưng")) {
-                    tvSharingType.setText("Phí tượng trưng");
-                } else if ("gifted".equalsIgnoreCase(status)) {
-                    tvSharingType.setText("Đã trao tặng");
+                if (st != null && !st.isEmpty()) {
+                    if ("Phí tượng trưng / Giá rẻ".equalsIgnoreCase(st)) {
+                        long p = book.getPrice();
+                        tvSharingType.setText(p > 0 ? ("Phí tượng trưng: " + p + " đ") : "Phí tượng trưng");
+                    } else if ("Trao đổi sách khác".equalsIgnoreCase(st)) {
+                        tvSharingType.setText("Trao đổi sách");
+                    } else {
+                        tvSharingType.setText("Tặng miễn phí 0đ");
+                    }
                 } else {
-                    tvSharingType.setText("Tặng miễn phí 0đ");
+                    if ("exchanging".equalsIgnoreCase(status) || desc.contains("Trao đổi sách khác")) {
+                        tvSharingType.setText("Trao đổi sách");
+                    } else if (desc.contains("Phí tượng trưng")) {
+                        tvSharingType.setText("Phí tượng trưng");
+                    } else if ("gifted".equalsIgnoreCase(status)) {
+                        tvSharingType.setText("Đã trao tặng");
+                    } else {
+                        tvSharingType.setText("Tặng miễn phí 0đ");
+                    }
                 }
             }
 

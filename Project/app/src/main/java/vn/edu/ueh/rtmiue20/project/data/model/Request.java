@@ -29,6 +29,10 @@ public class Request {
     private boolean receiveReportedNotYet = false;
     private String notReceivedNote;
     private long notReceivedTimestamp;
+    private boolean ownerRated = false;
+    private float ownerRatingValue = 5.0f;
+    private String ownerRatingComment;
+    private long ownerRatedTimestamp;
 
     public Request() {}
 
@@ -113,4 +117,16 @@ public class Request {
 
     public long getNotReceivedTimestamp() { return notReceivedTimestamp; }
     public void setNotReceivedTimestamp(long notReceivedTimestamp) { this.notReceivedTimestamp = notReceivedTimestamp; }
+
+    public boolean isOwnerRated() { return ownerRated; }
+    public void setOwnerRated(boolean ownerRated) { this.ownerRated = ownerRated; }
+
+    public float getOwnerRatingValue() { return ownerRatingValue; }
+    public void setOwnerRatingValue(float ownerRatingValue) { this.ownerRatingValue = ownerRatingValue; }
+
+    public String getOwnerRatingComment() { return ownerRatingComment; }
+    public void setOwnerRatingComment(String ownerRatingComment) { this.ownerRatingComment = ownerRatingComment; }
+
+    public long getOwnerRatedTimestamp() { return ownerRatedTimestamp; }
+    public void setOwnerRatedTimestamp(long ownerRatedTimestamp) { this.ownerRatedTimestamp = ownerRatedTimestamp; }
 }

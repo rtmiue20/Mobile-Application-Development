@@ -318,6 +318,9 @@ public class RequestRepository {
                     actionSuccess.setValue(true);
                     if (callback != null) callback.onSuccess();
 
+                    // Cập nhật vòng đời sách và xử lý các yêu cầu đồng thời
+                    handleBookLifecycleAndConcurrentRequests(request);
+
                     // Bắn FCM thông báo cho chủ sách biết người xin đã nhận sách
                     if (request.getOwnerId() != null && !request.getOwnerId().isEmpty()) {
                         firestore.collection("users").document(request.getOwnerId()).get()
@@ -449,7 +452,10 @@ public class RequestRepository {
         firestore.collection(COLLECTION_REQUESTS)
                 .document(request.getRequestId())
                 .update(updates)
-                .addOnSuccessListener(unused -> actionSuccess.setValue(true))
+                .addOnSuccessListener(unused -> {
+                    actionSuccess.setValue(true);
+                    handleBookLifecycleAndConcurrentRequests(request);
+                })
                 .addOnFailureListener(e -> {
                     android.util.Log.w("RequestRepository", "Cập nhật Firestore completed thất bại: " + e.getMessage());
                 });
@@ -717,5 +723,130 @@ public class RequestRepository {
             }
         });
         return list;
+    }
+
+    /**
+     * Vòng đời cuốn sách & xử lý yêu cầu đồng thời khi giao dịch hoàn tất (completed):
+     * 1. Tự động chuyển trạng thái sách sang "given" (nếu tặng) hoặc "exchanged" (nếu đổi) và ẩn khỏi Trang chủ.
+     * 2. Tự động cập nhật các yêu cầu đang chờ (pending/accepted) khác của cuốn sách đó thành rejected kèm thông báo.
+     */
+    private void handleBookLifecycleAndConcurrentRequests(final Request request) {
+        if (request == null || request.getBookId() == null || request.getBookId().isEmpty()) return;
+        final String bookId = request.getBookId();
+
+        // 1. Cập nhật trạng thái sách trong collection "books"
+        firestore.collection("books").document(bookId).get().addOnSuccessListener(bookDoc -> {
+            String newBookStatus = vn.edu.ueh.rtmiue20.project.data.model.Book.STATUS_GIVEN;
+            if (bookDoc != null && bookDoc.exists()) {
+                String desc = bookDoc.getString("description");
+                String currentStatus = bookDoc.getString("status");
+                if ("exchanging".equalsIgnoreCase(currentStatus) || (desc != null && (desc.contains("Trao đổi") || desc.contains("trao đổi")))) {
+                    newBookStatus = vn.edu.ueh.rtmiue20.project.data.model.Book.STATUS_EXCHANGED;
+                }
+            }
+            firestore.collection("books").document(bookId).update("status", newBookStatus)
+                    .addOnFailureListener(e -> android.util.Log.w("RequestRepository", "Cập nhật status Book khi completed thất bại: " + e.getMessage()));
+        });
+
+        // 2. Xử lý yêu cầu đồng thời: Cập nhật các yêu cầu pending/accepted khác của cuốn sách này thành rejected
+        firestore.collection(COLLECTION_REQUESTS)
+                .whereEqualTo("bookId", bookId)
+                .get()
+                .addOnSuccessListener(querySnapshots -> {
+                    if (querySnapshots != null) {
+                        for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshots.getDocuments()) {
+                            String reqId = doc.getId();
+                            if (reqId.equals(request.getRequestId())) continue;
+                            String st = doc.getString("status");
+                            if ("pending".equalsIgnoreCase(st) || "accepted".equalsIgnoreCase(st)) {
+                                java.util.Map<String, Object> rejectUpdates = new java.util.HashMap<>();
+                                rejectUpdates.put("status", Request.STATUS_REJECTED);
+                                rejectUpdates.put("message", "Sách đã được trao cho người khác.");
+                                firestore.collection(COLLECTION_REQUESTS).document(reqId)
+                                        .update(rejectUpdates)
+                                        .addOnFailureListener(e -> android.util.Log.w("RequestRepository", "Cập nhật request song song thất bại: " + e.getMessage()));
+
+                                // Gửi FCM thông báo cho requester
+                                String requesterId = doc.getString("requesterId");
+                                if (requesterId != null && !requesterId.isEmpty()) {
+                                    firestore.collection("users").document(requesterId).get()
+                                            .addOnSuccessListener(userDoc -> {
+                                                if (userDoc != null && userDoc.contains("fcmToken")) {
+                                                    String token = userDoc.getString("fcmToken");
+                                                    if (token != null && !token.isEmpty()) {
+                                                        String bTitle = request.getBookTitle() != null ? request.getBookTitle() : "sách";
+                                                        vn.edu.ueh.rtmiue20.project.util.FCMSender.pushNotification(
+                                                                token,
+                                                                "Sách đã được trao cho người khác",
+                                                                "Cuốn \"" + bTitle + "\" mà bạn xin đã được trao cho người nhận khác."
+                                                        );
+                                                    }
+                                                }
+                                            });
+                                }
+                            }
+                        }
+                    }
+                });
+    }
+
+    /**
+     * Chủ sách đánh giá uy tín người nhận (requester) khi giao dịch hoàn tất (đánh giá 2 chiều).
+     */
+    public void ownerRateRequester(final Request request, final float ratingValue, final String comment, final RequestCallback callback) {
+        if (request == null || request.getRequestId() == null) {
+            if (callback != null) callback.onError("Yêu cầu không hợp lệ.");
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        request.setOwnerRated(true);
+        request.setOwnerRatingValue(ratingValue);
+        request.setOwnerRatingComment(comment);
+        request.setOwnerRatedTimestamp(now);
+
+        addOrUpdateLocalRequest(request);
+        actionSuccess.setValue(true);
+
+        java.util.Map<String, Object> updates = new java.util.HashMap<>();
+        updates.put("ownerRated", true);
+        updates.put("ownerRatingValue", ratingValue);
+        updates.put("ownerRatingComment", comment != null ? comment : "");
+        updates.put("ownerRatedTimestamp", now);
+
+        firestore.collection(COLLECTION_REQUESTS)
+                .document(request.getRequestId())
+                .update(updates)
+                .addOnSuccessListener(unused -> {
+                    actionSuccess.setValue(true);
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    String msg = e.getMessage() != null ? e.getMessage() : "";
+                    android.util.Log.w("RequestRepository", "Cập nhật ownerRated Firestore thất bại: " + msg);
+                    if (callback != null) callback.onError(msg);
+                });
+
+        // Cập nhật điểm uy tín cho người nhận (requester)
+        if (request.getRequesterId() != null && !request.getRequesterId().isEmpty()) {
+            UserRepository.getInstance().submitUserRating(request.getRequesterId(), ratingValue, comment, null);
+
+            // Bắn FCM thông báo cho người nhận
+            firestore.collection("users").document(request.getRequesterId()).get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc != null && doc.contains("fcmToken")) {
+                            String token = doc.getString("fcmToken");
+                            if (token != null && !token.isEmpty()) {
+                                String oName = request.getOwnerName() != null ? request.getOwnerName() : "Chủ sách";
+                                String bTitle = request.getBookTitle() != null ? request.getBookTitle() : "sách";
+                                vn.edu.ueh.rtmiue20.project.util.FCMSender.pushNotification(
+                                        token,
+                                        "Đánh giá từ chủ sách",
+                                        oName + " đã đánh giá bạn " + ratingValue + "★ cho cuốn \"" + bTitle + "\"."
+                                );
+                            }
+                        }
+                    });
+        }
     }
 }
