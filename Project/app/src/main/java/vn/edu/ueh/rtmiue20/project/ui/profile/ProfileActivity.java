@@ -410,6 +410,7 @@ public class ProfileActivity extends BaseActivity {
     private void handleLogout() {
         SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
         prefs.edit()
+                .putBoolean("remember_me", false)
                 .remove("user_fullname")
                 .remove("user_avatar_url")
                 .remove("user_role")
