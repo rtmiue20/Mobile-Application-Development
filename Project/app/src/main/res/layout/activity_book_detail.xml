@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mainDetail"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@color/bg_surface">
 
     <!-- 1. HEADER / TOP BAR -->
@@ -12,7 +13,6 @@
         android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:layout_alignParentTop="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp">
@@ -75,111 +75,16 @@
         android:textColor="#854D0E"
         android:textSize="12sp"
         android:textStyle="bold"
-        android:visibility="gone"
-        android:layout_below="@id/topBar" />
+        android:visibility="gone" />
 
-    <!-- 2. THANH YÊU CẦU NHẬN SÁCH (NẰM DƯỚI CÙNG) -->
-    <LinearLayout
-        android:id="@+id/bottomBar"
+    <!-- 2. KHUNG CUỘN NỘI DUNG CHÍNH (Chi tiết sách + Bình luận ở dưới cùng) -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollViewContent"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="@drawable/bg_bottom_bar"
-        android:elevation="16dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="12dp">
-
-        <ImageView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_tag_grey"
-            android:padding="12dp"
-            android:src="@drawable/ic_chat_bubble_outline"
-            app:tint="@color/secondary_green" />
-
-        <LinearLayout
-            android:id="@+id/btn_request_book"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="16dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_pill_active"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:clickable="true"
-            android:focusable="true">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_book"
-                app:tint="@color/white" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Yêu cầu nhận sách"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- 3. THANH NHẬP BÌNH LUẬN (NẰM NGAY TRÊN THANH YÊU CẦU) -->
-    <LinearLayout
-        android:id="@+id/layout_comment_input"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/bottomBar"
-        android:background="@color/bg_surface"
-        android:elevation="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="8dp">
-
-        <EditText
-            android:id="@+id/et_comment"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/bg_comment_input"
-            android:hint="Viết bình luận..."
-            android:importantForAutofill="no"
-            android:inputType="textMultiLine|textCapSentences"
-            android:maxLines="4"
-            android:minHeight="44dp"
-            android:paddingStart="16dp"
-            android:paddingTop="10dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="10dp"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_secondary"
-            android:textSize="14sp" />
-
-        <ImageView
-            android:id="@+id/btn_send_comment"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:contentDescription="Gửi bình luận"
-            android:focusable="true"
-            android:padding="10dp"
-            android:src="@drawable/ic_send"
-            app:tint="@color/primary_dark_green" />
-    </LinearLayout>
-
-    <!-- 4. KHUNG CUỘN NỘI DUNG CHÍNH (NẰM GIỮA BANNER VÀ THANH BÌNH LUẬN) -->
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@+id/tvOfflineBanner"
-        android:layout_above="@+id/layout_comment_input"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:clipToPadding="false"
+        android:fillViewport="true"
         android:paddingBottom="24dp">
 
         <LinearLayout
@@ -480,7 +385,7 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <!-- OWNER ACTIONS -->
+            <!-- OWNER ACTIONS (Chỉ hiển thị khi người xem là chủ sách) -->
             <LinearLayout
                 android:id="@+id/layoutOwnerActions"
                 android:layout_width="match_parent"
@@ -510,38 +415,92 @@
                     android:backgroundTint="#B71C1C" />
             </LinearLayout>
 
-            <!-- Q&A Section Title -->
-            <RelativeLayout
+            <!-- PHẦN BÌNH LUẬN & HỎI ĐÁP CỘNG ĐỒNG (NẰM Ở DƯỚI CÙNG TRONG BOOK DETAIL) -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:layout_marginBottom="16dp">
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/tvQATitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_centerVertical="true"
-                    android:text="Hỏi đáp cộng đồng"
+                    android:layout_marginBottom="12dp"
+                    android:text="Hỏi đáp &amp; Bình luận cộng đồng"
                     android:textColor="@color/primary"
                     android:textSize="18sp"
                     android:textStyle="bold" />
-            </RelativeLayout>
 
-            <!-- REAL COMMENTS (FR08) -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvComments"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                tools:itemCount="3"
-                tools:listitem="@layout/item_comment" />
+                <!-- THANH NHẬP BÌNH LUẬN -->
+                <LinearLayout
+                    android:id="@+id/layout_comment_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_comment_input"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="4dp">
+
+                    <EditText
+                        android:id="@+id/et_comment"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="Viết bình luận hoặc đặt câu hỏi..."
+                        android:importantForAutofill="no"
+                        android:inputType="textMultiLine|textCapSentences"
+                        android:maxLines="4"
+                        android:minHeight="44dp"
+                        android:paddingVertical="8dp"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:textSize="14sp" />
+
+                    <ImageView
+                        android:id="@+id/btn_send_comment"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="Gửi bình luận"
+                        android:focusable="true"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_send"
+                        app:tint="@color/primary_dark_green" />
+                </LinearLayout>
+
+                <!-- DANH SÁCH BÌNH LUẬN (FR08) -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvComments"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    tools:itemCount="3"
+                    tools:listitem="@layout/item_comment" />
+
+                <!-- THÔNG BÁO KHI CHƯA CÓ BÌNH LUẬN -->
+                <TextView
+                    android:id="@+id/tvNoComments"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingVertical="14dp"
+                    android:text="Chưa có bình luận nào. Hãy là người đầu tiên đặt câu hỏi hoặc gửi lời nhắn cho chủ sách!"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <!-- Safety Note -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="16dp"
                 android:background="@drawable/bg_banner"
                 android:orientation="horizontal"
                 android:padding="16dp">
@@ -563,9 +522,9 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
                     <TextView
+                        android:layout_marginVertical="4dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
                         android:text="Hãy tôn trọng thời gian hẹn và giữ gìn sách cẩn thận như cách người trao tặng đã trân quý cuốn sách này."
                         android:textColor="@color/on_surface_variant"
                         android:textSize="12sp" />
@@ -573,6 +532,55 @@
             </LinearLayout>
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
-</RelativeLayout>
+    <!-- 3. THANH YÊU CẦU NHẬN SÁCH (NẰM DƯỚI CÙNG - Chỉ hiện cho người không phải chủ sách) -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_bottom_bar"
+        android:elevation="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_tag_grey"
+            android:padding="12dp"
+            android:src="@drawable/ic_chat_bubble_outline"
+            app:tint="@color/secondary_green" />
+
+        <LinearLayout
+            android:id="@+id/btn_request_book"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_pill_active"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_book"
+                app:tint="@color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Yêu cầu nhận sách"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

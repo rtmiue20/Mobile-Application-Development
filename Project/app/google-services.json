@@ -16,6 +16,14 @@
         {
           "client_id": "863907893764-8fbse0kg68iv33v6e6bprdjcupj53g7i.apps.googleusercontent.com",
           "client_type": 3
+        },
+        {
+          "client_id": "863907893764-90bfc8b0d62e4ad7009b51.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "vn.edu.ueh.rtmiue20.project",
+            "certificate_hash": "22f405b9514e0bb1198f9e2f719f5fceb9aa9c4b"
+          }
         }
       ],
       "api_key": [

@@ -117,6 +117,15 @@ public class LogInActivity extends AppCompatActivity {
         setupRegisterText();
         loadSavedCredentials();
         setupListeners();
+        checkLockedErrorFromIntent();
+    }
+
+    private void checkLockedErrorFromIntent() {
+        Intent intent = getIntent();
+        if (intent != null && intent.hasExtra("LOCKED_ERROR")) {
+            String lockedMsg = intent.getStringExtra("LOCKED_ERROR");
+            showLoginErrorDialog("Tài Khoản Đã Bị Khóa ⚠", lockedMsg);
+        }
     }
 
     @Override
@@ -164,40 +173,44 @@ public class LogInActivity extends AppCompatActivity {
 
         btnGoogleLogin.setEnabled(false);
 
-        credentialManager.getCredentialAsync(
-                this,
-                request,
-                new CancellationSignal(),
-                ContextCompat.getMainExecutor(this),
-                new CredentialManagerCallback<>() {
-                    @Override
-                    public void onResult(GetCredentialResponse result) {
-                        btnGoogleLogin.setEnabled(true);
-                        handleGoogleSignInResponse(result);
-                    }
+        try {
+            credentialManager.getCredentialAsync(
+                    this,
+                    request,
+                    new CancellationSignal(),
+                    ContextCompat.getMainExecutor(this),
+                    new CredentialManagerCallback<>() {
+                        @Override
+                        public void onResult(GetCredentialResponse result) {
+                            btnGoogleLogin.setEnabled(true);
+                            handleGoogleSignInResponse(result);
+                        }
 
-                    @Override
-                    public void onError(@NonNull GetCredentialException e) {
-                        btnGoogleLogin.setEnabled(true);
-                        // Ghi log đầy đủ (kể cả trường hợp Cancellation) để chẩn đoán lỗi cấu hình SHA / OAuth client
-                        Log.e("LogInActivity", "Google sign-in error [" + e.getClass().getSimpleName() + "] type=" + e.getType() + " msg=" + e.getMessage(), e);
-                        if (e instanceof GetCredentialCancellationException) {
-                            String reason = e.getMessage() != null ? e.getMessage() : "";
-                            // Người dùng chủ động đóng hộp thoại -> không làm gì
-                            if (reason.toLowerCase().contains("cancelled by the user")) {
+                        @Override
+                        public void onError(@NonNull GetCredentialException e) {
+                            btnGoogleLogin.setEnabled(true);
+                            // Ghi log đầy đủ (kể cả trường hợp Cancellation) để chẩn đoán lỗi cấu hình SHA / OAuth client
+                            Log.e("LogInActivity", "Google sign-in error [" + e.getClass().getSimpleName() + "] type=" + e.getType() + " msg=" + e.getMessage(), e);
+                            if (e instanceof GetCredentialCancellationException) {
+                                String reason = e.getMessage() != null ? e.getMessage() : "";
+                                // Người dùng chủ động đóng hộp thoại -> không làm gì
+                                if (reason.toLowerCase().contains("cancelled by the user")) {
+                                    return;
+                                }
+                                // Các trường hợp còn lại (VD: "[16] Account reauth failed") -> chuyển sang luồng dự phòng
+                                startLegacyGoogleSignIn(reason);
                                 return;
                             }
-                            // Các trường hợp còn lại (VD: "[16] Account reauth failed") -> chuyển sang luồng dự phòng
-                            startLegacyGoogleSignIn(reason);
-                            return;
+                            // Lỗi khác của Credential Manager (VD: NoCredentialException) -> thử luồng dự phòng
+                            startLegacyGoogleSignIn(e.getMessage());
                         }
-                        // Lỗi khác của Credential Manager (VD: NoCredentialException) -> thử luồng dự phòng
-                        startLegacyGoogleSignIn(e.getMessage());
-
-
                     }
-                }
-        );
+            );
+        } catch (Exception e) {
+            btnGoogleLogin.setEnabled(true);
+            Log.e("LogInActivity", "Lỗi CredentialManager: " + e.getMessage(), e);
+            startLegacyGoogleSignIn(e.getMessage());
+        }
     }
 
     /**
@@ -404,7 +417,7 @@ public class LogInActivity extends AppCompatActivity {
             @Override
             public void onError(String errorMessage) {
                 btnLogin.setEnabled(true);
-                Toast.makeText(LogInActivity.this, "Lỗi đăng nhập: " + errorMessage, Toast.LENGTH_LONG).show();
+                showLoginErrorDialog("Lỗi đăng nhập", errorMessage);
             }
         });
     }
@@ -421,7 +434,7 @@ public class LogInActivity extends AppCompatActivity {
 
             @Override
             public void onError(String errorMessage) {
-                Toast.makeText(LogInActivity.this, "Lỗi đăng nhập Google: " + errorMessage, Toast.LENGTH_LONG).show();
+                showLoginErrorDialog("Lỗi đăng nhập Google", errorMessage);
             }
         });
     }
@@ -452,6 +465,16 @@ public class LogInActivity extends AppCompatActivity {
                     new UserRepository.UserCallback() {
                         @Override
                         public void onSuccess(User userProfile) {
+                            boolean isLocked = userProfile != null && ("locked".equalsIgnoreCase(userProfile.getStatus()) || "banned".equalsIgnoreCase(userProfile.getStatus()));
+                            if (isLocked) {
+                                authRepository.logout();
+                                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                                prefs.edit().putBoolean(KEY_REMEMBER_ME, false).apply();
+                                btnLogin.setEnabled(true);
+                                showLockedAccountDialog(userProfile);
+                                return;
+                            }
+
                             if (userProfile != null && Boolean.TRUE.equals(userProfile.isMustChangePassword())) {
                                 showForceChangePasswordDialog(user, userProfile);
                                 return;
@@ -461,6 +484,14 @@ public class LogInActivity extends AppCompatActivity {
 
                         @Override
                         public void onError(String errorMessage) {
+                            if (errorMessage != null && errorMessage.contains("PERMISSION_DENIED")) {
+                                authRepository.logout();
+                                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                                prefs.edit().putBoolean(KEY_REMEMBER_ME, false).apply();
+                                btnLogin.setEnabled(true);
+                                showLockedAccountDialog(null);
+                                return;
+                            }
                             proceedToNextScreen(null);
                         }
                     }
@@ -468,6 +499,71 @@ public class LogInActivity extends AppCompatActivity {
         } else {
             proceedToNextScreen(null);
         }
+    }
+
+    private void showLockedAccountDialog(User userProfile) {
+        String reason = (userProfile != null && userProfile.getLockReason() != null && !userProfile.getLockReason().trim().isEmpty())
+                ? userProfile.getLockReason()
+                : "Vi phạm quy chuẩn cộng đồng BookShare";
+        showLockedModalDialog(reason);
+    }
+
+    private void showLockedModalDialog(String reason) {
+        if (isFinishing() || isDestroyed()) return;
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_user_locked_notice, null);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+        builder.setView(dialogView);
+        builder.setCancelable(true);
+
+        AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        TextView tvReason = dialogView.findViewById(R.id.tvLockedReason);
+        TextView btnDismiss = dialogView.findViewById(R.id.btnDismissLockedDialog);
+
+        if (tvReason != null && reason != null && !reason.trim().isEmpty()) {
+            tvReason.setText(reason);
+        }
+
+        if (btnDismiss != null) {
+            ViewPressEffectHelper.applyPressEffect(btnDismiss);
+            btnDismiss.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        dialog.show();
+    }
+
+    private void showLoginErrorDialog(String title, String message) {
+        if (isFinishing() || isDestroyed()) return;
+
+        boolean isLocked = message != null && (message.contains("bị khóa") || message.contains("locked") || message.contains("đình chỉ"));
+        if (isLocked) {
+            String extractedReason = "Vi phạm quy chuẩn cộng đồng BookShare";
+            if (message != null && message.contains("Lý do:")) {
+                String[] parts = message.split("Lý do:");
+                if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                    extractedReason = parts[1].trim();
+                }
+            } else if (message != null && message.contains(":")) {
+                String[] parts = message.split(":");
+                if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                    extractedReason = parts[1].trim();
+                }
+            }
+            showLockedModalDialog(extractedReason);
+            return;
+        }
+
+        new MaterialAlertDialogBuilder(this)
+                .setIcon(R.drawable.ic_warning)
+                .setTitle(title != null ? title : "Thông Báo Đăng Nhập")
+                .setMessage(message != null ? message : "Đã xảy ra lỗi không xác định.")
+                .setPositiveButton("Đã hiểu", (dialog, which) -> dialog.dismiss())
+                .setCancelable(true)
+                .show();
     }
 
     /**

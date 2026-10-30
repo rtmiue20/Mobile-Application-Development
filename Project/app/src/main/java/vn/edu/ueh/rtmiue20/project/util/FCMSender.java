@@ -46,20 +46,46 @@ public final class FCMSender {
     }
 
     /**
-     * Gửi thông báo đẩy FCM. Nếu OAUTH_TOKEN chưa được cấu hình tại Client,
-     * hệ thống tự động dựa vào Cloud Functions triggers trên Firestore để gửi an toàn.
+     * Gửi thông báo đẩy FCM.
+     * Sử dụng Firebase Functions Callable 'sendNotification' để gửi an toàn qua Firebase Admin SDK
+     * mà không cần hardcode token bí mật trong client APK.
      */
     public static void pushNotification(String targetToken, String title, String body) {
         if (targetToken == null || targetToken.trim().isEmpty()) {
             return;
         }
 
-        // Nếu chưa cấu hình OAuth2 token tại Client, ủy thác gửi cho Cloud Functions & In-App Notification
-        if (OAUTH_TOKEN.isEmpty()) {
-            Log.d(TAG, "FCM Notification delegated to Cloud Functions trigger & in-app notifications: [" + title + "] " + body);
+        // 1. Gửi qua Firebase Callable Cloud Function (khuyên dùng cho bảo mật)
+        try {
+            java.util.Map<String, Object> data = new java.util.HashMap<>();
+            data.put("token", targetToken);
+            data.put("title", title);
+            data.put("body", body);
+
+            com.google.firebase.functions.FirebaseFunctions.getInstance("us-central1")
+                    .getHttpsCallable("sendNotification")
+                    .call(data)
+                    .addOnSuccessListener(result -> {
+                        Log.d(TAG, "Gửi FCM qua Cloud Function thành công: [" + title + "] " + body);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.w(TAG, "Cloud Function sendNotification chưa khả dụng: " + e.getMessage());
+                        // 2. Dự phòng: Gửi trực tiếp nếu có OAUTH_TOKEN cấu hình
+                        if (!OAUTH_TOKEN.isEmpty()) {
+                            sendDirectHttp(targetToken, title, body);
+                        }
+                    });
             return;
+        } catch (Exception e) {
+            Log.w(TAG, "Lỗi gọi FirebaseFunctions: " + e.getMessage());
         }
 
+        if (!OAUTH_TOKEN.isEmpty()) {
+            sendDirectHttp(targetToken, title, body);
+        }
+    }
+
+    private static void sendDirectHttp(String targetToken, String title, String body) {
         OkHttpClient client = new OkHttpClient();
         JSONObject json = new JSONObject();
         try {
@@ -88,7 +114,7 @@ public final class FCMSender {
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
-                    Log.e(TAG, "Lỗi gửi thông báo FCM v1: " + e.getMessage());
+                    Log.e(TAG, "Lỗi gửi thông báo FCM v1 trực tiếp: " + e.getMessage());
                 }
 
                 @Override

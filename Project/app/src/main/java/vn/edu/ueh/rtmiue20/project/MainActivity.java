@@ -39,6 +39,20 @@ public class MainActivity extends AppCompatActivity {
                 UserRepository.getInstance().getUserProfile(firebaseUser.getUid(), new UserRepository.UserCallback() {
                     @Override
                     public void onSuccess(User userProfile) {
+                        boolean isLocked = userProfile != null && ("locked".equalsIgnoreCase(userProfile.getStatus()) || "banned".equalsIgnoreCase(userProfile.getStatus()));
+                        if (isLocked) {
+                            authRepository.logout();
+                            prefs.edit().putBoolean("remember_me", false).apply();
+                            Intent intent = new Intent(MainActivity.this, LogInActivity.class);
+                            String reason = (userProfile != null && userProfile.getLockReason() != null && !userProfile.getLockReason().trim().isEmpty())
+                                    ? userProfile.getLockReason()
+                                    : "Vi phạm quy chuẩn cộng đồng";
+                            intent.putExtra("LOCKED_ERROR", "Tài khoản của bạn đã bị khóa: " + reason);
+                            startActivity(intent);
+                            finish();
+                            return;
+                        }
+
                         Intent intent;
                         if (userProfile != null && "admin".equalsIgnoreCase(userProfile.getRole())) {
                             intent = new Intent(MainActivity.this, AdminDashboardActivity.class);
@@ -51,7 +65,13 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(String errorMessage) {
-                        startActivity(new Intent(MainActivity.this, HomeActivity.class));
+                        authRepository.logout();
+                        prefs.edit().putBoolean("remember_me", false).apply();
+                        Intent intent = new Intent(MainActivity.this, LogInActivity.class);
+                        if (errorMessage != null && errorMessage.contains("PERMISSION_DENIED")) {
+                            intent.putExtra("LOCKED_ERROR", "Tài khoản của bạn đã bị khóa hoặc không có quyền truy cập.");
+                        }
+                        startActivity(intent);
                         finish();
                     }
                 });

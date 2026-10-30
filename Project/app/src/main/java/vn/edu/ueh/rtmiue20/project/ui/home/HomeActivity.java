@@ -36,11 +36,14 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 import android.util.Log;
 import java.util.HashMap;
 import java.util.Map;
+import vn.edu.ueh.rtmiue20.project.data.repository.AuthRepository;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -109,6 +112,7 @@ public class HomeActivity extends AppCompatActivity {
     private int pendingReceivedCount = 0;
     private int acceptedSentCount = 0;
     private int previousTotalBooksCount = -1;
+    private ListenerRegistration userStatusListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -170,6 +174,67 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        if (userStatusListener != null) {
+            userStatusListener.remove();
+            userStatusListener = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (userStatusListener != null) {
+            userStatusListener.remove();
+            userStatusListener = null;
+        }
+    }
+
+    private void checkAndListenUserStatus() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) return;
+
+        if (userStatusListener != null) {
+            userStatusListener.remove();
+        }
+
+        userStatusListener = FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(currentUser.getUid())
+                .addSnapshotListener((snapshot, error) -> {
+                    if (error != null) {
+                        if (error.getCode() == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
+                            handleAccountLocked("Tài khoản của bạn đã bị khóa hoặc không có quyền truy cập hệ thống.");
+                        }
+                        return;
+                    }
+                    if (snapshot != null && snapshot.exists()) {
+                        String status = snapshot.getString("status");
+                        if ("locked".equalsIgnoreCase(status) || "banned".equalsIgnoreCase(status)) {
+                            String reason = snapshot.getString("lockReason");
+                            handleAccountLocked(reason != null && !reason.trim().isEmpty() ? reason : "Tài khoản vi phạm quy chuẩn cộng đồng");
+                        }
+                    }
+                });
+    }
+
+    private void handleAccountLocked(String reason) {
+        if (isFinishing() || isDestroyed()) return;
+        if (userStatusListener != null) {
+            userStatusListener.remove();
+            userStatusListener = null;
+        }
+        AuthRepository.getInstance().logout();
+        getSharedPreferences("BookSharePrefs", MODE_PRIVATE).edit().putBoolean("remember_me", false).apply();
+        Intent intent = new Intent(this, LogInActivity.class);
+        intent.putExtra("LOCKED_ERROR", "Tài khoản của bạn đã bị khóa: " + reason);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
@@ -227,6 +292,7 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        checkAndListenUserStatus();
         updateUserDistanceToExchange();
         loadHeaderUserAvatar();
         syncFcmTokenToFirestore();
@@ -367,9 +433,10 @@ public class HomeActivity extends AppCompatActivity {
                             .putFloat("user_lat", (float) safeLat)
                             .putFloat("user_lng", (float) safeLng)
                             .apply();
-                    String dist = LocationHelper.getDistanceToUEHCampusB(safeLat, safeLng);
+                    String dist = LocationHelper.getDistanceToUEHCampusB(safeLat, safeLng); double uLat = safeLat; double uLng = safeLng;
                     if (bookAdapter != null) {
                         bookAdapter.setUserDistanceToExchange(dist);
+                                bookAdapter.setCurrentUserCoordinates(uLat, uLng);
                     }
                 }
             });
@@ -383,6 +450,9 @@ public class HomeActivity extends AppCompatActivity {
 
         if (lat != 0f && lng != 0f) {
             String dist = vn.edu.ueh.rtmiue20.project.util.LocationHelper.getDistanceToUEHCampusB(lat, lng);
+            if (bookAdapter != null) {
+                bookAdapter.setCurrentUserCoordinates(lat, lng);
+            }
             if (bookAdapter != null) {
                 bookAdapter.setUserDistanceToExchange(dist);
             }
@@ -399,6 +469,7 @@ public class HomeActivity extends AppCompatActivity {
                             String dist = vn.edu.ueh.rtmiue20.project.util.LocationHelper.getDistanceToUEHCampusB(uLat, uLng);
                             if (bookAdapter != null) {
                                 bookAdapter.setUserDistanceToExchange(dist);
+                                bookAdapter.setCurrentUserCoordinates(uLat, uLng);
                             }
                         }
                     }
