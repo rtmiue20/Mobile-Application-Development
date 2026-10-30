@@ -170,5 +170,38 @@ service cloud.firestore {
         )
       );
     }
+
+    // 7. Collection Notifications (Quản lý thông báo thời gian thực)
+    match /notifications/{notificationId} {
+      // Đọc: Người nhận thông báo (resource.data.userId == request.auth.uid hoặc resource.data.recipientId == request.auth.uid) hoặc Admin
+      allow read: if isAdmin() || (
+        isNotLocked() && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.recipientId == request.auth.uid
+        )
+      );
+
+      // Tạo: Người dùng đã xác thực (request.auth != null) và không bị khóa (isNotLocked())
+      allow create: if isAuthenticated() && isNotLocked();
+
+      // Cập nhật: Chủ sở hữu thông báo được cập nhật trường 'read' (đánh dấu đã đọc)
+      allow update: if isAdmin() || (
+        isNotLocked() && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.recipientId == request.auth.uid
+        ) && (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'actionRequired'])
+        )
+      );
+
+      // Xóa: Chủ sở hữu thông báo hoặc Admin
+      allow delete: if isAdmin() || (
+        isNotLocked() && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.recipientId == request.auth.uid
+        )
+      );
+    }
   }
 }
+

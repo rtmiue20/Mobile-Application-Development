@@ -117,6 +117,9 @@ public class RequestRepository {
                         }
                         actionSuccess.setValue(true);
 
+                        // --- LƯU THÔNG BÁO VÀO FIRESTORE CHO CHỦ SÁCH ---
+                        NotificationRepository.getInstance().createRequestReceivedNotification(request);
+
                         if (appContext != null) {
                             new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
                                 android.widget.Toast.makeText(appContext, "🔔 Đã gửi yêu cầu trao đổi sách thành công (Thông báo tức thì)!", android.widget.Toast.LENGTH_SHORT).show();
@@ -274,6 +277,25 @@ public class RequestRepository {
                     public void onSuccess(Void unused) {
                         updateLocalRequestStatus(requestId, newStatus);
                         actionSuccess.setValue(true);
+
+                        // --- TẠO THÔNG BÁO FIRESTORE KHI TRẠNG THÁI THAY ĐỔI ---
+                        Request found = null;
+                        for (Request r : localCache) {
+                            if (requestId != null && requestId.equals(r.getRequestId())) {
+                                found = r;
+                                break;
+                            }
+                        }
+                        if (found != null) {
+                            if (Request.STATUS_ACCEPTED.equalsIgnoreCase(newStatus)) {
+                                NotificationRepository.getInstance().createRequestAcceptedNotification(found);
+                            } else if (Request.STATUS_REJECTED.equalsIgnoreCase(newStatus)) {
+                                NotificationRepository.getInstance().createRequestRejectedNotification(found);
+                            } else if (Request.STATUS_COMPLETED.equalsIgnoreCase(newStatus)) {
+                                NotificationRepository.getInstance().createRequestCompletedNotification(found, true);
+                                NotificationRepository.getInstance().createRequestCompletedNotification(found, false);
+                            }
+                        }
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -326,6 +348,10 @@ public class RequestRepository {
 
                     // Cập nhật vòng đời sách và xử lý các yêu cầu đồng thời
                     handleBookLifecycleAndConcurrentRequests(request);
+
+                    // --- TẠO THÔNG BÁO HOÀN TẤT LÊN FIRESTORE CHO CẢ HAI BÊN ---
+                    NotificationRepository.getInstance().createRequestCompletedNotification(request, true);
+                    NotificationRepository.getInstance().createRequestCompletedNotification(request, false);
 
                     // Bắn FCM thông báo cho chủ sách biết người xin đã nhận sách
                     if (request.getOwnerId() != null && !request.getOwnerId().isEmpty()) {
@@ -461,6 +487,10 @@ public class RequestRepository {
                 .addOnSuccessListener(unused -> {
                     actionSuccess.setValue(true);
                     handleBookLifecycleAndConcurrentRequests(request);
+
+                    // --- TẠO THÔNG BÁO HOÀN TẤT LÊN FIRESTORE CHO CẢ HAI BÊN ---
+                    NotificationRepository.getInstance().createRequestCompletedNotification(request, true);
+                    NotificationRepository.getInstance().createRequestCompletedNotification(request, false);
                 })
                 .addOnFailureListener(e -> {
                     android.util.Log.w("RequestRepository", "Cập nhật Firestore completed thất bại: " + e.getMessage());

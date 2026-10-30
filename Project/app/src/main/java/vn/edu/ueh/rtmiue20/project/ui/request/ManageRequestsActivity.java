@@ -205,6 +205,18 @@ public class ManageRequestsActivity extends AppCompatActivity {
                 }
 
                 adapter.setRequests(displayList);
+
+                String highlightId = getIntent().getStringExtra("highlight_request_id");
+                if (highlightId != null && !highlightId.isEmpty()) {
+                    for (int i = 0; i < displayList.size(); i++) {
+                        if (highlightId.equals(displayList.get(i).getRequestId())) {
+                            final int targetPos = i;
+                            rvRequests.post(() -> rvRequests.smoothScrollToPosition(targetPos));
+                            break;
+                        }
+                    }
+                    getIntent().removeExtra("highlight_request_id");
+                }
                 if (displayList.isEmpty()) {
                     if (isAdminMode) {
                         tvEmpty.setText(!adapter.isSentTabActive()
@@ -263,7 +275,18 @@ public class ManageRequestsActivity extends AppCompatActivity {
         }
 
         // Mặc định mở Tab đầu tiên
-        switchTab(false);
+        boolean initialShowSent = getIntent().getBooleanExtra("show_sent", false)
+                || "sent".equalsIgnoreCase(getIntent().getStringExtra("target_tab"));
+        switchTab(initialShowSent);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        boolean showSent = intent.getBooleanExtra("show_sent", false)
+                || "sent".equalsIgnoreCase(intent.getStringExtra("target_tab"));
+        switchTab(showSent);
     }
 
     @Override
