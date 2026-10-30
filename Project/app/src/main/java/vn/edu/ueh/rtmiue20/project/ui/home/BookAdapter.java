@@ -5,7 +5,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -13,14 +12,15 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.FavoriteRepository;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
+import vn.edu.ueh.rtmiue20.project.util.LocationHelper;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,6 +37,8 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookHolder> {
     private List<Book> books = new ArrayList<>();
     private Set<String> favoritedBookIds = new HashSet<>();
     private String userDistanceToExchange = null;
+    private double currentUserLat = 0.0;
+    private double currentUserLng = 0.0;
     private final OnBookClick listener;
 
     public BookAdapter(OnBookClick listener) { this.listener = listener; }
@@ -53,6 +55,12 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookHolder> {
 
     public void setUserDistanceToExchange(String distance) {
         this.userDistanceToExchange = distance;
+        notifyDataSetChanged();
+    }
+
+    public void setCurrentUserCoordinates(double lat, double lng) {
+        this.currentUserLat = lat;
+        this.currentUserLng = lng;
         notifyDataSetChanged();
     }
 
@@ -254,23 +262,17 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookHolder> {
             });
         }
 
-        // Hiển thị khoảng cách từ người dùng đến UEH cơ sở B (279 Nguyễn Tri Phương)
+        // Tính khoảng cách ĐỘNG giữa Người xem và Vị trí của TỪNG CUỐN SÁCH
         if (h.tvDistance != null) {
-            String distanceStr = userDistanceToExchange;
-            if (distanceStr == null || distanceStr.isEmpty()) {
+            double userLat = currentUserLat;
+            double userLng = currentUserLng;
+            if (userLat == 0.0 && userLng == 0.0) {
                 android.content.SharedPreferences prefs = h.itemView.getContext().getSharedPreferences("BookSharePrefs", android.content.Context.MODE_PRIVATE);
-                float lat = prefs.getFloat("user_lat", 0f);
-                float lng = prefs.getFloat("user_lng", 0f);
-                if (lat != 0f && lng != 0f) {
-                    distanceStr = vn.edu.ueh.rtmiue20.project.util.LocationHelper.getDistanceToUEHCampusB(lat, lng);
-                    userDistanceToExchange = distanceStr;
-                }
+                userLat = prefs.getFloat("user_lat", 0f);
+                userLng = prefs.getFloat("user_lng", 0f);
             }
-            if (distanceStr != null && !distanceStr.isEmpty()) {
-                h.tvDistance.setText(distanceStr);
-            } else {
-                h.tvDistance.setText("800m");
-            }
+            String distanceStr = LocationHelper.calculateBookDistance(userLat, userLng, b);
+            h.tvDistance.setText(distanceStr);
         }
     }
 

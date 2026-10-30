@@ -41,6 +41,13 @@ public class Book {
     private int viewCount = 0;
     private int favoriteCount = 0;
 
+    // Tọa độ & địa chỉ thực tế của sách để tính khoảng cách chính xác đến người tìm sách
+    private String city;
+    private String district;
+    private String ward;
+    private Double latitude;
+    private Double longitude;
+
     public Book() {}   // Firestore bắt buộc có constructor rỗng (slide 90)
 
     @androidx.room.Ignore
@@ -93,4 +100,33 @@ public class Book {
 
     public int getFavoriteCount() { return Math.max(0, favoriteCount); }
     public void setFavoriteCount(int favoriteCount) { this.favoriteCount = Math.max(0, favoriteCount); }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
+
+    public String getDistrict() { return district; }
+    public void setDistrict(String district) { this.district = district; }
+
+    public String getWard() { return ward; }
+    public void setWard(String ward) { this.ward = ward; }
+
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
+
+    public String getLocationAddressFormatted() {
+        StringBuilder sb = new StringBuilder();
+        if (ward != null && !ward.trim().isEmpty()) sb.append(ward.trim());
+        if (district != null && !district.trim().isEmpty()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(district.trim());
+        }
+        if (city != null && !city.trim().isEmpty()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(city.trim());
+        }
+        return sb.toString();
+    }
 }
