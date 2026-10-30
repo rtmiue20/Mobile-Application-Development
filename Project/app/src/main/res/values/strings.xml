@@ -104,7 +104,9 @@
     <string name="subtitle_dialog_reset_password">Cấp lại thông tin đăng nhập cho thành viên</string>
     <string name="hint_reset_new_password">Nhập mật khẩu mới (tối thiểu 8 ký tự)</string>
     <string name="hint_reset_confirm_password">Nhập lại mật khẩu mới</string>
-    <string name="security_note_reset_password">Bảo mật Firebase Auth: Mật khẩu mới được cập nhật trực tiếp vào hệ thống Firebase Auth qua Cloud Function bảo mật. Thành viên sẽ được yêu cầu đổi mật khẩu mới ngay trong lần đăng nhập đầu tiên.</string>
+    <string name="security_note_reset_password">Bảo mật Firebase Auth: Mật khẩu được Google bảo vệ nghiêm ngặt. Bạn có thể gửi email liên kết đặt lại mật khẩu trực tiếp (1 chạm), hoặc nhập mật khẩu mới bên dưới.</string>
+    <string name="btn_send_reset_email_direct">Gửi Email Đặt Lại Mật Khẩu (1 Chạm)</string>
+    <string name="divider_or_manual_password">— HOẶC ĐẶT MẬT KHẨU MỚI THỦ CÔNG —</string>
     <string name="btn_cancel">Hủy</string>
     <string name="btn_confirm">Xác nhận</string>
     <string name="btn_processing">Đang xử lý...</string>
