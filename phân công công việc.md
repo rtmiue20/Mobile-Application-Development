@@ -15,7 +15,7 @@
 | STT | Nội dung công việc (Task Description) | Người phụ trách | Thời gian | Trạng thái | % Hoàn thành |
 | :---: | :--- | :--- | :--- | :--- | :---: |
 | 1 | Khởi tạo cấu trúc dự án, Gradle, Material 3, Kiến trúc MVVM | Nguyễn Văn Minh Triều | Tuần 1 | Hoàn thành | **100%** |
-| 2 | Thiết kế cơ sở dữ liệu Firestore (Users, Books, Requests, Comments) | Nguyễn Văn Minh Triều | Tuần 1 | Hoàn thành | **100%** |
+| 2 | Thiết kế cơ sở dữ liệu Firestore (Users, Books, Requests, Comments, Notifications, Feedbacks) | Nguyễn Văn Minh Triều | Tuần 1 | Hoàn thành | **100%** |
 | 3 | Module Xác thực (Auth: Đăng nhập, Đăng ký, Quên mật khẩu) | Triệu Nguyễn Huỳnh Khang | Tuần 2 | Hoàn thành | **100%** |
 | 4 | Tích hợp Google Sign-In bằng Credential Manager API | Nguyễn Phúc Vương | Tuần 2 | Hoàn thành | **100%** |
 | 5 | Xử lý phân quyền User / Admin và tính năng Đổi mật khẩu bắt buộc | Ngô Trọng Phúc | Tuần 2 | Hoàn thành | **100%** |
