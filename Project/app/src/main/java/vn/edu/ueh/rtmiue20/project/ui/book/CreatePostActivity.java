@@ -282,8 +282,6 @@ public class CreatePostActivity extends AppCompatActivity {
                 } else if (book.getDistrict() != null && !book.getDistrict().trim().isEmpty()) {
                     restoreLocationSelection("Hồ Chí Minh", book.getDistrict(), book.getWard());
                 }
-                if (book != null) {
-                }
             }
         });
     }
@@ -348,9 +346,6 @@ public class CreatePostActivity extends AppCompatActivity {
                 public void onError(String errorMessage) {}
             });
         }
-        if (true) {
-        if (spCity != null) spCity.setAdapter(cityAdapter);
-
         if (spCity != null) {
             spCity.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
@@ -364,8 +359,6 @@ public class CreatePostActivity extends AppCompatActivity {
                 public void onNothingSelected(AdapterView<?> parent) {}
             });
         }
-    }
-
     }
 
     private void restoreLocationSelection(String targetCity, String targetDistrict, String targetWard) {
