@@ -2,62 +2,33 @@ package vn.edu.ueh.rtmiue20.project.util;
 
 import android.util.Log;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+/**
+ * LƯU Ý KIẾN TRÚC FIREBASE CLOUD MESSAGING (FR11):
+ *
+ * 1. Endpoint cũ "https://fcm.googleapis.com/fcm/send" (FCM Legacy HTTP API) đã bị Google khai tử
+ *    hoàn toàn từ tháng 06/2024, đồng thời việc lưu Server Key trong client APK vi phạm bảo mật.
+ *
+ * 2. Toàn bộ logic gửi thông báo đẩy FCM v1 đã được chuyển đổi sang Serverless Triggers
+ *    trên Firebase Cloud Functions (xem chi tiết trong file functions/index.js):
+ *    - onRequestCreated: Tự động gửi thông báo FCM v1 tới chủ sách khi có người gửi yêu cầu nhận sách mới.
+ *    - onRequestUpdated: Tự động gửi thông báo FCM v1 tới người xin khi chủ sách duyệt/từ chối/hoàn tất.
+ *    - onCommentCreated: Tự động gửi thông báo FCM v1 tới chủ sách khi có bình luận mới.
+ *
+ * 3. Phía Client kết hợp với Firestore Realtime Listener trong HomeActivity (observeNotificationData)
+ *    để cập nhật huy hiệu chuông thông báo tức thì theo thời gian thực.
+ */
+public final class FCMSender {
 
-import java.io.IOException;
+    private static final String TAG = "FCMSender";
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+    private FCMSender() {
+    }
 
-public class FCMSender {
-
-    // Đường dẫn API của Firebase Cloud Messaging
-    private static final String BASE_URL = "https://fcm.googleapis.com/fcm/send";
-
-    // TODO: Leader cần cung cấp SERVER KEY từ Firebase Console để điền vào đây
-    private static final String SERVER_KEY = "key=ĐIỀN_SERVER_KEY_CỦA_FIREBASE_VÀO_ĐÂY";
-
+    /**
+     * Phương thức tương thích ngược. Logic gửi thông báo thật sự được tự động kích hoạt
+     * bởi Cloud Functions khi tài liệu Firestore tương ứng được tạo hoặc cập nhật.
+     */
     public static void pushNotification(String targetToken, String title, String body) {
-        OkHttpClient client = new OkHttpClient();
-        JSONObject json = new JSONObject();
-        try {
-            JSONObject notification = new JSONObject();
-            notification.put("title", title);
-            notification.put("body", body);
-
-            json.put("to", targetToken);
-            json.put("notification", notification);
-
-            RequestBody requestBody = RequestBody.create(
-                    json.toString(),
-                    MediaType.get("application/json; charset=utf-8")
-            );
-
-            Request request = new Request.Builder()
-                    .url(BASE_URL)
-                    .post(requestBody)
-                    .addHeader("Authorization", SERVER_KEY)
-                    .build();
-
-            client.newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    Log.e("FCM", "Lỗi gửi thông báo: " + e.getMessage());
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    Log.d("FCM", "Gửi thông báo thành công: " + response.body().string());
-                }
-            });
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        Log.d(TAG, "FCM Notification delegated to Cloud Functions trigger: [" + title + "] " + body);
     }
 }

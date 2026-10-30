@@ -52,7 +52,7 @@
     <string name="btn_back_to_login">Quay lại Đăng nhập</string>
 
     <!-- Google Sign-In & Profile Strings -->
-    <string name="default_web_client_id">1234567890-exampleclientid.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">863907893764-8fbse0kg68iv33v6e6bprdjcupj53g7i.apps.googleusercontent.com</string>
     <string name="btn_guest_login">Xem như Khách</string>
     <string name="btn_google">Google</string>
     <string name="title_profile">Hồ sơ cá nhân</string>

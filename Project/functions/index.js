@@ -237,3 +237,61 @@ exports.onRequestUpdated = functions
     return null;
   });
 
+
+
+/**
+ * Cloud Function Trigger: onCommentCreated
+ * Tự động gửi thông báo FCM v1 tới chủ sách khi có người bình luận mới trên bài đăng.
+ */
+exports.onCommentCreated = functions
+  .region("us-central1")
+  .firestore.document("books/{bookId}/comments/{commentId}")
+  .onCreate(async (snapshot, context) => {
+    const comment = snapshot.data();
+    if (!comment) return null;
+
+    const bookId = context.params.bookId;
+    const commenterId = comment.userId;
+    const commenterName = comment.userName || "Một bạn đọc";
+    const content = comment.content || "";
+
+    try {
+      const bookDoc = await admin.firestore().collection("books").document(bookId).get();
+      if (!bookDoc.exists) return null;
+
+      const bookData = bookDoc.data();
+      const ownerId = bookData.ownerId || bookData.userId;
+      const bookTitle = bookData.title || "cuốn sách của bạn";
+
+      // Không tự gửi thông báo cho chính mình khi tự bình luận vào bài của mình
+      if (!ownerId || ownerId === commenterId) return null;
+
+      const ownerDoc = await admin.firestore().collection("users").document(ownerId).get();
+      if (!ownerDoc.exists) return null;
+
+      const fcmToken = ownerDoc.data().fcmToken;
+      if (!fcmToken) {
+        console.log(`Chủ sách ${ownerId} chưa đăng ký fcmToken.`);
+        return null;
+      }
+
+      const message = {
+        token: fcmToken,
+        notification: {
+          title: `Bình luận mới về "${bookTitle}" 💬`,
+          body: `${commenterName}: ${content}`,
+        },
+        data: {
+          bookId: bookId,
+          commentId: context.params.commentId,
+          type: "NEW_COMMENT",
+        },
+      };
+
+      await admin.messaging().send(message);
+      console.log(`Đã gửi FCM thông báo bình luận mới tới chủ sách ${ownerId}`);
+    } catch (err) {
+      console.error("Lỗi gửi FCM trong onCommentCreated:", err);
+    }
+    return null;
+  });
