@@ -204,20 +204,7 @@ public class ProfileActivity extends BaseActivity {
         }
 
         if (btnHelpCenter != null) {
-            btnHelpCenter.setOnClickListener(v -> {
-                View dialogView = getLayoutInflater().inflate(R.layout.dialog_help_center, null);
-                AlertDialog dialog = new AlertDialog.Builder(this)
-                        .setView(dialogView)
-                        .create();
-                if (dialog.getWindow() != null) {
-                    dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-                }
-                View btnDismiss = dialogView.findViewById(R.id.btnDismissHelp);
-                if (btnDismiss != null) {
-                    btnDismiss.setOnClickListener(view -> dialog.dismiss());
-                }
-                dialog.show();
-            });
+            btnHelpCenter.setOnClickListener(v -> showHelpCenterDialog());
         }
     }
 
@@ -508,6 +495,154 @@ public class ProfileActivity extends BaseActivity {
         }
 
         dialog.show();
+    }
+
+    private void showHelpCenterDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_help_center, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        // Setup FAQ accordions
+        setupFaqAccordion(
+                dialogView.findViewById(R.id.cardFaq1),
+                dialogView.findViewById(R.id.tvFaqAnswer1),
+                dialogView.findViewById(R.id.ivFaqArrow1)
+        );
+        setupFaqAccordion(
+                dialogView.findViewById(R.id.cardFaq2),
+                dialogView.findViewById(R.id.tvFaqAnswer2),
+                dialogView.findViewById(R.id.ivFaqArrow2)
+        );
+        setupFaqAccordion(
+                dialogView.findViewById(R.id.cardFaq3),
+                dialogView.findViewById(R.id.tvFaqAnswer3),
+                dialogView.findViewById(R.id.ivFaqArrow3)
+        );
+
+        // Kênh hỗ trợ Email
+        View cardContactEmail = dialogView.findViewById(R.id.cardContactEmail);
+        if (cardContactEmail != null) {
+            cardContactEmail.setOnClickListener(v -> sendSupportEmail());
+        }
+
+        // Kênh đóng góp ý kiến & báo lỗi
+        View cardSendFeedback = dialogView.findViewById(R.id.cardSendFeedback);
+        if (cardSendFeedback != null) {
+            cardSendFeedback.setOnClickListener(v -> showFeedbackInputDialog());
+        }
+
+        // Nút Đã hiểu
+        View btnDismiss = dialogView.findViewById(R.id.btnDismissHelp);
+        if (btnDismiss != null) {
+            btnDismiss.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.82);
+            int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92);
+            dialog.getWindow().setLayout(width, height);
+        }
+    }
+
+    private void setupFaqAccordion(View card, TextView tvAnswer, ImageView ivArrow) {
+        if (card == null || tvAnswer == null || ivArrow == null) return;
+        card.setOnClickListener(v -> {
+            boolean isExpanded = tvAnswer.getVisibility() == View.VISIBLE;
+            if (isExpanded) {
+                tvAnswer.setVisibility(View.GONE);
+                ivArrow.animate().rotation(0f).setDuration(200).start();
+            } else {
+                tvAnswer.setVisibility(View.VISIBLE);
+                ivArrow.animate().rotation(90f).setDuration(200).start();
+            }
+        });
+    }
+
+    private void sendSupportEmail() {
+        FirebaseUser currentUser = authRepository.getCurrentUser();
+        String userEmail = (currentUser != null && currentUser.getEmail() != null) ? currentUser.getEmail() : "N/A";
+        String userName = (currentUser != null && currentUser.getDisplayName() != null) ? currentUser.getDisplayName() : "Sinh viên UEH";
+
+        Intent intent = new Intent(Intent.ACTION_SENDTO);
+        intent.setData(Uri.parse("mailto:hotro.bookshare@ueh.edu.vn"));
+        intent.putExtra(Intent.EXTRA_SUBJECT, "[BookShare UEH] Yêu cầu hỗ trợ: " + userName);
+        String body = "\n\n---\nThông tin tài khoản gửi hỗ trợ:\n- Họ và tên: " + userName +
+                "\n- Email tài khoản: " + userEmail +
+                "\n- Thiết bị: " + android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL +
+                "\n- Phiên bản Android: " + android.os.Build.VERSION.RELEASE +
+                "\n- Phiên bản ứng dụng: BookShare UEH v1.0\n";
+        intent.putExtra(Intent.EXTRA_TEXT, body);
+
+        try {
+            startActivity(Intent.createChooser(intent, "Chọn ứng dụng gửi Email"));
+        } catch (Exception e) {
+            Toast.makeText(this, "Không tìm thấy ứng dụng Email trên thiết bị. Bạn vui lòng liên hệ qua email: hotro.bookshare@ueh.edu.vn", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void showFeedbackInputDialog() {
+        android.widget.EditText edtFeedback = new android.widget.EditText(this);
+        edtFeedback.setHint("Nhập nội dung góp ý, báo lỗi hoặc đề xuất tính năng mới...");
+        edtFeedback.setTextSize(14f);
+        edtFeedback.setMinLines(4);
+        edtFeedback.setMaxLines(8);
+        edtFeedback.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
+        edtFeedback.setBackgroundResource(R.drawable.bg_feedback_input);
+        int pad = (int) (12 * getResources().getDisplayMetrics().density);
+        edtFeedback.setPadding(pad, pad, pad, pad);
+        edtFeedback.setTextColor(getColor(R.color.text_primary));
+        edtFeedback.setHintTextColor(getColor(R.color.text_secondary));
+
+        android.widget.FrameLayout container = new android.widget.FrameLayout(this);
+        int horPad = (int) (20 * getResources().getDisplayMetrics().density);
+        int topPad = (int) (12 * getResources().getDisplayMetrics().density);
+        container.setPadding(horPad, topPad, horPad, topPad);
+        container.addView(edtFeedback);
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Đóng góp ý kiến & Báo lỗi")
+                .setMessage("Ý kiến của bạn giúp cộng đồng BookShare UEH ngày càng phát triển tốt hơn:")
+                .setView(container)
+                .setPositiveButton("Gửi đóng góp", (dialog, which) -> {
+                    String content = edtFeedback.getText().toString().trim();
+                    if (content.isEmpty()) {
+                        Toast.makeText(this, "Vui lòng nhập nội dung trước khi gửi.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    submitUserFeedback(content);
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void submitUserFeedback(String content) {
+        FirebaseUser currentUser = authRepository.getCurrentUser();
+        String uid = (currentUser != null) ? currentUser.getUid() : "anonymous";
+        String email = (currentUser != null && currentUser.getEmail() != null) ? currentUser.getEmail() : "";
+        String name = (currentUser != null && currentUser.getDisplayName() != null) ? currentUser.getDisplayName() : "";
+
+        java.util.Map<String, Object> feedback = new java.util.HashMap<>();
+        feedback.put("userId", uid);
+        feedback.put("userEmail", email);
+        feedback.put("userName", name);
+        feedback.put("content", content);
+        feedback.put("device", android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL);
+        feedback.put("androidVersion", android.os.Build.VERSION.RELEASE);
+        feedback.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+
+        FirebaseFirestore.getInstance().collection("feedbacks")
+                .add(feedback)
+                .addOnSuccessListener(ref -> {
+                    Toast.makeText(this, "Cảm ơn bạn! Đóng góp ý kiến đã được gửi đến ban quản trị BookShare UEH.", Toast.LENGTH_LONG).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Đã ghi nhận ý kiến của bạn. Cảm ơn bạn đã đồng hành cùng BookShare UEH!", Toast.LENGTH_LONG).show();
+                });
     }
 
     private void showChooseLocationDialog(TextView tvSelectedLocation) {
