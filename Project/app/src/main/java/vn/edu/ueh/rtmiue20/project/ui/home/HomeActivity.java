@@ -79,6 +79,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private TextView btnBackToAdminDashboard;
     private ImageView btnNotifications;
+    private TextView tvNotificationBadge;
     private ImageView btnGoToProfile;
     private View btnFilter;
     private View layoutBrandLogo, ivBrandLogoIcon;
@@ -274,6 +275,7 @@ public class HomeActivity extends AppCompatActivity {
                 }
             }
             pendingReceivedCount = pending;
+            updateNotificationBadge();
         });
 
         requestViewModel.getSentRequests(user.getUid()).observe(this, list -> {
@@ -286,7 +288,19 @@ public class HomeActivity extends AppCompatActivity {
                 }
             }
             acceptedSentCount = accepted;
+            updateNotificationBadge();
         });
+    }
+
+    private void updateNotificationBadge() {
+        if (tvNotificationBadge == null) return;
+        int total = pendingReceivedCount + acceptedSentCount;
+        if (total > 0) {
+            tvNotificationBadge.setText(String.valueOf(total));
+            tvNotificationBadge.setVisibility(View.VISIBLE);
+        } else {
+            tvNotificationBadge.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -491,6 +505,7 @@ public class HomeActivity extends AppCompatActivity {
 
         btnBackToAdminDashboard = findViewById(R.id.btnBackToAdminDashboard);
         btnNotifications = findViewById(R.id.btnNotifications);
+        tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
         btnGoToProfile = findViewById(R.id.btnGoToProfile);
         btnFilter = findViewById(R.id.btnFilter);
         layoutBrandLogo = findViewById(R.id.layoutBrandLogo);

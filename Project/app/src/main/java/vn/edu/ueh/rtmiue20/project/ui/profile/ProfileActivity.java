@@ -196,27 +196,35 @@ public class ProfileActivity extends BaseActivity {
 
         if (btnAppSettings != null) {
             btnAppSettings.setOnClickListener(v -> {
-                new AlertDialog.Builder(this)
-                        .setTitle("Cài đặt ứng dụng")
-                        .setMessage("• Đồng bộ ngoại tuyến (Room SQLite): Đang bật\n" +
-                                "• Thông báo đẩy (Firebase Cloud Messaging): Đang bật\n" +
-                                "• Điểm hẹn mặc định: UEH Cơ sở B (" + LocationHelper.UEH_CAMPUS_B_ADDRESS + ")\n" +
-                                "• Phiên bản: BookShare v2.4.1")
-                        .setPositiveButton("Đóng", null)
-                        .show();
+                View dialogView = getLayoutInflater().inflate(R.layout.dialog_app_settings, null);
+                AlertDialog dialog = new AlertDialog.Builder(this)
+                        .setView(dialogView)
+                        .create();
+                if (dialog.getWindow() != null) {
+                    dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                }
+                View btnDismiss = dialogView.findViewById(R.id.btnDismissSettings);
+                if (btnDismiss != null) {
+                    btnDismiss.setOnClickListener(view -> dialog.dismiss());
+                }
+                dialog.show();
             });
         }
 
         if (btnHelpCenter != null) {
             btnHelpCenter.setOnClickListener(v -> {
-                new AlertDialog.Builder(this)
-                        .setTitle("Trung tâm trợ giúp & Điều khoản")
-                        .setMessage("Chào mừng bạn đến với cộng đồng BookShare UEH!\n\n" +
-                                "1. Tinh thần chia sẻ: Tặng miễn phí hoặc trao đổi sách văn minh, tôn trọng tác quyền.\n" +
-                                "2. Điểm hẹn an toàn: Khuyến khích giao nhận trực tiếp tại khuôn viên UEH Cơ sở B (279 Nguyễn Tri Phương, Q.10).\n" +
-                                "3. Giữ gìn sách: Hãy trân trọng cuốn sách nhận được và tiếp tục lan tỏa cho bạn đọc tiếp theo.")
-                        .setPositiveButton("Đã hiểu", null)
-                        .show();
+                View dialogView = getLayoutInflater().inflate(R.layout.dialog_help_center, null);
+                AlertDialog dialog = new AlertDialog.Builder(this)
+                        .setView(dialogView)
+                        .create();
+                if (dialog.getWindow() != null) {
+                    dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                }
+                View btnDismiss = dialogView.findViewById(R.id.btnDismissHelp);
+                if (btnDismiss != null) {
+                    btnDismiss.setOnClickListener(view -> dialog.dismiss());
+                }
+                dialog.show();
             });
         }
     }

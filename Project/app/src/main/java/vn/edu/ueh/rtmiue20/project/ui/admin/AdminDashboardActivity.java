@@ -649,7 +649,24 @@ public class AdminDashboardActivity extends AppCompatActivity {
                         Toast.makeText(AdminDashboardActivity.this,
                                 "Đã phê duyệt! Sách hiển thị công khai với nhãn \""
                                         + (Book.STATUS_EXCHANGING.equals(approvedStatus) ? "Đang trao đổi" : "Miễn phí") + "\".",
-                                Toast.LENGTH_SHORT).show();
+                                Toast.LENGTH_LONG).show();
+
+                        // Yêu cầu 2: Gửi thông báo cho chủ bài đăng khi được duyệt thành công
+                        if (book.getOwnerId() != null && !book.getOwnerId().isEmpty()) {
+                            FirebaseFirestore.getInstance().collection("users").document(book.getOwnerId()).get()
+                                    .addOnSuccessListener(userDoc -> {
+                                        if (userDoc != null && userDoc.contains("fcmToken")) {
+                                            String token = userDoc.getString("fcmToken");
+                                            if (token != null && !token.isEmpty()) {
+                                                vn.edu.ueh.rtmiue20.project.util.FCMSender.pushNotification(
+                                                        token,
+                                                        "Bài đăng sách đã được duyệt! ✅",
+                                                        "Cuốn \"" + (book.getTitle() != null ? book.getTitle() : "sách") + "\" của bạn đã được Admin phê duyệt và hiển thị công khai."
+                                                );
+                                            }
+                                        }
+                                    });
+                        }
                     }
 
                     @Override
