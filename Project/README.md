@@ -57,10 +57,10 @@
 ## 4. Các thành viên trong nhóm thực hiện
 | STT | Họ và tên | Mã sinh viên | Vai trò / Công việc đảm nhận | % Hoàn thành |
 | :---: | :--- | :---: | :--- | :---: |
-| 1 | Nguyễn Văn Minh Triều | 31241027455 | Nhóm trưởng, Thiết kế UI/UX & Module Auth (Email, Google Sign-In) | **100%** |
-| 2 | Triệu Nguyễn Huỳnh Khang | 31241022785 | Phát triển Trang chủ, Chi tiết sách & Đăng bài (Responsive landscape) | **100%** |
-| 3 | Nguyễn Phúc Vượng | 31241025017 | Phát triển Quản lý yêu cầu, Bình luận & Tích hợp Firebase Firestore | **100%** |
-| 4 | Ngô Trọng Phúc | 31241020074 | Phát triển Quản trị hệ thống (Admin), Cài đặt, Help Center & Báo cáo | **100%** |
+| 1 | Nguyễn Văn Minh Triều | 31241027455 | **Nhóm trưởng**: Kiến trúc MVVM, Quản trị repo, Review & Merge PR, Chế độ Khách (Guest mode), Luồng chuông thông báo, Kiểm duyệt bài đăng (Admin Posts) & Tối ưu logic Request | **100%** |
+| 2 | Triệu Nguyễn Huỳnh Khang | 31241022785 | **Thành viên**: Phát triển Module Xác thực (Auth: Đăng nhập, Đăng ký, Google Sign-In), Quên mật khẩu, Hồ sơ cá nhân (Edit Profile), Vector icon Material & Cơ chế Remember Me | **100%** |
+| 3 | Nguyễn Phúc Vượng | 31241025017 | **Thành viên**: Phát triển Bình luận (Comments), Quản lý yêu cầu & Đánh giá (Rating), Thông báo FCM Push, Khoảng cách GPS Haversine, Room SQLite & Responsive Landscape | **100%** |
+| 4 | Ngô Trọng Phúc | 31241020074 | **Thành viên**: Phát triển Trang chủ, Tìm kiếm, Đăng bài, Quản trị hệ thống (Admin Dashboard & User Mgmt), Firestore Rules v2 (8 collections), Cài đặt app, Help Center FAQ & Báo cáo đồ án | **100%** |
 
 ## 5. Tài liệu & Báo cáo kỹ thuật
 Tất cả tài liệu kỹ thuật, sơ đồ thiết kế và báo cáo tiến độ chi tiết được lưu trữ trong thư mục [docs/](docs/):

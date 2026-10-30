@@ -35,21 +35,21 @@ Dự án được xây dựng và hoàn thiện 100% theo các tiêu chuẩn k�
 
 | STT | Tên Hạng mục / Module Chức năng | Thành viên Đảm nhiệm | Trạng thái |
 | :---: | :--- | :--- | :---: |
-| 1 | Khởi tạo Dự án & Kiến trúc MVVM Material 3 | Trọng Phúc | **100% Hoàn thành** |
-| 2 | Hệ thống Xác thực & Google Credential Manager | Trọng Phúc | **100% Hoàn thành** |
-| 3 | Chế độ Trải nghiệm cho Khách (Guest Mode) | Minh Anh | **100% Hoàn thành** |
-| 4 | Quản lý Hồ sơ Cá nhân, UEH Campus & GPS | Trọng Phúc | **100% Hoàn thành** |
-| 5 | Đăng bài Chia sẻ Sách (Camera / Gallery đa nguồn) | Hoàng Long | **100% Hoàn thành** |
-| 6 | Giao diện Xoay ngang Thích ứng (`layout-land`) | Hoàng Long | **100% Hoàn thành** |
-| 7 | Trang chủ, Tìm kiếm Thời gian thực & Lọc Danh mục | Minh Anh | **100% Hoàn thành** |
-| 8 | Chi tiết Sách, Bản đồ & Tính Khoảng cách GPS | Minh Anh | **100% Hoàn thành** |
-| 9 | Bình luận Thảo luận Công khai & Quyền xóa Chủ bài | Minh Anh | **100% Hoàn thành** |
-| 10 | Quy trình Yêu cầu Sách & Xác thực Mã QR Code | Hải Đăng | **100% Hoàn thành** |
-| 11 | Đánh giá Sao & Tính Điểm Uy tín Thành viên | Hải Đăng | **100% Hoàn thành** |
-| 12 | Sách Yêu thích & Lưu trữ Ngoại tuyến Room SQLite v9 | Hải Đăng | **100% Hoàn thành** |
-| 13 | Thông báo Đẩy Thời gian thực qua Firebase Cloud Messaging | Trọng Phúc | **100% Hoàn thành** |
-| 14 | Cài đặt Ứng dụng, Dọn Cache & Trung tâm Trợ giúp FAQ | Trọng Phúc | **100% Hoàn thành** |
-| 15 | Bảng điều khiển Quản trị viên, Khóa Tài khoản & Health Check | Trọng Phúc | **100% Hoàn thành** |
+| 1 | Khởi tạo Dự án, Kiến trúc MVVM & Quản trị repo | Nguyễn Văn Minh Triều | **100% Hoàn thành** |
+| 2 | Module Xác thực (Auth: Đăng nhập, Đăng ký, Google Sign-In) | Triệu Nguyễn Huỳnh Khang | **100% Hoàn thành** |
+| 3 | Màn hình Quên mật khẩu, Hồ sơ cá nhân (Edit Profile) & Remember Me | Triệu Nguyễn Huỳnh Khang | **100% Hoàn thành** |
+| 4 | Trang chủ, Tìm kiếm & Lọc danh mục trượt ngang | Ngô Trọng Phúc | **100% Hoàn thành** |
+| 5 | Màn hình Đăng bài (`CreatePostActivity`) & Chi tiết sách (`BookDetailActivity`) | Ngô Trọng Phúc | **100% Hoàn thành** |
+| 6 | Chế độ xem cho Khách (Guest mode) & Hệ thống Chuông thông báo | Nguyễn Văn Minh Triều | **100% Hoàn thành** |
+| 7 | Tính năng Bình luận cộng đồng (Comments) & Sách yêu thích (Favorites) | Nguyễn Phúc Vượng | **100% Hoàn thành** |
+| 8 | Quản lý yêu cầu nhận sách, Hộp thoại xác nhận & Đánh giá Rating | Nguyễn Phúc Vượng | **100% Hoàn thành** |
+| 9 | Thông báo FCM Push & Tính khoảng cách động GPS Haversine | Nguyễn Phúc Vượng | **100% Hoàn thành** |
+| 10 | Giao diện Responsive Xoay ngang (`layout-land`) & Dialog Admin Reset Pass | Nguyễn Phúc Vượng | **100% Hoàn thành** |
+| 11 | Bảng điều khiển Quản trị viên (`AdminDashboardActivity`) & Quản lý User | Ngô Trọng Phúc | **100% Hoàn thành** |
+| 12 | Thiết lập & Bảo mật Cloud Firestore Security Rules v2 (8 Collections) | Ngô Trọng Phúc | **100% Hoàn thành** |
+| 13 | Cài đặt ứng dụng (FCM Switch, Ép đồng bộ, Dọn Cache) & Trung tâm FAQ | Ngô Trọng Phúc | **100% Hoàn thành** |
+| 14 | Tối ưu cơ sở dữ liệu ngoại tuyến Room SQLite v9 & Đồng bộ Firestore | Nguyễn Phúc Vượng, Ngô Trọng Phúc | **100% Hoàn thành** |
+| 15 | Kiểm duyệt bài đăng sách (Admin Posts), Review PR & Báo cáo đồ án | Nguyễn Văn Minh Triều, Ngô Trọng Phúc | **100% Hoàn thành** |
 
 ---
 
