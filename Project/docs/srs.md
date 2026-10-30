@@ -4,7 +4,7 @@
 ---
 
 ## 1. Giới thiệu dự án (Project Overview)
-**BookShare** là ứng dụng di động Android hiện đại được phát triển theo tiêu chuẩn Material 3, nhằm xây dựng mạng lưới kết nối sinh viên và cộng đồng yêu sách tại Đại học Kinh tế TP. Hồ Chí Minh (UEH) và các khu vực lân cận. Ứng dụng cho phép sinh viên trao tặng sách miễn phí, trao đổi giáo trình hoặc chia sẻ sách cũ với chi phí tiết kiệm; từ đó thúc đẩy văn hóa đọc, bảo vệ môi trường thông qua việc tái sử dụng tri thức và gắn kết sinh viên giữa các cơ sở đào tạo.
+**BookShare** là ứng dụng di động Android hiện đại được phát triển theo tiêu chuẩn Material 3, nhằm xây dựng mạng lưới kết nối sinh viên và cộng đồng yêu thích đọc sách, chia sẻ tài liệu và trao đổi sách theo nhu cầu cá nhân.
 
 ---
 
@@ -12,85 +12,95 @@
 
 | Vai trò | Mô tả | Quyền hạn chính |
 | :--- | :--- | :--- |
-| **Khách (Guest)** | Người dùng chưa đăng ký hoặc chưa đăng nhập vào hệ thống. | - Trải nghiệm chế độ "Xem như Khách" (Guest Mode).<br>- Khám phá danh sách sách ở Trang chủ, tìm kiếm theo tiêu đề/tác giả, lọc theo thể loại.<br>- Xem chi tiết sách, đọc các bình luận cộng đồng.<br>*(Bị giới hạn không thể yêu cầu sách, đăng bài, bình luận, yêu thích)*. |
-| **Thành viên (Member)** | Sinh viên hoặc người dùng đã xác thực danh tính qua Email hoặc Google Sign-In. | - Toàn quyền quản lý hồ sơ cá nhân, cập nhật Cơ sở UEH / Tọa độ GPS.<br>- Đăng tải bài viết chia sẻ sách (kèm ảnh chụp từ Camera hoặc Thư viện).<br>- Gửi và nhận yêu cầu mượn/đổi sách, tạo mã QR Code xác thực khi giao nhận sách.<br>- Thảo luận bình luận dưới bài đăng sách, xóa bình luận của chính mình.<br>- Lưu sách yêu thích và đọc ngoại tuyến (Offline Mode qua Room SQLite).<br>- Đánh giá và chấm điểm sao thành viên sau khi hoàn thành giao dịch.<br>- Góp ý, báo lỗi qua Hộp thoại Trợ giúp & Phản hồi. |
-| **Quản trị viên (Admin)** | Người dùng được phân quyền hệ thống (`role: 'admin'`). | - Xem Dashboard thống kê số lượng sách, người dùng, giao dịch thời gian thực.<br>- Quản lý tài khoản: Khóa (Lock), Mở khóa (Unlock), Cấp lại mật khẩu tạm thời.<br>- Kiểm duyệt và xóa bài đăng sách vi phạm tiêu chuẩn cộng đồng.<br>- Giám sát độ trễ và tình trạng kết nối cơ sở dữ liệu (Database Health Check).<br>- Xem danh sách phản hồi (Feedbacks) gửi từ người dùng. |
+| **Khách (Guest)** | Người dùng chưa đăng ký hoặc chưa đăng nhập vào hệ thống. | - Trải nghiệm chế độ "Xem như Khách" (Guest Mode).<br>- Khám phá danh sách sách và xem nội dung công khai.<br>- Quyết định có muốn đăng ký hay không. |
+| **Thành viên (Member)** | Sinh viên hoặc người dùng đã xác thực danh tính qua Email hoặc Google Sign-In. | - Quản lý hồ sơ cá nhân, cơ sở UEH, sách yêu thích và sách của mình.<br>- Đăng bài, tìm kiếm, trao đổi và đánh giá sách.<br>- Thực hiện giao dịch, bình luận và tương tác cộng đồng. |
+| **Quản trị viên (Admin)** | Người dùng được phân quyền hệ thống (`role: 'admin'`). | - Theo dõi thống kê hệ thống.<br>- Quản lý người dùng và tài khoản.<br>- Kiểm duyệt bài đăng và giám sát hoạt động của ứng dụng. |
 
 ---
 
 ## 3. Các yêu cầu chức năng (Functional Requirements)
 
-### FR01 - Xác thực & Quản lý phiên (Authentication & Session)
-- **FR01.1**: Đăng ký tài khoản mới bằng Email và Mật khẩu, tự động kiểm tra định dạng và chống trùng lặp.
-- **FR01.2**: Đăng nhập nhanh bằng Google sử dụng **Google Credential Manager API** thế hệ mới (thay thế hoàn toàn API cũ bị deprecated).
-- **FR01.3**: Đăng nhập bằng Email/Password hoặc Tra cứu theo Nickname/Username.
-- **FR01.4**: Cơ chế Quên mật khẩu: gửi liên kết đặt lại mật khẩu an toàn qua Email Firebase Auth.
-- **FR01.5**: Kiểm tra trạng thái tài khoản thời gian thực; nếu tài khoản bị Admin khóa (`status: 'locked'`), ứng dụng lập tức từ chối quyền truy cập và hiển thị thông báo.
-- **FR01.6**: Xử lý mật khẩu tạm thời: Bắt buộc đổi mật khẩu (`mustChangePassword: true`) ngay sau khi đăng nhập thành công nếu vừa được Admin cấp lại mật khẩu.
-- **FR01.7**: Hỗ trợ nút "Xem như Khách" (Guest Mode) ngay tại màn hình đăng nhập.
+### FR01 - Đăng ký, đăng nhập và quản lý phiên
+- Người dùng có thể đăng ký tài khoản mới bằng Email và Mật khẩu.
+- Hệ thống kiểm tra định dạng email, mật khẩu và tránh trùng lặp tài khoản.
+- Người dùng có thể đăng nhập bằng Email, Google Sign-In hoặc Nickname/Username.
+- Hệ thống hỗ trợ chức năng quên mật khẩu qua Email.
+- Nếu tài khoản bị khóa bởi Admin, hệ thống từ chối truy cập ngay.
+- Người dùng có thể sử dụng chế độ “Xem như Khách” khi chưa đăng nhập.
 
-### FR02 - Quản lý Hồ sơ cá nhân & Vị trí Cơ sở (User Profile & UEH Campus)
-- **FR02.1**: Hiển thị thông tin cá nhân: Ảnh đại diện, Tên hiển thị, Nickname, Email, Số điện thoại, Cơ sở UEH, Điểm uy tín (Reputation Score).
-- **FR02.2**: Chỉnh sửa hồ sơ: Tải ảnh đại diện mới lên Cloud Storage / xử lý URI an toàn, cập nhật số điện thoại và tiểu sử.
-- **FR02.3**: Thiết lập địa điểm mặc định: Chọn Cơ sở UEH (mặc định Cơ sở B - 279 Nguyễn Tri Phương, Quận 10) hoặc lấy tọa độ GPS thực tế của thiết bị qua FusedLocationProvider.
-- **FR02.4**: Quản lý danh sách "Sách của tôi" (My Books) và "Sách yêu thích" (Favorites).
+### FR02 - Quản lý hồ sơ cá nhân và vị trí cơ sở UEH
+- Người dùng có thể xem và chỉnh sửa thông tin cá nhân như tên, ảnh đại diện, email, số điện thoại, tiểu sử.
+- Hệ thống cho phép chọn cơ sở UEH mặc định hoặc sử dụng vị trí GPS thực tế.
+- Người dùng quản lý danh sách “Sách của tôi” và “Sách yêu thích”.
 
-### FR03 - Đăng bài chia sẻ sách (Book Creation & Publishing)
-- **FR03.1**: Nhập đầy đủ thông tin sách: Tiêu đề sách, Tên tác giả, Danh mục (Văn học, Kinh tế, Công nghệ, Giáo trình, Ngoại ngữ, Kỹ năng, Truyện tranh, Khác).
-- **FR03.2**: Thiết lập Tình trạng sách (Mới 100%, 95%, 80%, Sách cũ chấp nhận được) và Hình thức chia sẻ (Tặng miễn phí, Trao đổi giáo trình, Bán lại giá rẻ).
-- **FR03.3**: Chụp ảnh trực tiếp từ Camera thiết bị hoặc chọn từ Thư viện hình ảnh; nén ảnh tối ưu trước khi tải lên.
-- **FR03.4**: Chọn vị trí chia sẻ: Tự động điền theo vị trí Cơ sở UEH của người đăng hoặc định vị GPS hiện tại.
-- **FR03.5**: Hỗ trợ giao diện xoay ngang chuyên dụng (`layout-land/activity_create_post.xml`) phân tách 2 cột tiện dụng cho máy tính bảng và màn hình ngang.
+### FR03 - Đăng bài chia sẻ sách
+- Người dùng có thể tạo bài đăng sách với đầy đủ thông tin: tiêu đề, tác giả, danh mục, tình trạng sách, hình thức chia sẻ.
+- Hệ thống hỗ trợ upload ảnh từ Camera hoặc Thư viện, đồng thời nén ảnh tối ưu trước khi tải lên.
+- Người dùng có thể chọn vị trí chia sẻ dựa trên cơ sở UEH hoặc vị trí GPS hiện tại.
+- Giao diện hỗ trợ layout ngang cho tablet và màn hình rộng.
 
-### FR04 - Khám phá, Tìm kiếm & Lọc sách (Home, Search & Filter)
-- **FR04.1**: Thanh tìm kiếm thời gian thực theo Tên sách hoặc Tác giả.
-- **FR04.2**: Thanh lọc danh mục trượt ngang dạng Chip/Tab (Tất cả, Kinh tế, Văn học, Công nghệ, Giáo trình, Ngoại ngữ...).
-- **FR04.3**: Tính toán và hiển thị khoảng cách địa lý (Haversine Formula) từ vị trí người dùng đến cuốn sách tính theo km.
-- **FR04.4**: Cơ chế phân trang (Pagination) và làm mới dữ liệu kéo vuốt (Swipe-to-Refresh).
-- **FR04.5**: Hiệu ứng chạm tương tác Material (ViewPressEffect) cho thẻ bài đăng.
+### FR04 - Khám phá, tìm kiếm và lọc sách
+- Người dùng có thể tìm kiếm sách theo tên hoặc tác giả theo thời gian thực.
+- Hệ thống cho phép lọc sách theo danh mục và hiển thị kết quả dưới dạng chip/tab.
+- Ứng dụng tính toán khoảng cách từ vị trí người dùng đến cuốn sách và hiển thị theo km.
+- Danh sách sách hỗ trợ phân trang và làm mới dữ liệu bằng swipe-to-refresh.
 
-### FR05 - Chi tiết sách & Thảo luận Cộng đồng (Book Detail & Comments)
-- **FR05.1**: Xem ảnh bìa kích thước lớn, thông tin chi tiết, mô tả nội dung, hình thức chia sẻ, khoảng cách km và thông tin người đăng.
-- **FR05.2**: Nút bấm gọi điện thoại (`Intent.ACTION_DIAL`) hoặc mở bản đồ dẫn đường trực tiếp.
-- **FR05.3**: Thả tim yêu thích (Favorite Toggle) với hiệu ứng đồng bộ ngay lập tức vào Room SQLite và Firestore.
-- **FR05.4**: Bình luận thảo luận công khai: Người dùng có thể để lại thắc mắc, hỏi tình trạng sách.
-- **FR05.5**: Quyền xóa bình luận: Tác giả của bình luận hoặc Chủ sở hữu cuốn sách có quyền xóa bình luận; Firestore Security Rules kiểm soát chặt chẽ ở cấp độ tài liệu.
+### FR05 - Xem chi tiết sách và tương tác cộng đồng
+- Người dùng có thể xem thông tin chi tiết sách, ảnh bìa lớn, mô tả, trạng thái, khoảng cách và thông tin chủ sách.
+- Hệ thống hỗ trợ gọi điện hoặc mở bản đồ chỉ đường trực tiếp từ chi tiết sách.
+- Người dùng có thể thả tim yêu thích và đồng bộ trạng thái yêu thích lên local/remote data.
+- Người dùng có thể bình luận và xóa bình luận của chính mình hoặc do chủ sở hữu sách quản lý.
 
-### FR06 - Quy trình Yêu cầu & Giao nhận Mã QR (Book Exchange & QR Verification)
-- **FR06.1**: Người nhận gửi yêu cầu mượn/nhận/đổi sách kèm lời nhắn cho chủ sách.
-- **FR06.2**: Chủ sách nhận thông báo, kiểm tra danh sách yêu cầu (tab "Yêu cầu nhận được") và lựa chọn Chấp nhận (Accept) hoặc Từ chối (Reject).
-- **FR06.3**: Tạo mã QR Code giao nhận độc nhất cho mỗi giao dịch đã chấp nhận.
-- **FR06.4**: Xác thực giao nhận: Một bên quét mã QR hoặc nhập mã bí mật để xác nhận hoàn thành giao dịch; trạng thái sách tự động chuyển sang "Đã trao đổi" (Exchanged).
+### FR06 - Yêu cầu nhận sách và xử lý giao dịch
+- Người nhận có thể gửi yêu cầu mượn/nhận/đổi sách kèm lời nhắn cho chủ sách.
+- Chủ sách nhận được thông báo và xem danh sách yêu cầu nhận sách.
+- Chủ sách có quyền chấp nhận hoặc từ chối yêu cầu.
 
-### FR07 - Đánh giá & Chấm điểm uy tín (Reviews & Reputation Scoring)
-- **FR07.1**: Sau khi giao dịch hoàn tất, hai bên có thể đánh giá lẫn nhau (chấm điểm từ 1 đến 5 sao kèm nhận xét).
-- **FR07.2**: Hệ thống tự động tính toán điểm trung bình rating (`ratingAverage`, `ratingCount`, `reputationScore`) và cập nhật vào hồ sơ người dùng.
+### FR07 - Tạo mã QR và xác thực giao nhận
+- Hệ thống tạo mã QR Code duy nhất cho mỗi giao dịch đã được chấp nhận.
+- Một bên có thể quét mã QR hoặc nhập mã bí mật để xác thực hoàn tất giao dịch.
+- Sau khi xác nhận, trạng thái sách tự động chuyển sang “Đã trao đổi”.
 
-### FR08 - Yêu thích & Bộ nhớ đệm ngoại tuyến (Offline Room SQLite v9)
-- **FR08.1**: Lưu trữ cục bộ toàn bộ danh sách sách yêu thích vào Room Database (`BookRoomDatabase` phiên bản 9).
-- **FR08.2**: Khi mất kết nối Internet, người dùng vẫn có thể mở màn hình "Sách yêu thích" và duyệt các bài đăng đã lưu.
-- **FR08.3**: Cơ chế đồng bộ hóa 2 chiều tự động và thủ công (Force Sync) giữa Room SQLite cục bộ và Cloud Firestore từ xa.
+### FR08 - Đánh giá và cập nhật uy tín
+- Sau khi giao dịch hoàn tất, hai bên có thể đánh giá nhau từ 1 đến 5 sao kèm nhận xét.
+- Hệ thống tự động tính điểm trung bình đánh giá và cập nhật vào hồ sơ người dùng.
+- Điểm uy tín (reputation score) được sử dụng để đánh giá độ tin cậy của người dùng.
 
-### FR09 - Thông báo thời gian thực & FCM (Push Notifications)
-- **FR09.1**: Tích hợp Firebase Cloud Messaging (`MyFirebaseMessagingService`) gửi thông báo đẩy đến thiết bị khi có yêu cầu nhận sách mới, yêu cầu được chấp nhận, hoặc có bình luận mới.
-- **FR09.2**: Lưu lịch sử thông báo vào collection `notifications`, hiển thị huy hiệu (Badge) số lượng chưa đọc.
-- **FR09.3**: Chạm vào thông báo để chuyển hướng thông minh đến đúng màn hình chi tiết tương ứng.
+### FR09 - Sách yêu thích và lưu trữ offline
+- Hệ thống lưu trữ sách yêu thích trong Room Database để người dùng vẫn xem được khi offline.
+- Khi mất kết nối mạng, người dùng vẫn có thể duyệt các bài đăng đã lưu trong danh sách yêu thích.
+- Dữ liệu local và Firestore được đồng bộ hai chiều thủ công hoặc tự động.
 
-### FR10 - Cài đặt ứng dụng & Quản lý bộ nhớ (App Settings & Cache Cleaning)
-- **FR10.1**: Bật/Tắt tính năng nhận thông báo đẩy FCM với trạng thái lưu vào `SharedPreferences`.
-- **FR10.2**: Nút "Đồng bộ dữ liệu Room": Cưỡng bức làm mới toàn bộ bộ nhớ đệm ngoại tuyến từ Firestore.
-- **FR10.3**: Nút "Xóa bộ nhớ đệm (Cache)": Dọn dẹp an toàn các tệp hình ảnh tạm thời của Glide, giải phóng dung lượng bộ nhớ máy thực tế.
+### FR10 - Thông báo thời gian thực và FCM
+- Ứng dụng tích hợp Firebase Cloud Messaging để gửi thông báo khi có yêu cầu mới, trạng thái cập nhật hoặc giao dịch.
+- Hệ thống lưu lịch sử thông báo và hiển thị badge số lượng chưa đọc.
+- Khi nhấn vào thông báo, ứng dụng chuyển hướng tới màn hình tương ứng.
 
-### FR11 - Trung tâm trợ giúp & Góp ý người dùng (Help Center & Feedbacks)
-- **FR11.1**: Hộp thoại Trợ giúp tương tác trực quan (`HelpCenterDialog`) chứa danh mục FAQ dạng Collapsible Accordion (Hướng dẫn tìm sách, Đăng bài, Quy trình mượn sách, Bảo mật tài khoản).
-- **FR11.2**: Liên hệ hỗ trợ trực tiếp qua Email Intent định dạng sẵn tiêu đề và thông tin hỗ trợ UEH BookShare.
-- **FR11.3**: Hộp thoại Góp ý In-app: Cho phép sinh viên gửi phản hồi, báo cáo lỗi kèm thông tin thiết bị vào collection `feedbacks` trên Firestore để Admin xử lý.
+### FR11 - Cài đặt ứng dụng và quản lý bộ nhớ
+- Người dùng có thể bật/tắt thông báo đẩy trong thiết lập ứng dụng.
+- Hệ thống cho phép đồng bộ dữ liệu Room một cách cưỡng bức từ Firestore.
+- Người dùng có thể xóa bộ nhớ cache hình ảnh tạm thời để giải phóng dung lượng lưu trữ.
 
-### FR12 - Quản trị hệ thống & Kiểm duyệt (Admin Dashboard)
-- **FR12.1**: Thống kê số lượng tổng quan: Tổng số sách, Sách có sẵn, Sách đã trao đổi, Tổng số người dùng, Tài khoản bị khóa.
-- **FR12.2**: Quản lý người dùng: Tìm kiếm người dùng theo tên/email/nickname, Khóa tài khoản vi phạm, Mở khóa tài khoản, Cấp lại mật khẩu tạm thời.
-- **FR12.3**: Kiểm duyệt sách: Xem danh sách bài đăng sách, kiểm tra nội dung và thực hiện xóa các bài đăng vi phạm chính sách.
-- **FR12.4**: Giám sát sức khỏe kết nối cơ sở dữ liệu (Database Health Check): Đo lường độ trễ mạng (Ping Firestore latency) hiển thị trạng thái xanh/vàng/đỏ.
+### FR12 - Trung tâm trợ giúp và phản hồi
+- Ứng dụng cung cấp hộp thoại trợ giúp có dạng FAQ, hỗ trợ người dùng tìm hiểu cách đăng bài, tìm sách và quy trình giao dịch.
+- Người dùng có thể liên hệ hỗ trợ qua Email với tiêu đề và thông tin đã chuẩn hóa sẵn.
+- Người dùng có thể gửi góp ý hoặc báo lỗi trong ứng dụng qua form phản hồi.
+
+### FR13 - Quản trị hệ thống và kiểm duyệt người dùng
+- Admin có dashboard thống kê tổng số sách, sách có sẵn, sách đã trao đổi, người dùng và tài khoản bị khóa.
+- Admin có quyền tìm kiếm người dùng theo tên, email hoặc nickname.
+- Admin có quyền khóa/mở khóa tài khoản và cấp lại mật khẩu tạm thời cho người dùng.
+
+### FR14 - Kiểm duyệt nội dung và giám sát hệ thống
+- Admin xem danh sách bài đăng sách và có quyền xóa nội dung vi phạm chính sách.
+- Hệ thống giám sát trạng thái kết nối và độ trễ của Firestore theo mức xanh/vàng/đỏ.
+- Admin có thể theo dõi tình trạng hệ thống để đảm bảo dịch vụ hoạt động ổn định.
+
+### FR15 - Bảo mật, phân quyền và kiểm soát truy cập
+- Hệ thống áp dụng Firestore Security Rules để kiểm soát quyền truy cập dữ liệu theo vai trò người dùng.
+- Mật khẩu không được lưu ở dạng plain text; phiên đăng nhập được bảo mật bằng Firebase Auth Token.
+- Chỉ người có quyền sở hữu mới được thực hiện thao tác sửa/xóa bài đăng, bình luận và dữ liệu liên quan.
+- Ứng dụng kiểm tra trạng thái tài khoản và các điều kiện quyền trước khi cho phép thực hiện chức năng.
 
 ---
 
