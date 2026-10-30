@@ -33,4 +33,13 @@
     <color name="red_danger">#EF4444</color>
     <color name="error">#BA1A1A</color>
     <color name="outline">#717973</color>
+
+    <!-- Notification & Status Pill Colors -->
+    <color name="badge_pending_text">#B45309</color>
+    <color name="badge_accepted_text">#047857</color>
+    <color name="badge_completed_text">#1D4ED8</color>
+    <color name="badge_rejected_text">#B91C1C</color>
+    <color name="badge_completed_bg">#DBEAFE</color>
+    <color name="badge_rejected_bg">#FEE2E2</color>
+    <color name="badge_unread_dot">#EF4444</color>
 </resources>

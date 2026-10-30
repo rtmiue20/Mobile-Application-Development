@@ -205,6 +205,31 @@ exports.onRequestCreated = functions
       return null;
     }
 
+    // Lưu Notification vào Firestore collection "notifications"
+    try {
+      await admin.firestore().collection("notifications").doc(`req_recv_${context.params.requestId}`).set({
+        id: `req_recv_${context.params.requestId}`,
+        userId: ownerId,
+        senderId: data.requesterId || "",
+        senderName: requesterName,
+        type: "REQUEST_RECEIVED",
+        title: "Yêu cầu nhận sách mới",
+        message: `${requesterName} đã gửi yêu cầu nhận cuốn "${bookTitle}"`,
+        subMessage: data.message ? `"${data.message}"` : null,
+        timestamp: data.timestamp || Date.now(),
+        imageUrl: data.requesterAvatar || data.bookImageUrl || null,
+        statusTag: "Chờ phản hồi",
+        actionRequired: true,
+        read: false,
+        targetScreen: "REQUESTS",
+        targetTab: "received",
+        requestId: context.params.requestId,
+        bookId: data.bookId || ""
+      }, { merge: true });
+    } catch (notifErr) {
+      console.error("Lỗi lưu Firestore notification trong onRequestCreated:", notifErr);
+    }
+
     try {
       const ownerDoc = await admin.firestore().collection("users").document(ownerId).get();
       if (!ownerDoc.exists) return null;
@@ -283,9 +308,58 @@ exports.onRequestUpdated = functions
     const bookTitle = after.bookTitle || "sách";
     const requesterName = after.requesterName || "Người nhận";
 
-    // 1. Khi hoàn tất giao dịch (người nhận xác nhận): Báo cho CHỦ SÁCH (ownerId)
+    // 1. Khi hoàn tất giao dịch (người nhận xác nhận): Báo cho CHỦ SÁCH (ownerId) và NGƯỜI NHẬN (requesterId)
     if (after.status === "completed") {
       const ownerId = after.ownerId || after.receiverId;
+      const requesterId = after.requesterId || after.senderId;
+
+      // Lưu Notification Document cho cả 2 bên
+      try {
+        if (ownerId) {
+          await admin.firestore().collection("notifications").doc(`req_comp_o_${context.params.requestId}`).set({
+            id: `req_comp_o_${context.params.requestId}`,
+            userId: ownerId,
+            senderId: requesterId || "",
+            senderName: requesterName,
+            type: "REQUEST_COMPLETED",
+            title: "Giao dịch hoàn tất! ✅",
+            message: `Giao dịch tặng cuốn "${bookTitle}" cho ${requesterName} đã hoàn tất thành công.`,
+            subMessage: null,
+            timestamp: after.completedTimestamp || Date.now(),
+            imageUrl: after.bookImageUrl || null,
+            statusTag: "Hoàn tất",
+            actionRequired: false,
+            read: false,
+            targetScreen: "REQUESTS",
+            targetTab: "received",
+            requestId: context.params.requestId,
+            bookId: after.bookId || ""
+          }, { merge: true });
+        }
+        if (requesterId) {
+          await admin.firestore().collection("notifications").doc(`req_comp_r_${context.params.requestId}`).set({
+            id: `req_comp_r_${context.params.requestId}`,
+            userId: requesterId,
+            senderId: ownerId || "",
+            senderName: after.ownerName || "Chủ sách",
+            type: "REQUEST_COMPLETED",
+            title: "Đã nhận sách thành công ✅",
+            message: `Bạn đã nhận thành công cuốn "${bookTitle}" từ ${after.ownerName || "chủ sách"}.`,
+            subMessage: !after.rated ? "Chạm để đánh giá uy tín cho chủ sách" : null,
+            timestamp: after.completedTimestamp || Date.now(),
+            imageUrl: after.bookImageUrl || null,
+            statusTag: "Đã nhận",
+            actionRequired: !after.rated,
+            read: false,
+            targetScreen: "REQUESTS",
+            targetTab: "sent",
+            requestId: context.params.requestId,
+            bookId: after.bookId || ""
+          }, { merge: true });
+        }
+      } catch (notifErr) {
+        console.error("Lỗi lưu Firestore notifications trong onRequestUpdated completed:", notifErr);
+      }
       if (!ownerId) {
         console.warn("onRequestUpdated: Không tìm thấy ownerId khi completed", context.params.requestId);
         return null;
@@ -326,6 +400,34 @@ exports.onRequestUpdated = functions
     if (after.status === "accepted" || after.status === "rejected") {
       const requesterId = after.requesterId || after.senderId;
       if (!requesterId) return null;
+
+      // Lưu Notification Document trong Firestore
+      try {
+        const notifDocId = after.status === "accepted" ? `req_acc_${context.params.requestId}` : `req_rej_${context.params.requestId}`;
+        await admin.firestore().collection("notifications").doc(notifDocId).set({
+          id: notifDocId,
+          userId: requesterId,
+          senderId: after.ownerId || "",
+          senderName: after.ownerName || "Chủ sách",
+          type: after.status === "accepted" ? "REQUEST_ACCEPTED" : "REQUEST_REJECTED",
+          title: after.status === "accepted" ? "Yêu cầu được chấp nhận! 🎉" : "Yêu cầu không được duyệt",
+          message: after.status === "accepted"
+            ? `${after.ownerName || "Chủ sách"} đã đồng ý tặng cuốn "${bookTitle}" cho bạn. Hãy liên hệ hẹn nhận sách!`
+            : `Yêu cầu nhận cuốn "${bookTitle}" của bạn không được chủ sách chấp thuận.`,
+          subMessage: after.status === "accepted" ? "Điểm hẹn: Đại học Kinh Tế TP.HCM (UEH Cơ sở B)" : null,
+          timestamp: Date.now(),
+          imageUrl: after.bookImageUrl || null,
+          statusTag: after.status === "accepted" ? "Đã chấp nhận" : "Đã từ chối",
+          actionRequired: after.status === "accepted",
+          read: false,
+          targetScreen: "REQUESTS",
+          targetTab: "sent",
+          requestId: context.params.requestId,
+          bookId: after.bookId || ""
+        }, { merge: true });
+      } catch (notifErr) {
+        console.error("Lỗi lưu Firestore notification trong onRequestUpdated accepted/rejected:", notifErr);
+      }
 
       try {
         const requesterDoc = await admin.firestore().collection("users").document(requesterId).get();
@@ -395,6 +497,31 @@ exports.onCommentCreated = functions
 
       // Không tự gửi thông báo cho chính mình khi tự bình luận vào bài của mình
       if (!ownerId || ownerId === commenterId) return null;
+
+      // Lưu Notification Document trong Firestore
+      try {
+        await admin.firestore().collection("notifications").doc(`cmt_${context.params.commentId}`).set({
+          id: `cmt_${context.params.commentId}`,
+          userId: ownerId,
+          senderId: commenterId,
+          senderName: commenterName,
+          type: "NEW_COMMENT",
+          title: "Bình luận mới về sách 💬",
+          message: `${commenterName} đã bình luận về cuốn "${bookTitle}"`,
+          subMessage: content ? `"${content}"` : null,
+          timestamp: comment.createdAt || Date.now(),
+          imageUrl: null,
+          statusTag: "Bình luận",
+          actionRequired: true,
+          read: false,
+          targetScreen: "BOOK_DETAIL",
+          targetTab: "",
+          requestId: null,
+          bookId: bookId
+        }, { merge: true });
+      } catch (notifErr) {
+        console.error("Lỗi lưu Firestore notification trong onCommentCreated:", notifErr);
+      }
 
       const ownerDoc = await admin.firestore().collection("users").document(ownerId).get();
       if (!ownerDoc.exists) return null;

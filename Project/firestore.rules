@@ -176,11 +176,9 @@ service cloud.firestore {
       );
     }
 
-    // =========================================================================
     // 7. Collection Notifications (Quản lý thông báo thời gian thực)
-    // =========================================================================
     match /notifications/{notificationId} {
-      // Đọc: Người nhận thông báo (userId hoặc recipientId) không bị khóa hoặc Admin
+      // Đọc: Người nhận thông báo (resource.data.userId == request.auth.uid hoặc resource.data.recipientId == request.auth.uid) hoặc Admin
       allow read: if isAdmin() || (
         isNotLocked() && (
           resource.data.userId == request.auth.uid ||
@@ -188,10 +186,10 @@ service cloud.firestore {
         )
       );
 
-      // Tạo: Người dùng đã xác thực và không bị khóa
+      // Tạo: Người dùng đã xác thực (request.auth != null) và không bị khóa (isNotLocked())
       allow create: if isAuthenticated() && isNotLocked();
 
-      // Cập nhật: Chủ sở hữu thông báo được cập nhật trường 'read' (đánh dấu đã đọc) và 'actionRequired'
+      // Cập nhật: Chủ sở hữu thông báo được cập nhật trường 'read' (đánh dấu đã đọc)
       allow update: if isAdmin() || (
         isNotLocked() && (
           resource.data.userId == request.auth.uid ||
@@ -209,19 +207,6 @@ service cloud.firestore {
         )
       );
     }
-
-    // =========================================================================
-    // 8. Collection Feedbacks (Góp ý & Báo lỗi từ người dùng)
-    // =========================================================================
-    match /feedbacks/{feedbackId} {
-      allow read: if isAdmin();
-      allow create: if isNotLocked() &&
-        request.resource.data.userId == request.auth.uid &&
-        request.resource.data.content is string &&
-        request.resource.data.content.size() > 0 &&
-        request.resource.data.content.size() <= 2000;
-      allow update, delete: if isAdmin();
-    }
-
   }
 }
+
