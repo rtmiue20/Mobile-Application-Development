@@ -17,22 +17,36 @@ import okhttp3.Response;
 
 public class FCMSender {
 
-    // Đường dẫn API của Firebase Cloud Messaging
-    private static final String BASE_URL = "https://fcm.googleapis.com/fcm/send";
+    // Nâng cấp lên chuẩn FCM HTTP v1 API (thay thế cho API /fcm/send đã bị Google sunset)
+    private static final String BASE_URL = "https://fcm.googleapis.com/v1/projects/bookshare-2ccca/messages:send";
 
-    // TODO: Leader cần cung cấp SERVER KEY từ Firebase Console để điền vào đây
-    private static final String SERVER_KEY = "key=ĐIỀN_SERVER_KEY_CỦA_FIREBASE_VÀO_ĐÂY";
+    // FCM HTTP v1 yêu cầu OAuth2 Bearer token (được cấp bởi Firebase Admin SDK / Cloud Functions hoặc Service Account).
+    // Nếu chưa cấu hình Token, ứng dụng sẽ ưu tiên sử dụng thông báo nội bộ / Badge in-app trên HomeActivity.
+    private static final String OAUTH_TOKEN = "";
 
     public static void pushNotification(String targetToken, String title, String body) {
+        if (targetToken == null || targetToken.trim().isEmpty()) {
+            return;
+        }
+
+        // Nếu chưa có OAuth token, bỏ qua client-side push và dùng in-app notifications / Cloud Functions trigger
+        if (OAUTH_TOKEN.isEmpty()) {
+            Log.d("FCM", "FCM v1 push skipped: OAuth2 Access Token not configured (Using Cloud Functions & in-app notifications).");
+            return;
+        }
+
         OkHttpClient client = new OkHttpClient();
         JSONObject json = new JSONObject();
         try {
+            JSONObject message = new JSONObject();
+            message.put("token", targetToken);
+
             JSONObject notification = new JSONObject();
             notification.put("title", title);
             notification.put("body", body);
 
-            json.put("to", targetToken);
-            json.put("notification", notification);
+            message.put("notification", notification);
+            json.put("message", message);
 
             RequestBody requestBody = RequestBody.create(
                     json.toString(),
@@ -42,18 +56,19 @@ public class FCMSender {
             Request request = new Request.Builder()
                     .url(BASE_URL)
                     .post(requestBody)
-                    .addHeader("Authorization", SERVER_KEY)
+                    .addHeader("Authorization", "Bearer " + OAUTH_TOKEN)
+                    .addHeader("Content-Type", "application/json")
                     .build();
 
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
-                    Log.e("FCM", "Lỗi gửi thông báo: " + e.getMessage());
+                    Log.e("FCM", "Lỗi gửi thông báo FCM v1: " + e.getMessage());
                 }
 
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
-                    Log.d("FCM", "Gửi thông báo thành công: " + response.body().string());
+                    Log.d("FCM", "Gửi thông báo FCM v1 thành công: " + (response.body() != null ? response.body().string() : ""));
                 }
             });
         } catch (JSONException e) {

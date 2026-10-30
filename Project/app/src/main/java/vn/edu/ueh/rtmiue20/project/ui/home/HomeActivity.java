@@ -45,6 +45,7 @@ import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Book;
 import vn.edu.ueh.rtmiue20.project.data.model.Request;
 import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
+import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
 import vn.edu.ueh.rtmiue20.project.ui.book.BookDetailActivity;
 import vn.edu.ueh.rtmiue20.project.ui.book.CreatePostActivity;
 import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
@@ -392,6 +393,15 @@ public class HomeActivity extends AppCompatActivity {
         rvBooks.setAdapter(bookAdapter);
     }
 
+    private boolean checkGuestLogin() {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            android.widget.Toast.makeText(this, "Vui lòng đăng nhập để thực hiện tính năng này!", android.widget.Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, LogInActivity.class));
+            return false;
+        }
+        return true;
+    }
+
     private void setupListeners() {
         if (btnBackToAdminDashboard != null) {
             btnBackToAdminDashboard.setOnClickListener(v -> {
@@ -425,15 +435,24 @@ public class HomeActivity extends AppCompatActivity {
 
         // Profile Buttons
         if (btnGoToProfile != null) {
-            btnGoToProfile.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, ProfileActivity.class)));
+            btnGoToProfile.setOnClickListener(v -> {
+                if (!checkGuestLogin()) return;
+                startActivity(new Intent(HomeActivity.this, ProfileActivity.class));
+            });
         }
         if (btnNavProfile != null) {
-            btnNavProfile.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, ProfileActivity.class)));
+            btnNavProfile.setOnClickListener(v -> {
+                if (!checkGuestLogin()) return;
+                startActivity(new Intent(HomeActivity.this, ProfileActivity.class));
+            });
         }
 
         // FAB Add Book
         if (fabAddBook != null) {
-            fabAddBook.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, CreatePostActivity.class)));
+            fabAddBook.setOnClickListener(v -> {
+                if (!checkGuestLogin()) return;
+                startActivity(new Intent(HomeActivity.this, CreatePostActivity.class));
+            });
         }
 
         // Category Pills
@@ -487,7 +506,10 @@ public class HomeActivity extends AppCompatActivity {
         }
 
         if (btnNavRequests != null) {
-            btnNavRequests.setOnClickListener(v -> startActivity(new Intent(HomeActivity.this, ManageRequestsActivity.class)));
+            btnNavRequests.setOnClickListener(v -> {
+                if (!checkGuestLogin()) return;
+                startActivity(new Intent(HomeActivity.this, ManageRequestsActivity.class));
+            });
         }
 
         // Pagination Buttons
