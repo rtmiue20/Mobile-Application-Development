@@ -153,7 +153,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:lineSpacingExtra="3dp"
-                        android:text="Cộng đồng BookShare ưu tiên giao nhận tại khuôn viên các cơ sở UEH (Cơ sở B 279 Nguyễn Tri Phương, Cơ sở A 59C Nguyễn Đình Chiểu, Cơ sở N Nam Sài Gòn,...). Bạn có thể đổi điểm hẹn mặc định trong mục Cài đặt ứng dụng."
+                        android:text="Cộng đồng BookShare ưu tiên giao nhận tại khuôn viên các cơ sở UEH, với điểm hẹn mặc định là Cơ sở B (279 Nguyễn Tri Phương, Q.10). Bạn có thể xem hoặc cập nhật trong phần Chỉnh sửa hồ sơ cá nhân."
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:visibility="gone" />

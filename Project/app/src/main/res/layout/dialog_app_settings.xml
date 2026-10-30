@@ -93,68 +93,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 2. Điểm hẹn giao dịch mặc định (Clickable Picker) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardDefaultLocation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardBackgroundColor="@color/card_bg"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="0dp"
-                app:strokeColor="#E2E8F0"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="14dp">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_marginEnd="12dp"
-                        android:src="@drawable/ic_near_me"
-                        app:tint="@color/secondary_green" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Điểm hẹn mặc định"
-                            android:textColor="@color/primary_dark_green"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvSelectedLocation"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="UEH Cơ sở B (279 Nguyễn Tri Phương, Q.10)"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_arrow_forward"
-                        app:tint="@color/text_secondary" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- 3. Đồng bộ ngoại tuyến (Room SQLite) -->
+            <!-- 2. Đồng bộ ngoại tuyến (Room SQLite) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardSyncOffline"
                 android:layout_width="match_parent"
@@ -222,7 +161,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 4. Xóa bộ nhớ đệm (Clear Cache) -->
+            <!-- 3. Xóa bộ nhớ đệm (Clear Cache) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardClearCache"
                 android:layout_width="match_parent"
@@ -289,7 +228,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 5. Phiên bản ứng dụng (App Info) -->
+            <!-- 4. Phiên bản ứng dụng (App Info) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardAppVersion"
                 android:layout_width="match_parent"

@@ -435,18 +435,7 @@ public class ProfileActivity extends BaseActivity {
             });
         }
 
-        // 2. Điểm hẹn giao dịch mặc định (Click chọn campus UEH)
-        View cardDefaultLocation = dialogView.findViewById(R.id.cardDefaultLocation);
-        TextView tvSelectedLocation = dialogView.findViewById(R.id.tvSelectedLocation);
-        if (tvSelectedLocation != null) {
-            String savedLocation = prefs.getString("pref_default_meeting_location", "UEH Cơ sở B (279 Nguyễn Tri Phương, Q.10)");
-            tvSelectedLocation.setText(savedLocation);
-        }
-        if (cardDefaultLocation != null) {
-            cardDefaultLocation.setOnClickListener(v -> showChooseLocationDialog(tvSelectedLocation));
-        }
-
-        // 3. Đồng bộ ngoại tuyến (Room SQLite)
+        // 2. Đồng bộ ngoại tuyến (Room SQLite)
         View cardSyncOffline = dialogView.findViewById(R.id.cardSyncOffline);
         TextView tvSyncStatus = dialogView.findViewById(R.id.tvSyncStatus);
         View btnSyncNow = dialogView.findViewById(R.id.btnSyncNow);
@@ -464,7 +453,7 @@ public class ProfileActivity extends BaseActivity {
         if (cardSyncOffline != null) cardSyncOffline.setOnClickListener(syncListener);
         if (btnSyncNow != null) btnSyncNow.setOnClickListener(syncListener);
 
-        // 4. Xóa bộ nhớ đệm (Cache)
+        // 3. Xóa bộ nhớ đệm (Cache)
         View cardClearCache = dialogView.findViewById(R.id.cardClearCache);
         TextView tvCacheSize = dialogView.findViewById(R.id.tvCacheSize);
         View btnClearCache = dialogView.findViewById(R.id.btnClearCache);
@@ -473,7 +462,7 @@ public class ProfileActivity extends BaseActivity {
         if (cardClearCache != null) cardClearCache.setOnClickListener(clearCacheListener);
         if (btnClearCache != null) btnClearCache.setOnClickListener(clearCacheListener);
 
-        // 5. Phiên bản ứng dụng
+        // 4. Phiên bản ứng dụng
         View cardAppVersion = dialogView.findViewById(R.id.cardAppVersion);
         TextView tvAppVersion = dialogView.findViewById(R.id.tvAppVersion);
         try {
@@ -645,38 +634,6 @@ public class ProfileActivity extends BaseActivity {
                 });
     }
 
-    private void showChooseLocationDialog(TextView tvSelectedLocation) {
-        final String[] campuses = new String[]{
-                "UEH Cơ sở B (279 Nguyễn Tri Phương, Q.10)",
-                "UEH Cơ sở A (59C Nguyễn Đình Chiểu, Q.3)",
-                "UEH Cơ sở E (54 Nguyễn Văn Thủ, Q.1)",
-                "UEH Cơ sở N (Khu đô thị Nam TP, Nguyễn Văn Linh)",
-                "UEH Cơ sở H (Hoàng Diệu, Phú Nhuận)",
-                "UEH Cơ sở V (Vĩnh Long)"
-        };
-        SharedPreferences prefs = getSharedPreferences("BookSharePrefs", MODE_PRIVATE);
-        String current = prefs.getString("pref_default_meeting_location", campuses[0]);
-        int selectedIndex = 0;
-        for (int i = 0; i < campuses.length; i++) {
-            if (campuses[i].equals(current)) {
-                selectedIndex = i;
-                break;
-            }
-        }
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("Chọn điểm hẹn mặc định")
-                .setSingleChoiceItems(campuses, selectedIndex, (dialog, which) -> {
-                    String chosen = campuses[which];
-                    prefs.edit().putString("pref_default_meeting_location", chosen).apply();
-                    if (tvSelectedLocation != null) {
-                        tvSelectedLocation.setText(chosen);
-                    }
-                    Toast.makeText(this, "Đã chọn: " + chosen, Toast.LENGTH_SHORT).show();
-                    dialog.dismiss();
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
-    }
 
     private void computeAndDisplayCacheSize(TextView tvCacheSize) {
         if (tvCacheSize == null) return;
