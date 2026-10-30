@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "vn.edu.ueh.rtmiue20.project"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "vn.edu.ueh.rtmiue20.project"
@@ -19,9 +19,11 @@ android {
 
     buildTypes {
         release {
-            optimization {
-                enable = false
-            }
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
     compileOptions {
