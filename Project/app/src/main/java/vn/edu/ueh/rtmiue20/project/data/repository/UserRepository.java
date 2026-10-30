@@ -294,7 +294,9 @@ public class UserRepository {
     }
 
     /**
-     * Cập nhật trạng thái người dùng (active / locked) và lý do kỷ luật
+     * Cập nhật trạng thái người dùng (active / locked) và lý do kỷ luật.
+     * Cố gắng gọi Callable Cloud Function 'adminSetUserStatus' để vô hiệu hóa tài khoản trên Firebase Auth,
+     * đồng thời luôn đảm bảo Firestore được cập nhật đồng bộ.
      */
     public void updateUserStatus(String uid, String newStatus, String lockReason, UpdateCallback callback) {
         Map<String, Object> updates = new HashMap<>();
@@ -307,9 +309,26 @@ public class UserRepository {
             updates.put("unlockedAt", System.currentTimeMillis());
         }
 
-        firestore.collection("users").document(uid).update(updates)
-                .addOnSuccessListener(unused -> callback.onSuccess())
-                .addOnFailureListener(e -> callback.onError("Cập nhật trạng thái người dùng thất bại: " + e.getLocalizedMessage()));
+        Map<String, Object> data = new HashMap<>();
+        data.put("targetUid", uid);
+        data.put("newStatus", newStatus);
+        data.put("lockReason", lockReason);
+
+        functions.getHttpsCallable("adminSetUserStatus")
+                .call(data)
+                .addOnSuccessListener(result -> {
+                    if (callback != null) callback.onSuccess();
+                })
+                .addOnFailureListener(e -> {
+                    // Fallback cập nhật trực tiếp Firestore
+                    firestore.collection("users").document(uid).update(updates)
+                            .addOnSuccessListener(unused -> {
+                                if (callback != null) callback.onSuccess();
+                            })
+                            .addOnFailureListener(err -> {
+                                if (callback != null) callback.onError("Cập nhật trạng thái người dùng thất bại: " + err.getLocalizedMessage());
+                            });
+                });
     }
 
     /**

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_login_card"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Icon tam giác cảnh báo màu đỏ lên đầu -->
+    <FrameLayout
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:background="@drawable/bg_circle_icon_danger">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:contentDescription="Warning Icon"
+            android:src="@drawable/ic_warning"
+            app:tint="@color/error" />
+    </FrameLayout>
+
+    <!-- Tiêu đề chính -->
+    <TextView
+        android:id="@+id/tvLockedDialogTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="Tài Khoản Đã Bị Khóa"
+        android:textColor="@color/text_primary"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- Badge Trạng thái Banned / Locked -->
+    <TextView
+        android:id="@+id/tvLockedStatusBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_badge_locked"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="4dp"
+        android:text="TRẠNG THÁI: ĐÌNH CHỈ / BANNED"
+        android:textColor="@color/error"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+
+    <!-- Khối 1: Thông báo chính từ hệ thống -->
+    <TextView
+        android:id="@+id/tvLockedMainNotice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:gravity="center"
+        android:lineSpacingExtra="3dp"
+        android:text="Tài khoản của bạn đã bị Quản trị viên đình chỉ hoạt động trên hệ thống BookShare."
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
+
+    <!-- Khối 2: Khối Lý do kỷ luật nổi bật -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_reason_box"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:contentDescription="Reason"
+                android:src="@drawable/ic_warning"
+                app:tint="@color/error" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="LÝ DO XỬ LÝ KỶ LUẬT:"
+                android:textColor="@color/error"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvLockedReason"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Vi phạm quy chuẩn cộng đồng BookShare"
+            android:textColor="@color/error"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Khối 3: Hướng dẫn hỗ trợ / khiếu nại -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_tips_card"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:contentDescription="Info"
+            android:src="@drawable/ic_info"
+            app:tint="@color/outline" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:lineSpacingExtra="2dp"
+            android:text="Nếu bạn cho rằng quyết định này có sự nhầm lẫn, vui lòng liên hệ Ban quản trị để được hỗ trợ giải quyết."
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Khối 4: Nút Đã Hiểu -->
+    <TextView
+        android:id="@+id/btnDismissLockedDialog"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/bg_btn_primary"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="ĐÃ HIỂU"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+</LinearLayout>
