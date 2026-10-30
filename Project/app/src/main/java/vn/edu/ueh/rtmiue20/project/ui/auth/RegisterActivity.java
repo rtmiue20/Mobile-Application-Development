@@ -37,6 +37,18 @@ import androidx.credentials.GetCredentialRequest;
 import androidx.credentials.GetCredentialResponse;
 import androidx.credentials.exceptions.GetCredentialCancellationException;
 import androidx.credentials.exceptions.GetCredentialException;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.tasks.Task;
 
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
@@ -69,6 +81,12 @@ public class RegisterActivity extends AppCompatActivity {
 
     private AuthRepository authRepository;
     private CredentialManager credentialManager;
+
+    // Luồng Google Sign-In dự phòng (dùng khi Credential Manager lỗi, ví dụ "[16] Account reauth failed")
+    private GoogleSignInClient legacyGoogleSignInClient;
+    private final ActivityResultLauncher<Intent> legacyGoogleSignInLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    this::handleLegacyGoogleSignInResult);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,6 +126,12 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void setupGoogleSignIn() {
         credentialManager = CredentialManager.create(this);
+
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+        legacyGoogleSignInClient = GoogleSignIn.getClient(this, gso);
     }
 
     private void handleGoogleSignIn() {
@@ -141,15 +165,67 @@ public class RegisterActivity extends AppCompatActivity {
                     @Override
                     public void onError(@NonNull GetCredentialException e) {
                         btnGoogleRegister.setEnabled(true);
+                        Log.e("RegisterActivity", "Google sign-in error [" + e.getClass().getSimpleName() + "] type=" + e.getType() + " msg=" + e.getMessage(), e);
                         if (e instanceof GetCredentialCancellationException) {
+                            String reason = e.getMessage() != null ? e.getMessage() : "";
+                            // Người dùng chủ động đóng hộp thoại -> không làm gì
+                            if (reason.toLowerCase().contains("cancelled by the user")) {
+                                return;
+                            }
+                            // Các trường hợp còn lại (VD: "[16] Account reauth failed") -> chuyển sang luồng dự phòng
+                            startLegacyGoogleSignIn(reason);
                             return;
                         }
-                        Log.e("RegisterActivity", "Google sign-in error", e);
-                        String msg = "Đăng ký Google thất bại: " + (e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Lỗi xác thực Google.");
-                        Toast.makeText(RegisterActivity.this, msg, Toast.LENGTH_LONG).show();
+                        // Lỗi khác của Credential Manager (VD: NoCredentialException) -> thử luồng dự phòng
+                        startLegacyGoogleSignIn(e.getMessage());
+
+
                     }
                 }
         );
+    }
+
+    /**
+     * Luồng dự phòng khi Credential Manager thất bại (VD: "[16] Account reauth failed").
+     * Google Sign-In cổ điển tự hiển thị màn hình xác thực lại tài khoản nếu Google yêu cầu.
+     */
+    private void startLegacyGoogleSignIn(String reason) {
+        Log.w("RegisterActivity", "Chuyển sang Google Sign-In dự phòng. Lý do: " + reason);
+        btnGoogleRegister.setEnabled(false);
+        legacyGoogleSignInClient.signOut().addOnCompleteListener(this, task ->
+                legacyGoogleSignInLauncher.launch(legacyGoogleSignInClient.getSignInIntent()));
+    }
+
+    private void handleLegacyGoogleSignInResult(ActivityResult result) {
+        btnGoogleRegister.setEnabled(true);
+        if (result.getData() == null) {
+            return;
+        }
+        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+        try {
+            GoogleSignInAccount account = task.getResult(ApiException.class);
+            String idToken = account != null ? account.getIdToken() : null;
+            if (idToken != null && !idToken.isEmpty()) {
+                performGoogleAuth(idToken);
+            } else {
+                Toast.makeText(this, "Không thể lấy ID token từ Google.", Toast.LENGTH_LONG).show();
+            }
+        } catch (ApiException e) {
+            int code = e.getStatusCode();
+            Log.e("RegisterActivity", "Google Sign-In dự phòng thất bại, code=" + code, e);
+            if (code == GoogleSignInStatusCodes.SIGN_IN_CANCELLED) {
+                return;
+            }
+            String hint;
+            if (code == CommonStatusCodes.DEVELOPER_ERROR) {
+                hint = "Sai cấu hình SHA-1 / package / Web Client ID trên Firebase (mã 10)";
+            } else if (code == CommonStatusCodes.NETWORK_ERROR) {
+                hint = "Lỗi kết nối mạng (mã 7)";
+            } else {
+                hint = GoogleSignInStatusCodes.getStatusCodeString(code) + " (mã " + code + ")";
+            }
+            Toast.makeText(this, "Đăng ký Google thất bại: " + hint, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void handleGoogleSignInResponse(GetCredentialResponse result) {

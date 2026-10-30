@@ -12,7 +12,12 @@
           "package_name": "vn.edu.ueh.rtmiue20.project"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "863907893764-8fbse0kg68iv33v6e6bprdjcupj53g7i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDzXxg9yTzndt_HMPdJ3Cl9xTfrx-zWtQs"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "863907893764-8fbse0kg68iv33v6e6bprdjcupj53g7i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
