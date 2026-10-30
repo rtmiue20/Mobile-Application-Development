@@ -37,6 +37,7 @@ import vn.edu.ueh.rtmiue20.project.data.model.Comment;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.BookRepository;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
+import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
 import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
 import vn.edu.ueh.rtmiue20.project.ui.home.BookViewModel;
 
@@ -449,7 +450,8 @@ public class BookDetailActivity extends AppCompatActivity {
                 }
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
                 if (user == null) {
-                    Toast.makeText(BookDetailActivity.this, getString(R.string.msg_comment_need_login), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(BookDetailActivity.this, "Vui lòng đăng nhập để bình luận!", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(BookDetailActivity.this, LogInActivity.class));
                     return;
                 }
                 String userName = user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty() ? user.getDisplayName() : user.getEmail();
@@ -477,7 +479,8 @@ public class BookDetailActivity extends AppCompatActivity {
             btnRequestBook.setOnClickListener(v -> {
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
                 if (user == null) {
-                    Toast.makeText(BookDetailActivity.this, "Cần đăng nhập!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(BookDetailActivity.this, "Vui lòng đăng nhập để gửi yêu cầu nhận sách!", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(BookDetailActivity.this, LogInActivity.class));
                     return;
                 }
                 if (currentOwnerId.equals(user.getUid())) {
@@ -561,7 +564,8 @@ public class BookDetailActivity extends AppCompatActivity {
             btnFavorite.setOnClickListener(v -> {
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
                 if (user == null) {
-                    Toast.makeText(BookDetailActivity.this, "Vui lòng đăng nhập để lưu bài yêu thích", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(BookDetailActivity.this, "Vui lòng đăng nhập để thêm vào yêu thích!", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(BookDetailActivity.this, LogInActivity.class));
                     return;
                 }
                 if (bookId != null && !bookId.trim().isEmpty()) {

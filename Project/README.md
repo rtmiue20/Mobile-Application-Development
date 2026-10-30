@@ -15,9 +15,10 @@
 ## 3. Các thành viên trong nhóm
 | STT | Họ và tên | Mã sinh viên | Vai trò / Công việc đảm nhận | % Hoàn thành |
 | :---: | :--- | :--- | :--- | :---: |
-| 1 | Nguyễn Hoàng Phương Trúc | 3124102xxxx | Trưởng nhóm, Thiết kế UI/UX & Module Auth (Email, Google Sign-In) | 100% |
-| 2 | Thành viên 2 | 3124102xxxx | Phát triển Trang chủ, Chi tiết sách & Đăng bài (Responsive landscape) | 100% |
-| 3 | Thành viên 3 | 3124102xxxx | Phát triển Quản lý yêu cầu, Bình luận & Tích hợp Firebase Firestore | 100% |
+| 1 | Nguyễn Văn Minh Triều | 31241027455 | Nhóm trưởng, Thiết kế UI/UX & Module Auth (Email, Google Sign-In) | 100% |
+| 2 | Triệu Nguyễn Huỳnh Khang | 31241022785 | Phát triển Trang chủ, Chi tiết sách & Đăng bài (Responsive landscape) | 100% |
+| 3 | Nguyễn Phúc Vượng | 31241025017 | Phát triển Quản lý yêu cầu, Bình luận & Tích hợp Firebase Firestore | 100% |
+| 4 | Ngô Trọng Phúc | 31241020074 | Phát triển Quản trị hệ thống (Admin) & Tài liệu, Báo cáo | 100% |
 
 ## 4. Tài liệu & Báo cáo
 Tham khảo thư mục [docs/](docs/) bao gồm SRS, Sơ đồ ERD, Wireframes, Minh chứng làm việc nhóm và Báo cáo tiến độ các tuần.
