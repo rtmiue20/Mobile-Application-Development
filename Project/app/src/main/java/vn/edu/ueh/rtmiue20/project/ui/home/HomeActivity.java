@@ -35,6 +35,12 @@ import com.google.android.gms.location.Priority;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
+import android.util.Log;
+import java.util.HashMap;
+import java.util.Map;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -87,6 +93,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private FusedLocationProviderClient fusedLocationClient;
     private ActivityResultLauncher<String[]> locationPermissionLauncher;
+    private ActivityResultLauncher<String> notificationPermissionLauncher;
 
     // Bottom Navigation & Actions
     private View btnNavHome, btnNavSearch, btnNavRequests, btnNavProfile;
@@ -149,13 +156,16 @@ public class HomeActivity extends AppCompatActivity {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         setupLocationPermissionLauncher();
+        setupNotificationPermissionLauncher();
 
         observeNotificationData();
         setupListeners();
         setupPressEffects();
         updateUserDistanceToExchange();
         loadHeaderUserAvatar();
+        syncFcmTokenToFirestore();
         requestLocationOnAppStart();
+        requestNotificationPermissionOnStart();
         handleFocusSearchIntent(getIntent());
     }
 
@@ -219,6 +229,7 @@ public class HomeActivity extends AppCompatActivity {
         super.onResume();
         updateUserDistanceToExchange();
         loadHeaderUserAvatar();
+        syncFcmTokenToFirestore();
     }
 
     private void loadHeaderUserAvatar() {
@@ -289,6 +300,55 @@ public class HomeActivity extends AppCompatActivity {
                     Manifest.permission.ACCESS_COARSE_LOCATION
             });
         }
+    }
+
+    private void setupNotificationPermissionLauncher() {
+        notificationPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                isGranted -> syncFcmTokenToFirestore()
+        );
+    }
+
+    private void requestNotificationPermissionOnStart() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                if (notificationPermissionLauncher != null) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+                }
+            } else {
+                syncFcmTokenToFirestore();
+            }
+        } else {
+            syncFcmTokenToFirestore();
+        }
+    }
+
+    private void syncFcmTokenToFirestore() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            Log.w("FCM", "syncFcmTokenToFirestore: Chưa đăng nhập, bỏ qua đồng bộ FCM token");
+            return;
+        }
+
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.e("FCM", "Không thể lấy FCM Token từ Firebase", task.getException());
+                        return;
+                    }
+                    String token = task.getResult();
+                    Log.i("FCM", "Lấy FCM Token thành công: " + token);
+                    if (token != null && !token.isEmpty()) {
+                        Map<String, Object> tokenData = new HashMap<>();
+                        tokenData.put("fcmToken", token);
+                        FirebaseFirestore.getInstance().collection("users")
+                                .document(user.getUid())
+                                .set(tokenData, SetOptions.merge())
+                                .addOnSuccessListener(unused -> Log.i("FCM", "Đã lưu fcmToken lên Firestore cho user: " + user.getUid()))
+                                .addOnFailureListener(e -> Log.e("FCM", "Lỗi lưu fcmToken lên Firestore: " + e.getMessage(), e));
+                    }
+                });
     }
 
     @SuppressLint("MissingPermission")

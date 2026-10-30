@@ -36,6 +36,18 @@ import androidx.credentials.GetCredentialRequest;
 import androidx.credentials.GetCredentialResponse;
 import androidx.credentials.exceptions.GetCredentialCancellationException;
 import androidx.credentials.exceptions.GetCredentialException;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.tasks.Task;
 
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
@@ -54,6 +66,7 @@ import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
 import vn.edu.ueh.rtmiue20.project.ui.admin.AdminDashboardActivity;
 import vn.edu.ueh.rtmiue20.project.ui.home.HomeActivity;
 import vn.edu.ueh.rtmiue20.project.util.ViewPressEffectHelper;
+import vn.edu.ueh.rtmiue20.project.util.SigningInfoHelper;
 
 public class LogInActivity extends AppCompatActivity {
 
@@ -75,6 +88,12 @@ public class LogInActivity extends AppCompatActivity {
     private boolean isPasswordVisible = false;
     private AuthRepository authRepository;
     private CredentialManager credentialManager;
+
+    // Luồng Google Sign-In dự phòng (dùng khi Credential Manager lỗi, ví dụ "[16] Account reauth failed")
+    private GoogleSignInClient legacyGoogleSignInClient;
+    private final ActivityResultLauncher<Intent> legacyGoogleSignInLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    this::handleLegacyGoogleSignInResult);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,6 +140,12 @@ public class LogInActivity extends AppCompatActivity {
 
     private void setupGoogleSignIn() {
         credentialManager = CredentialManager.create(this);
+
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+        legacyGoogleSignInClient = GoogleSignIn.getClient(this, gso);
     }
 
     private void handleGoogleSignIn() {
@@ -154,15 +179,103 @@ public class LogInActivity extends AppCompatActivity {
                     @Override
                     public void onError(@NonNull GetCredentialException e) {
                         btnGoogleLogin.setEnabled(true);
+                        // Ghi log đầy đủ (kể cả trường hợp Cancellation) để chẩn đoán lỗi cấu hình SHA / OAuth client
+                        Log.e("LogInActivity", "Google sign-in error [" + e.getClass().getSimpleName() + "] type=" + e.getType() + " msg=" + e.getMessage(), e);
                         if (e instanceof GetCredentialCancellationException) {
+                            String reason = e.getMessage() != null ? e.getMessage() : "";
+                            // Người dùng chủ động đóng hộp thoại -> không làm gì
+                            if (reason.toLowerCase().contains("cancelled by the user")) {
+                                return;
+                            }
+                            // Các trường hợp còn lại (VD: "[16] Account reauth failed") -> chuyển sang luồng dự phòng
+                            startLegacyGoogleSignIn(reason);
                             return;
                         }
-                        Log.e("LogInActivity", "Google sign-in error", e);
-                        String msg = "Đăng nhập Google thất bại: " + (e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Lỗi xác thực Google.");
-                        Toast.makeText(LogInActivity.this, msg, Toast.LENGTH_LONG).show();
+                        // Lỗi khác của Credential Manager (VD: NoCredentialException) -> thử luồng dự phòng
+                        startLegacyGoogleSignIn(e.getMessage());
+
+
                     }
                 }
         );
+    }
+
+    /**
+     * Luồng dự phòng khi Credential Manager thất bại (VD: "[16] Account reauth failed").
+     * Google Sign-In cổ điển tự hiển thị màn hình xác thực lại tài khoản nếu Google yêu cầu,
+     * nên xử lý được trường hợp tài khoản trên thiết bị cần đăng nhập lại.
+     */
+    private void startLegacyGoogleSignIn(String reason) {
+        Log.w("LogInActivity", "Chuyển sang Google Sign-In dự phòng. Lý do: " + reason);
+        btnGoogleLogin.setEnabled(false);
+        // Đăng xuất phiên Google cũ của app để luôn hiện bộ chọn tài khoản
+        legacyGoogleSignInClient.signOut().addOnCompleteListener(this, task ->
+                legacyGoogleSignInLauncher.launch(legacyGoogleSignInClient.getSignInIntent()));
+    }
+
+    private void handleLegacyGoogleSignInResult(ActivityResult result) {
+        btnGoogleLogin.setEnabled(true);
+        if (result.getData() == null) {
+            // Người dùng bấm Back / đóng màn hình chọn tài khoản
+            return;
+        }
+        Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+        try {
+            GoogleSignInAccount account = task.getResult(ApiException.class);
+            String idToken = account != null ? account.getIdToken() : null;
+            if (idToken != null && !idToken.isEmpty()) {
+                performGoogleAuth(idToken);
+            } else {
+                Toast.makeText(this, "Không thể lấy ID token từ Google.", Toast.LENGTH_LONG).show();
+            }
+        } catch (ApiException e) {
+            int code = e.getStatusCode();
+            Log.e("LogInActivity", "Google Sign-In dự phòng thất bại, code=" + code, e);
+            if (code == GoogleSignInStatusCodes.SIGN_IN_CANCELLED) {
+                return;
+            }
+            String hint;
+            if (code == CommonStatusCodes.DEVELOPER_ERROR) {
+                showSigningFingerprintDialog();
+                return;
+            } else if (code == CommonStatusCodes.NETWORK_ERROR) {
+                hint = "Lỗi kết nối mạng (mã 7)";
+            } else {
+                hint = GoogleSignInStatusCodes.getStatusCodeString(code) + " (mã " + code + ")";
+            }
+            Toast.makeText(this, "Đăng nhập Google thất bại: " + hint, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * Hiển thị SHA-1 / SHA-256 THỰC TẾ của APK đang chạy để so khớp với Firebase / Google Cloud
+     * khi Google Sign-In trả về DEVELOPER_ERROR (mã 10).
+     */
+    private void showSigningFingerprintDialog() {
+        String sha1 = SigningInfoHelper.getFingerprint(this, "SHA-1");
+        String sha256 = SigningInfoHelper.getFingerprint(this, "SHA-256");
+        Log.e("LogInActivity", "APK package=" + getPackageName() + " SHA-1=" + sha1 + " SHA-256=" + sha256);
+
+        String message = "Google từ chối vì SHA của app chưa được đăng ký (mã 10).\n\n"
+                + "Package:\n" + getPackageName() + "\n\n"
+                + "SHA-1 thực tế:\n" + sha1 + "\n\n"
+                + "SHA-256 thực tế:\n" + sha256 + "\n\n"
+                + "→ Thêm 2 mã này vào Firebase > Cài đặt dự án > Thêm dấu vân tay.";
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Chẩn đoán Google Sign-In")
+                .setMessage(message)
+                .setPositiveButton("Sao chép", (d, w) -> {
+                    android.content.ClipboardManager cm =
+                            (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                    if (cm != null) {
+                        cm.setPrimaryClip(android.content.ClipData.newPlainText("SHA",
+                                "SHA-1: " + sha1 + "\nSHA-256: " + sha256));
+                        Toast.makeText(this, "Đã sao chép SHA vào clipboard", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Đóng", null)
+                .show();
     }
 
     private void handleGoogleSignInResponse(GetCredentialResponse result) {

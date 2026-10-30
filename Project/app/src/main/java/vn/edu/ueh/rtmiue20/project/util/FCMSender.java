@@ -15,23 +15,48 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class FCMSender {
+/**
+ * LƯU Ý KIẾN TRÚC FIREBASE CLOUD MESSAGING (FR11):
+ *
+ * 1. Nâng cấp lên chuẩn FCM HTTP v1 API ("https://fcm.googleapis.com/v1/projects/bookshare-2ccca/messages:send"),
+ *    thay thế hoàn toàn cho endpoint cũ "/fcm/send" đã bị Google khai tử từ tháng 06/2024.
+ *
+ * 2. FCM v1 yêu cầu OAuth2 Bearer token (được cấp bởi Firebase Admin SDK / Cloud Functions hoặc Service Account).
+ *    Toàn bộ logic gửi thông báo đẩy FCM v1 tự động được xử lý qua Serverless Triggers
+ *    trên Firebase Cloud Functions (xem chi tiết trong file functions/index.js):
+ *    - onRequestCreated: Tự động gửi thông báo FCM v1 tới chủ sách khi có người gửi yêu cầu nhận sách mới.
+ *    - onRequestUpdated: Tự động gửi thông báo FCM v1 tới người xin khi chủ sách duyệt/từ chối/hoàn tất.
+ *    - onCommentCreated: Tự động gửi thông báo FCM v1 tới chủ sách khi có bình luận mới.
+ *
+ * 3. Phía Client kết hợp với Firestore Realtime Listener trong HomeActivity (observeNotificationData)
+ *    để cập nhật huy hiệu chuông thông báo tức thì theo thời gian thực.
+ */
+public final class FCMSender {
 
-    // Nâng cấp lên chuẩn FCM HTTP v1 API (thay thế cho API /fcm/send đã bị Google sunset)
+    private static final String TAG = "FCMSender";
+
+    // Chuẩn FCM HTTP v1 API
     private static final String BASE_URL = "https://fcm.googleapis.com/v1/projects/bookshare-2ccca/messages:send";
 
-    // FCM HTTP v1 yêu cầu OAuth2 Bearer token (được cấp bởi Firebase Admin SDK / Cloud Functions hoặc Service Account).
-    // Nếu chưa cấu hình Token, ứng dụng sẽ ưu tiên sử dụng thông báo nội bộ / Badge in-app trên HomeActivity.
+    // FCM HTTP v1 yêu cầu OAuth2 Bearer token ngắn hạn (Short-lived token).
+    // Nếu để trống, ứng dụng tự động ủy thác việc gửi cho Cloud Functions triggers và in-app notifications.
     private static final String OAUTH_TOKEN = "";
 
+    private FCMSender() {
+    }
+
+    /**
+     * Gửi thông báo đẩy FCM. Nếu OAUTH_TOKEN chưa được cấu hình tại Client,
+     * hệ thống tự động dựa vào Cloud Functions triggers trên Firestore để gửi an toàn.
+     */
     public static void pushNotification(String targetToken, String title, String body) {
         if (targetToken == null || targetToken.trim().isEmpty()) {
             return;
         }
 
-        // Nếu chưa có OAuth token, bỏ qua client-side push và dùng in-app notifications / Cloud Functions trigger
+        // Nếu chưa cấu hình OAuth2 token tại Client, ủy thác gửi cho Cloud Functions & In-App Notification
         if (OAUTH_TOKEN.isEmpty()) {
-            Log.d("FCM", "FCM v1 push skipped: OAuth2 Access Token not configured (Using Cloud Functions & in-app notifications).");
+            Log.d(TAG, "FCM Notification delegated to Cloud Functions trigger & in-app notifications: [" + title + "] " + body);
             return;
         }
 
@@ -63,16 +88,16 @@ public class FCMSender {
             client.newCall(request).enqueue(new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
-                    Log.e("FCM", "Lỗi gửi thông báo FCM v1: " + e.getMessage());
+                    Log.e(TAG, "Lỗi gửi thông báo FCM v1: " + e.getMessage());
                 }
 
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
-                    Log.d("FCM", "Gửi thông báo FCM v1 thành công: " + (response.body() != null ? response.body().string() : ""));
+                    Log.d(TAG, "Gửi thông báo FCM v1 thành công: " + (response.body() != null ? response.body().string() : ""));
                 }
             });
         } catch (JSONException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Lỗi đóng gói JSON FCM v1: " + e.getMessage(), e);
         }
     }
 }
