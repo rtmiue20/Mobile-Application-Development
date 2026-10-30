@@ -538,6 +538,7 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
         TextView btnCancel = dialogView.findViewById(R.id.btnCancelReset);
         LinearLayout btnConfirm = dialogView.findViewById(R.id.btnConfirmReset);
         TextView tvConfirmText = dialogView.findViewById(R.id.tvConfirmResetText);
+        LinearLayout btnSendResetEmailDirect = dialogView.findViewById(R.id.btnSendResetEmailDirect);
 
         String email = user.getEmail().trim();
         String name = (user.getFullName() != null && !user.getFullName().trim().isEmpty())
@@ -548,7 +549,38 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
         String uid = user.getUid() != null ? user.getUid() : "";
         tvUid.setText("UID: " + uid);
 
-        ViewPressEffectHelper.applyPressEffect(btnCancel, btnConfirm);
+        ViewPressEffectHelper.applyPressEffect(btnCancel, btnConfirm, btnSendResetEmailDirect);
+
+        // Xử lý gửi Email Đặt Lại Mật Khẩu 1 Chạm chuẩn Firebase Auth
+        if (btnSendResetEmailDirect != null) {
+            btnSendResetEmailDirect.setOnClickListener(v -> {
+                btnSendResetEmailDirect.setEnabled(false);
+                btnConfirm.setEnabled(false);
+                btnCancel.setEnabled(false);
+                pbLoading.setVisibility(View.VISIBLE);
+                Toast.makeText(UserManagementActivity.this, "Đang gửi email đặt lại mật khẩu...", Toast.LENGTH_SHORT).show();
+
+                AuthRepository.getInstance().sendPasswordResetEmail(email, new AuthRepository.ActionCallback() {
+                    @Override
+                    public void onSuccess() {
+                        if (isFinishing() || isDestroyed()) return;
+                        UserRepository.getInstance().recordAdminPasswordReset(user.getUid(), null);
+                        dialog.dismiss();
+                        showResetEmailSuccessDialog(user);
+                    }
+
+                    @Override
+                    public void onError(String sendErr) {
+                        if (isFinishing() || isDestroyed()) return;
+                        btnSendResetEmailDirect.setEnabled(true);
+                        btnConfirm.setEnabled(true);
+                        btnCancel.setEnabled(true);
+                        pbLoading.setVisibility(View.GONE);
+                        Toast.makeText(UserManagementActivity.this, "Lỗi gửi email: " + sendErr, Toast.LENGTH_LONG).show();
+                    }
+                });
+            });
+        }
 
         etNewPassword.addTextChangedListener(new TextWatcher() {
             @Override
@@ -610,6 +642,7 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
             // Khóa giao diện & Hiển thị trạng thái đang tải
             btnConfirm.setEnabled(false);
             btnCancel.setEnabled(false);
+            if (btnSendResetEmailDirect != null) btnSendResetEmailDirect.setEnabled(false);
             etNewPassword.setEnabled(false);
             etConfirmPassword.setEnabled(false);
             pbLoading.setVisibility(View.VISIBLE);
@@ -627,38 +660,41 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
                 @Override
                 public void onError(String errorMessage) {
                     if (isFinishing() || isDestroyed()) return;
-                    btnConfirm.setEnabled(true);
-                    btnCancel.setEnabled(true);
-                    etNewPassword.setEnabled(true);
-                    etConfirmPassword.setEnabled(true);
-                    pbLoading.setVisibility(View.GONE);
-                    tvConfirmText.setText(R.string.btn_confirm);
-                    tilNewPassword.setError(errorMessage);
 
+                    // Nếu dự án chưa deploy Cloud Function (gói Spark), tự động fallback sang gửi Email đặt lại mật khẩu an toàn
                     if (errorMessage != null && errorMessage.contains("Chưa deploy Cloud Function")) {
-                        new MaterialAlertDialogBuilder(UserManagementActivity.this)
-                                .setTitle("Chưa Deploy Cloud Function")
-                                .setMessage("Hàm đổi mật khẩu trực tiếp 'adminSetUserPassword' chưa được deploy lên máy chủ Firebase (yêu cầu gói Blaze để chạy server function).\n\nBạn có muốn gửi email liên kết đặt lại mật khẩu trực tiếp tới hộp thư (" + email + ") của thành viên thay thế không?")
-                                .setPositiveButton("Gửi Email Khôi Phục", (d, which) -> {
-                                    Toast.makeText(UserManagementActivity.this, "Đang gửi email đặt lại mật khẩu...", Toast.LENGTH_SHORT).show();
-                                    AuthRepository.getInstance().sendPasswordResetEmail(email, new AuthRepository.ActionCallback() {
-                                        @Override
-                                        public void onSuccess() {
-                                            if (isFinishing() || isDestroyed()) return;
-                                            Toast.makeText(UserManagementActivity.this, "Đã gửi email đặt lại mật khẩu đến " + email + " thành công!", Toast.LENGTH_LONG).show();
-                                            dialog.dismiss();
-                                        }
+                        Toast.makeText(UserManagementActivity.this, "Đang gửi email đặt lại mật khẩu tới " + email + "...", Toast.LENGTH_SHORT).show();
+                        AuthRepository.getInstance().sendPasswordResetEmail(email, new AuthRepository.ActionCallback() {
+                            @Override
+                            public void onSuccess() {
+                                if (isFinishing() || isDestroyed()) return;
+                                UserRepository.getInstance().recordAdminPasswordReset(user.getUid(), null);
+                                dialog.dismiss();
+                                showResetEmailSuccessDialog(user);
+                            }
 
-                                        @Override
-                                        public void onError(String sendErr) {
-                                            if (isFinishing() || isDestroyed()) return;
-                                            Toast.makeText(UserManagementActivity.this, "Lỗi gửi email: " + sendErr, Toast.LENGTH_LONG).show();
-                                        }
-                                    });
-                                })
-                                .setNegativeButton("Đóng", null)
-                                .show();
+                            @Override
+                            public void onError(String sendErr) {
+                                if (isFinishing() || isDestroyed()) return;
+                                btnConfirm.setEnabled(true);
+                                btnCancel.setEnabled(true);
+                                if (btnSendResetEmailDirect != null) btnSendResetEmailDirect.setEnabled(true);
+                                etNewPassword.setEnabled(true);
+                                etConfirmPassword.setEnabled(true);
+                                pbLoading.setVisibility(View.GONE);
+                                tvConfirmText.setText(R.string.btn_confirm);
+                                Toast.makeText(UserManagementActivity.this, "Lỗi gửi email: " + sendErr, Toast.LENGTH_LONG).show();
+                            }
+                        });
                     } else {
+                        btnConfirm.setEnabled(true);
+                        btnCancel.setEnabled(true);
+                        if (btnSendResetEmailDirect != null) btnSendResetEmailDirect.setEnabled(true);
+                        etNewPassword.setEnabled(true);
+                        etConfirmPassword.setEnabled(true);
+                        pbLoading.setVisibility(View.GONE);
+                        tvConfirmText.setText(R.string.btn_confirm);
+                        tilNewPassword.setError(errorMessage);
                         Toast.makeText(UserManagementActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                     }
                 }
@@ -706,6 +742,21 @@ public class UserManagementActivity extends AppCompatActivity implements UserMan
         btnDone.setOnClickListener(v -> successDialog.dismiss());
 
         successDialog.show();
+    }
+
+    private void showResetEmailSuccessDialog(User user) {
+        if (isFinishing() || isDestroyed()) return;
+
+        String name = (user.getFullName() != null && !user.getFullName().trim().isEmpty())
+                ? user.getFullName()
+                : (user.getEmail() != null ? user.getEmail() : "thành viên");
+        String email = user.getEmail() != null ? user.getEmail() : "";
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Cấp Lại Mật Khẩu Thành Công")
+                .setMessage("Hệ thống đã gửi liên kết đặt lại mật khẩu chính thức từ Firebase Authentication đến hộp thư (" + email + ") của thành viên " + name + " thành công!\n\nThành viên chỉ cần mở email để xác nhận mật khẩu mới một cách an toàn theo tiêu chuẩn bảo mật của Google.")
+                .setPositiveButton("Đã hiểu", null)
+                .show();
     }
 
     private void showLockUserModal(User user) {
