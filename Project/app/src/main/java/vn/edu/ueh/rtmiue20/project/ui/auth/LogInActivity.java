@@ -112,6 +112,16 @@ public class LogInActivity extends AppCompatActivity {
 
         authRepository = AuthRepository.getInstance();
 
+        // Kiểm tra tự động đăng nhập nếu "Ghi nhớ đăng nhập" được chọn
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        boolean rememberMe = prefs.getBoolean(KEY_REMEMBER_ME, false);
+        if (authRepository.isLoggedIn() && rememberMe) {
+            navigateToDashboard();
+            return;
+        } else if (authRepository.isLoggedIn()) {
+            authRepository.logout();
+        }
+
         initViews();
         setupGoogleSignIn();
         setupRegisterText();
