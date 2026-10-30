@@ -150,39 +150,43 @@ public class RegisterActivity extends AppCompatActivity {
 
         btnGoogleRegister.setEnabled(false);
 
-        credentialManager.getCredentialAsync(
-                this,
-                request,
-                new CancellationSignal(),
-                ContextCompat.getMainExecutor(this),
-                new CredentialManagerCallback<>() {
-                    @Override
-                    public void onResult(GetCredentialResponse result) {
-                        btnGoogleRegister.setEnabled(true);
-                        handleGoogleSignInResponse(result);
-                    }
+        try {
+            credentialManager.getCredentialAsync(
+                    this,
+                    request,
+                    new CancellationSignal(),
+                    ContextCompat.getMainExecutor(this),
+                    new CredentialManagerCallback<>() {
+                        @Override
+                        public void onResult(GetCredentialResponse result) {
+                            btnGoogleRegister.setEnabled(true);
+                            handleGoogleSignInResponse(result);
+                        }
 
-                    @Override
-                    public void onError(@NonNull GetCredentialException e) {
-                        btnGoogleRegister.setEnabled(true);
-                        Log.e("RegisterActivity", "Google sign-in error [" + e.getClass().getSimpleName() + "] type=" + e.getType() + " msg=" + e.getMessage(), e);
-                        if (e instanceof GetCredentialCancellationException) {
-                            String reason = e.getMessage() != null ? e.getMessage() : "";
-                            // Người dùng chủ động đóng hộp thoại -> không làm gì
-                            if (reason.toLowerCase().contains("cancelled by the user")) {
+                        @Override
+                        public void onError(@NonNull GetCredentialException e) {
+                            btnGoogleRegister.setEnabled(true);
+                            Log.e("RegisterActivity", "Google sign-in error [" + e.getClass().getSimpleName() + "] type=" + e.getType() + " msg=" + e.getMessage(), e);
+                            if (e instanceof GetCredentialCancellationException) {
+                                String reason = e.getMessage() != null ? e.getMessage() : "";
+                                // Người dùng chủ động đóng hộp thoại -> không làm gì
+                                if (reason.toLowerCase().contains("cancelled by the user")) {
+                                    return;
+                                }
+                                // Các trường hợp còn lại (VD: "[16] Account reauth failed") -> chuyển sang luồng dự phòng
+                                startLegacyGoogleSignIn(reason);
                                 return;
                             }
-                            // Các trường hợp còn lại (VD: "[16] Account reauth failed") -> chuyển sang luồng dự phòng
-                            startLegacyGoogleSignIn(reason);
-                            return;
+                            // Lỗi khác của Credential Manager (VD: NoCredentialException) -> thử luồng dự phòng
+                            startLegacyGoogleSignIn(e.getMessage());
                         }
-                        // Lỗi khác của Credential Manager (VD: NoCredentialException) -> thử luồng dự phòng
-                        startLegacyGoogleSignIn(e.getMessage());
-
-
                     }
-                }
-        );
+            );
+        } catch (Exception e) {
+            btnGoogleRegister.setEnabled(true);
+            Log.e("RegisterActivity", "Lỗi CredentialManager: " + e.getMessage(), e);
+            startLegacyGoogleSignIn(e.getMessage());
+        }
     }
 
     /**

@@ -47,6 +47,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import vn.edu.ueh.rtmiue20.project.R;
 import vn.edu.ueh.rtmiue20.project.data.model.Book;
@@ -79,6 +81,7 @@ public class CreatePostActivity extends AppCompatActivity {
     private String editBookId = null;
     private Book existingBook = null;
     private boolean hasLoadedExistingBook = false;
+    private boolean isRestoringLocation = false;
 
     // Quản lý việc chọn ảnh và hiển thị preview
     private final ActivityResultLauncher<String[]> pickImageLauncher = registerForActivityResult(
@@ -156,6 +159,26 @@ public class CreatePostActivity extends AppCompatActivity {
         spWard = findViewById(R.id.spWard);
     }
 
+    /**
+     * Tách bỏ phần thông tin giao dịch (Hình thức, Giá, Vị trí, Sách muốn đổi)
+     * vốn được append tự động vào cuối description khi lưu.
+     * Tránh triệt để lỗi nhân bản nội dung (Text Duplication) khi mở form chỉnh sửa bài đăng.
+     */
+    public static String stripAppendedMetadata(String desc) {
+        if (desc == null || desc.trim().isEmpty()) {
+            return "";
+        }
+        String normalized = desc.replace("\r\n", "\n").replace("\r", "\n");
+        Pattern pattern = Pattern.compile(
+                "(?i)(?:^|\\n)\\s*(Hình thức:|- Sách muốn đổi:|- Giá:|- Vị trí:)"
+        );
+        Matcher matcher = pattern.matcher(normalized);
+        if (matcher.find()) {
+            return normalized.substring(0, matcher.start()).trim();
+        }
+        return normalized.trim();
+    }
+
     private void loadBookForEditing(String id) {
         if (tvHeaderCreatePost != null) {
             tvHeaderCreatePost.setText("Chỉnh sửa thông tin sách");
@@ -173,12 +196,9 @@ public class CreatePostActivity extends AppCompatActivity {
                 if (book.getAuthor() != null) etAuthor.setText(book.getAuthor());
 
                 String desc = book.getDescription() != null ? book.getDescription() : "";
-                int splitIdx = desc.indexOf("\n\nHình thức:");
-                if (splitIdx >= 0) {
-                    etDescription.setText(desc.substring(0, splitIdx).trim());
-                } else {
-                    etDescription.setText(desc);
-                }
+                // Chỉ lấy nội dung mô tả thực tế của người dùng, loại bỏ metadata giao dịch đã bị append
+                String cleanDesc = stripAppendedMetadata(desc);
+                etDescription.setText(cleanDesc);
 
                 if (book.getImageUrl() != null && !book.getImageUrl().isEmpty()) {
                     layoutAddImagePlaceholder.setVisibility(View.GONE);
@@ -210,10 +230,48 @@ public class CreatePostActivity extends AppCompatActivity {
                     etConditionOther.setText(cond);
                 }
 
-                if ("exchanging".equalsIgnoreCase(book.getStatus()) || desc.contains("Trao đổi sách khác")) {
+                if ("exchanging".equalsIgnoreCase(book.getStatus()) || desc.contains("Trao đổi sách khác") || desc.contains("Đổi sách")) {
                     rgSharingType.check(R.id.rbShareExchange);
+                    Matcher exMatcher = Pattern.compile(
+                            "(?i)-\\s*Sách muốn đổi:\\s*([^(]+?)(?:\\s*\\(Tác giả:\\s*([^)]+)\\))?(?:\\r?\\n|$)"
+                    ).matcher(desc);
+                    if (exMatcher.find()) {
+                        String exT = exMatcher.group(1);
+                        String exA = exMatcher.group(2);
+                        if (exT != null && !exT.trim().isEmpty() && !"Sách cùng thể loại".equalsIgnoreCase(exT.trim())) {
+                            if (etExchangeBookTitle != null) etExchangeBookTitle.setText(exT.trim());
+                        }
+                        if (exA != null && !exA.trim().isEmpty() && !"Tùy chọn".equalsIgnoreCase(exA.trim())) {
+                            if (etExchangeBookAuthor != null) etExchangeBookAuthor.setText(exA.trim());
+                        }
+                    }
                 } else if (desc.contains("Phí tượng trưng")) {
                     rgSharingType.check(R.id.rbShareFee);
+                    Matcher priceMatcher = Pattern.compile(
+                            "(?i)-\\s*Giá:\\s*([0-9.,]+)"
+                    ).matcher(desc);
+                    if (priceMatcher.find()) {
+                        String p = priceMatcher.group(1);
+                        if (p != null && etPrice != null) {
+                            etPrice.setText(p.trim());
+                        }
+                    }
+
+                    Matcher locMatcher = Pattern.compile(
+                            "(?i)-\\s*Vị trí:\\s*([^\r\n]+)"
+                    ).matcher(desc);
+                    if (locMatcher.find()) {
+                        String locStr = locMatcher.group(1);
+                        if (locStr != null) {
+                            String[] parts = locStr.split(",");
+                            if (parts.length >= 3) {
+                                String targetWard = parts[0].trim();
+                                String targetDistrict = parts[1].trim();
+                                String targetCity = parts[2].trim();
+                                restoreLocationSelection(targetCity, targetDistrict, targetWard);
+                            }
+                        }
+                    }
                 } else {
                     rgSharingType.check(R.id.rbShareFree);
                 }
@@ -270,8 +328,9 @@ public class CreatePostActivity extends AppCompatActivity {
             spCity.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    if (isRestoringLocation) return;
                     String selectedCity = cities.get(position);
-                    updateDistrictsForCity(selectedCity, null);
+                    updateDistrictsForCity(selectedCity, null, null);
                 }
 
                 @Override
@@ -280,7 +339,31 @@ public class CreatePostActivity extends AppCompatActivity {
         }
     }
 
+    private void restoreLocationSelection(String targetCity, String targetDistrict, String targetWard) {
+        List<String> cities = LocationHelper.getCities();
+        if (spCity != null && targetCity != null) {
+            for (int i = 0; i < cities.size(); i++) {
+                if (cities.get(i).equalsIgnoreCase(targetCity)
+                        || cities.get(i).toLowerCase().contains(targetCity.toLowerCase())
+                        || targetCity.toLowerCase().contains(cities.get(i).toLowerCase())) {
+                    try {
+                        isRestoringLocation = true;
+                        spCity.setSelection(i);
+                        updateDistrictsForCity(cities.get(i), targetDistrict, targetWard);
+                    } finally {
+                        isRestoringLocation = false;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     private void updateDistrictsForCity(String city, String targetDistrict) {
+        updateDistrictsForCity(city, targetDistrict, null);
+    }
+
+    private void updateDistrictsForCity(String city, String targetDistrict, String targetWard) {
         List<String> districts = LocationHelper.getDistrictsForCity(city);
         ArrayAdapter<String> districtAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, districts);
         districtAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -290,9 +373,10 @@ public class CreatePostActivity extends AppCompatActivity {
             spDistrict.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    if (isRestoringLocation) return;
                     if (position < currentDistricts.size()) {
                         String selectedDistrict = currentDistricts.get(position);
-                        updateWardsForDistrict(selectedDistrict);
+                        updateWardsForDistrict(selectedDistrict, null);
                     }
                 }
 
@@ -302,8 +386,11 @@ public class CreatePostActivity extends AppCompatActivity {
 
             if (targetDistrict != null) {
                 for (int i = 0; i < districts.size(); i++) {
-                    if (districts.get(i).toLowerCase().contains(targetDistrict.toLowerCase()) || targetDistrict.toLowerCase().contains(districts.get(i).toLowerCase())) {
+                    if (districts.get(i).equalsIgnoreCase(targetDistrict)
+                            || districts.get(i).toLowerCase().contains(targetDistrict.toLowerCase())
+                            || targetDistrict.toLowerCase().contains(districts.get(i).toLowerCase())) {
                         spDistrict.setSelection(i);
+                        updateWardsForDistrict(districts.get(i), targetWard);
                         break;
                     }
                 }
@@ -312,11 +399,25 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void updateWardsForDistrict(String district) {
+        updateWardsForDistrict(district, null);
+    }
+
+    private void updateWardsForDistrict(String district, String targetWard) {
         List<String> wards = LocationHelper.getWardsForDistrict(district);
         ArrayAdapter<String> wardAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, wards);
         wardAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         if (spWard != null) {
             spWard.setAdapter(wardAdapter);
+            if (targetWard != null) {
+                for (int i = 0; i < wards.size(); i++) {
+                    if (wards.get(i).equalsIgnoreCase(targetWard)
+                            || wards.get(i).toLowerCase().contains(targetWard.toLowerCase())
+                            || targetWard.toLowerCase().contains(wards.get(i).toLowerCase())) {
+                        spWard.setSelection(i);
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -455,7 +556,8 @@ public class CreatePostActivity extends AppCompatActivity {
     private void submitPost() {
         String title = etTitle.getText().toString().trim();
         String author = etAuthor.getText().toString().trim();
-        String description = etDescription.getText().toString().trim();
+        // Lọc sạch mọi metadata cũ nếu người dùng dán hoặc sửa từ nội dung cũ
+        String description = stripAppendedMetadata(etDescription.getText().toString());
 
         if (title.isEmpty() || author.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập tên sách và tác giả", Toast.LENGTH_SHORT).show();
@@ -484,6 +586,8 @@ public class CreatePostActivity extends AppCompatActivity {
         final String finalDesc;
         int checkedShareId = rgSharingType.getCheckedRadioButtonId();
 
+        String descPrefix = description.isEmpty() ? "" : description + "\n\n";
+
         if (checkedShareId == R.id.rbShareExchange) {
             String exTitle = etExchangeBookTitle != null ? etExchangeBookTitle.getText().toString().trim() : "";
             String exAuthor = etExchangeBookAuthor != null ? etExchangeBookAuthor.getText().toString().trim() : "";
@@ -495,7 +599,7 @@ public class CreatePostActivity extends AppCompatActivity {
             }
             sharingType = "Trao đổi sách khác";
             bookStatus = "exchanging";
-            finalDesc = description + "\n\nHình thức: " + sharingType + "\n- Sách muốn đổi: " + exTitle + " (Tác giả: " + exAuthor + ")";
+            finalDesc = descPrefix + "Hình thức: " + sharingType + "\n- Sách muốn đổi: " + exTitle + " (Tác giả: " + exAuthor + ")";
         } else if (checkedShareId == R.id.rbShareFee) {
             String priceStr = etPrice.getText().toString().trim();
             if (priceStr.isEmpty()) {
@@ -508,9 +612,9 @@ public class CreatePostActivity extends AppCompatActivity {
             String ward = spWard != null && spWard.getSelectedItem() != null ? spWard.getSelectedItem().toString() : "";
             sharingType = "Phí tượng trưng / Giá rẻ";
             bookStatus = "available";
-            finalDesc = description + "\n\nHình thức: " + sharingType + "\n- Giá: " + priceStr + " VNĐ\n- Vị trí: " + ward + ", " + district + ", " + city;
+            finalDesc = descPrefix + "Hình thức: " + sharingType + "\n- Giá: " + priceStr + " VNĐ\n- Vị trí: " + ward + ", " + district + ", " + city;
         } else {
-            finalDesc = description + "\n\nHình thức: " + sharingType;
+            finalDesc = descPrefix + "Hình thức: " + sharingType;
         }
 
         String finalCondition = condition;

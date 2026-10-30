@@ -5,8 +5,10 @@ import com.google.firebase.firestore.Exclude;
 public class Comment {
 
     private String commentId;
+    private String bookId; // Khóa ngoại REF tới document trong collection books
     private String userId;
     private String userName;
+    private String userAvatar;
     private String content;
     private Long createdAt;
     private Long updatedAt; // Thêm để theo dõi thời gian chỉnh sửa (Update)
@@ -14,13 +16,23 @@ public class Comment {
     public Comment() {
     }
 
-    public Comment(String commentId, String userId, String userName, String content, Long createdAt) {
+    public Comment(String commentId, String bookId, String userId, String userName, String userAvatar, String content, Long createdAt) {
         this.commentId = commentId;
+        this.bookId = bookId;
         this.userId = userId;
         this.userName = userName;
+        this.userAvatar = userAvatar;
         this.content = content;
         this.createdAt = createdAt;
         this.updatedAt = null;
+    }
+
+    public Comment(String commentId, String userId, String userName, String userAvatar, String content, Long createdAt) {
+        this(commentId, null, userId, userName, userAvatar, content, createdAt);
+    }
+
+    public Comment(String commentId, String userId, String userName, String content, Long createdAt) {
+        this(commentId, null, userId, userName, "", content, createdAt);
     }
 
     @Exclude
@@ -31,6 +43,14 @@ public class Comment {
     @Exclude
     public void setCommentId(String commentId) {
         this.commentId = commentId;
+    }
+
+    public String getBookId() {
+        return bookId;
+    }
+
+    public void setBookId(String bookId) {
+        this.bookId = bookId;
     }
 
     public String getUserId() {
@@ -47,6 +67,14 @@ public class Comment {
 
     public void setUserName(String userName) {
         this.userName = userName;
+    }
+
+    public String getUserAvatar() {
+        return userAvatar;
+    }
+
+    public void setUserAvatar(String userAvatar) {
+        this.userAvatar = userAvatar;
     }
 
     public String getContent() {
