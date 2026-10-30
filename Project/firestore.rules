@@ -172,7 +172,7 @@ service cloud.firestore {
     }
 
     // ==========================================
-    // 6. FEEDBACKS COLLECTION (Góp ý & Báo lỗi từ người dùng)
+    // 7. FEEDBACKS COLLECTION (Góp ý & Báo lỗi từ người dùng)
     // ==========================================
     match /feedbacks/{feedbackId} {
       allow read: if isAdmin();
