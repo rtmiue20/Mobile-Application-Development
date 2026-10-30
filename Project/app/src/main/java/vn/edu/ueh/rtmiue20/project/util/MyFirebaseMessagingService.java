@@ -52,6 +52,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             body = remoteMessage.getData().get("body");
         }
 
+        // Yêu cầu 1: Hiển thị thông báo dạng Toast message khi nhận thông báo
+        final String displayTitle = title;
+        final String displayBody = body;
+        new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+            android.widget.Toast.makeText(getApplicationContext(), "🔔 " + displayTitle + "\n" + displayBody, android.widget.Toast.LENGTH_LONG).show();
+        });
+
         sendNotification(title, body);
     }
 

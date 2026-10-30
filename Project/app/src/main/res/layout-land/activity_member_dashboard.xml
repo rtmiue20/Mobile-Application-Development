@@ -69,17 +69,38 @@
             android:textStyle="bold"
             android:visibility="gone" />
 
-        <ImageView
-            android:id="@+id/btnNotifications"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:contentDescription="Thông báo"
-            android:focusable="true"
-            android:padding="6dp"
-            android:src="@drawable/ic_notifications"
-            app:tint="@color/text_primary" />
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/btnNotifications"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="Thông báo"
+                android:focusable="true"
+                android:padding="6dp"
+                android:src="@drawable/ic_notifications"
+                app:tint="@color/text_primary" />
+
+            <TextView
+                android:id="@+id/tvNotificationBadge"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="top|end"
+                android:layout_marginEnd="2dp"
+                android:layout_marginTop="2dp"
+                android:background="@drawable/bg_badge_locked"
+                android:backgroundTint="#EF4444"
+                android:gravity="center"
+                android:text="1"
+                android:textColor="@color/white"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <ImageView
             android:id="@+id/btnGoToProfile"

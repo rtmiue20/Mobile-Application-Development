@@ -117,6 +117,12 @@ public class RequestRepository {
                         }
                         actionSuccess.setValue(true);
 
+                        if (appContext != null) {
+                            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                                android.widget.Toast.makeText(appContext, "🔔 Đã gửi yêu cầu trao đổi sách thành công (Thông báo tức thì)!", android.widget.Toast.LENGTH_SHORT).show();
+                            });
+                        }
+
                         // --- GỌI FCM: TÌM TOKEN CHỦ SÁCH VÀ BẮN THÔNG BÁO ---
                         if (request.getOwnerId() != null && !request.getOwnerId().isEmpty()) {
                             firestore.collection("users").document(request.getOwnerId()).get()
