@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:text="Trung tâm trợ giúp &amp; Điều khoản"
         android:textColor="@color/text_primary"
-        android:textSize="18sp"
+        android:textSize="20sp"
         android:textStyle="bold" />
 
     <TextView
@@ -21,123 +21,442 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="16dp"
-        android:text="Chào mừng bạn đến với cộng đồng BookShare UEH!"
+        android:text="Giải đáp thắc mắc, hỗ trợ kỹ thuật và quy tắc cộng đồng UEH"
         android:textColor="@color/text_secondary"
         android:textSize="13sp" />
 
-    <!-- Block 1: Tinh thần chia sẻ -->
-    <com.google.android.material.card.MaterialCardView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        app:cardBackgroundColor="@color/card_bg"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="0dp"
-        app:strokeColor="#E2E8F0"
-        app:strokeWidth="1dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="never">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="14dp">
+            android:orientation="vertical">
 
+            <!-- Tiêu đề mục: CÂU HỎI THƯỜNG GẶP -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1. Tinh thần chia sẻ"
-                android:textColor="@color/primary_dark_green"
-                android:textSize="14sp"
+                android:layout_marginBottom="8dp"
+                android:text="CÂU HỎI THƯỜNG GẶP (FAQ)"
+                android:textColor="@color/secondary_green"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <!-- FAQ 1 -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardFaq1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:lineSpacingExtra="3dp"
-                android:text="Tặng miễn phí hoặc trao đổi sách văn minh, tôn trọng tác quyền."
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                android:layout_marginBottom="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardBackgroundColor="@color/card_bg"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp">
 
-    <!-- Block 2: Điểm hẹn an toàn -->
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="10dp"
-        app:cardBackgroundColor="@color/card_bg"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="0dp"
-        app:strokeColor="#E2E8F0"
-        app:strokeWidth="1dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="14dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Làm thế nào để nhận hoặc trao đổi sách?"
+                            android:textColor="@color/primary_dark_green"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <ImageView
+                            android:id="@+id/ivFaqArrow1"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_arrow_forward"
+                            app:tint="@color/text_secondary" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvFaqAnswer1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:lineSpacingExtra="3dp"
+                        android:text="1. Bấm vào cuốn sách bạn quan tâm trên trang chủ.\n2. Bấm nút 'Gửi yêu cầu nhận sách' và viết lời nhắn.\n3. Sau khi chủ sách duyệt, bạn mở mục 'Quản lý yêu cầu' để xem mã QR và hẹn gặp trực tiếp tại trường UEH."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- FAQ 2 -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardFaq2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardBackgroundColor="@color/card_bg"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Điểm hẹn giao nhận diễn ra ở đâu?"
+                            android:textColor="@color/primary_dark_green"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <ImageView
+                            android:id="@+id/ivFaqArrow2"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_arrow_forward"
+                            app:tint="@color/text_secondary" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvFaqAnswer2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:lineSpacingExtra="3dp"
+                        android:text="Cộng đồng BookShare ưu tiên giao nhận tại khuôn viên các cơ sở UEH, với điểm hẹn mặc định là Cơ sở B (279 Nguyễn Tri Phương, Q.10). Bạn có thể xem hoặc cập nhật trong phần Chỉnh sửa hồ sơ cá nhân."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- FAQ 3 -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardFaq3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardBackgroundColor="@color/card_bg"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Điểm uy tín (Reputation Score) là gì?"
+                            android:textColor="@color/primary_dark_green"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <ImageView
+                            android:id="@+id/ivFaqArrow3"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_arrow_forward"
+                            app:tint="@color/text_secondary" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvFaqAnswer3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:lineSpacingExtra="3dp"
+                        android:text="Mỗi khi hoàn tất một giao dịch và nhận được đánh giá tích cực từ bạn đọc, điểm uy tín của bạn sẽ tăng lên. Thành viên có điểm uy tín cao sẽ được hệ thống ưu tiên khi xin nhận các đầu sách giáo trình quý hiếm."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Tiêu đề mục: HỖ TRỢ & LIÊN HỆ -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="2. Điểm hẹn an toàn"
-                android:textColor="@color/primary_dark_green"
-                android:textSize="14sp"
+                android:layout_marginBottom="8dp"
+                android:text="KÊNH HỖ TRỢ &amp; ĐÓNG GÓP Ý KIẾN"
+                android:textColor="@color/secondary_green"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <!-- Email hỗ trợ -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardContactEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:lineSpacingExtra="3dp"
-                android:text="Khuyến khích giao nhận trực tiếp tại khuôn viên UEH Cơ sở B (279 Nguyễn Tri Phương, Q.10)."
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                android:layout_marginBottom="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardBackgroundColor="@color/card_bg"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp">
 
-    <!-- Block 3: Giữ gìn sách -->
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="@color/card_bg"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="0dp"
-        app:strokeColor="#E2E8F0"
-        app:strokeWidth="1dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="14dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="14dp">
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginEnd="12dp"
+                        android:src="@drawable/ic_mail"
+                        app:tint="@color/secondary_green" />
 
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Gửi Email hỗ trợ kỹ thuật"
+                            android:textColor="@color/primary_dark_green"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="hotro.bookshare@ueh.edu.vn"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_db_pill_green"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:text="Gửi thư"
+                        android:textColor="@color/secondary_green"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Góp ý / Báo lỗi -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSendFeedback"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardBackgroundColor="@color/card_bg"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="14dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginEnd="12dp"
+                        android:src="@drawable/ic_edit_note"
+                        app:tint="@color/secondary_green" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Đóng góp ý kiến &amp; Báo lỗi"
+                            android:textColor="@color/primary_dark_green"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Góp ý để hoàn thiện trải nghiệm ứng dụng"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_db_pill_amber"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:text="Góp ý"
+                        android:textColor="#D97706"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Tiêu đề mục: ĐIỀU KHOẢN & QUY TẮC CỘNG ĐỒNG -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="3. Giữ gìn sách"
-                android:textColor="@color/primary_dark_green"
-                android:textSize="14sp"
+                android:layout_marginBottom="8dp"
+                android:text="QUY TẮC CỘNG ĐỒNG BOOKSHARE UEH"
+                android:textColor="@color/secondary_green"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <!-- Card Điều khoản tóm tắt -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:lineSpacingExtra="3dp"
-                android:text="Hãy trân trọng cuốn sách nhận được và tiếp tục lan tỏa cho bạn đọc tiếp theo."
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/card_bg"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp">
 
-    <!-- Button -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🌱 1. Tinh thần chia sẻ văn minh"
+                        android:textColor="@color/primary_dark_green"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginBottom="10dp"
+                        android:text="Tặng miễn phí hoặc trao đổi sách trung thực, tôn trọng tác quyền và không buôn bán gian lận."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginBottom="10dp"
+                        android:background="#F1F5F9" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📍 2. Điểm hẹn giao nhận an toàn"
+                        android:textColor="@color/primary_dark_green"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginBottom="10dp"
+                        android:text="Khuyến khích gặp mặt tại khuôn viên trường UEH vào ban ngày, kiểm tra sách cẩn thận trước khi xác nhận hoàn tất."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginBottom="10dp"
+                        android:background="#F1F5F9" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📖 3. Trân trọng và giữ gìn sách"
+                        android:textColor="@color/primary_dark_green"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Hãy giữ gìn cuốn sách bạn nhận được cẩn thận và tiếp tục chia sẻ cho thế hệ sinh viên tiếp theo."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Button Đóng -->
     <TextView
         android:id="@+id/btnDismissHelp"
         android:layout_width="match_parent"
         android:layout_height="46dp"
+        android:layout_marginTop="12dp"
         android:background="@drawable/bg_btn_primary"
         android:clickable="true"
         android:focusable="true"

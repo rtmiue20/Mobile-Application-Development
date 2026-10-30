@@ -2,7 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // =========================================================================
+    // HELPER FUNCTIONS (Hàm tiện ích kiểm tra quyền & trạng thái tài khoản)
+    // =========================================================================
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -29,9 +31,11 @@ service cloud.firestore {
       );
     }
 
-    // 1. Collection Users (Quản lý người dùng)
+    // =========================================================================
+    // 1. Collection Users (Quản lý hồ sơ người dùng)
+    // =========================================================================
     match /users/{userId} {
-      allow read: if true; // Cho phép xem thông tin hồ sơ/chủ sách cả khi chưa đăng nhập
+      allow read: if true; // Cho phép xem thông tin hồ sơ/chủ sách
 
       // Khi đăng ký: Chỉ chính chủ được tạo, chặn leo quyền admin và tự đặt status khác 'active'
       allow create: if isAuthenticated() && (
@@ -43,9 +47,8 @@ service cloud.firestore {
 
       // Cập nhật tài khoản:
       // - Admin được toàn quyền cập nhật (bao gồm khóa/mở khóa)
-      // - Chủ tài khoản được sửa hồ sơ, nhưng KHÔNG ĐƯỢC tự nâng role lên admin hoặc sửa status (tự mở khóa)
-      // - CẤM tài khoản đã bị khóa (locked/banned) cập nhật hồ sơ hoặc đánh giá người khác
-      // - Người dùng khác CHỈ ĐƯỢC cập nhật ratingAverage, ratingCount, reputationScore khi đánh giá (dùng hasOnly)
+      // - Chủ tài khoản được sửa hồ sơ, nhưng KHÔNG ĐƯỢC tự nâng role lên admin hoặc sửa status
+      // - Người dùng khác CHỈ ĐƯỢC cập nhật ratingAverage, ratingCount, reputationScore khi đánh giá
       allow update: if isAdmin() ||
         (isOwner(userId) && isNotLocked() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status'])) ||
         (isNotLocked() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ratingAverage', 'ratingCount', 'reputationScore']));
@@ -53,7 +56,9 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // =========================================================================
     // 2. Collection Books (Quản lý bài đăng sách)
+    // =========================================================================
     match /books/{bookId} {
       allow read: if true; // Cho phép duyệt danh sách sách
 
@@ -64,10 +69,7 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid
       );
 
-      // Cập nhật bài đăng:
-      // - CẤM tài khoản bị locked thao tác
-      // - Chủ sách hoặc Admin được quyền sửa sách
-      // - Người khác CHỈ ĐƯỢC cập nhật lượt xem (viewCount) và/hoặc lượt thích (favoriteCount)
+      // Cập nhật bài đăng: Chủ sách, Admin hoặc người dùng tăng lượt viewCount/favoriteCount
       allow update: if isAdmin() || (
         isNotLocked() && (
           request.auth.uid == resource.data.ownerId || 
@@ -85,9 +87,10 @@ service cloud.firestore {
       );
     }
 
-    // 3. Collection Favorites (Yêu thích sách - FR09)
+    // =========================================================================
+    // 3. Collection Favorites (Yêu thích sách)
+    // =========================================================================
     match /favorites/{favoriteId} {
-      // Đọc: Chỉ chính chủ mục yêu thích (không bị khóa) hoặc Admin mới được đọc
       allow read: if isAdmin() || (
         isNotLocked() && (
           (resource != null && resource.data.userId == request.auth.uid) ||
@@ -95,18 +98,18 @@ service cloud.firestore {
         )
       );
 
-      // Tạo: Chỉ chính chủ không bị khóa được thêm sách vào danh sách yêu thích
       allow create: if (isAdmin() || isNotLocked()) && request.resource.data.userId == request.auth.uid;
 
-      // Sửa/Xóa: Chỉ chính chủ không bị khóa hoặc Admin
       allow update, delete: if isAdmin() || (
         isNotLocked() && resource != null && resource.data.userId == request.auth.uid
       );
     }
 
-    // 4. Collection Requests (Quản lý yêu cầu nhận sách / trao đổi - FR10)
+    // =========================================================================
+    // 4. Collection Requests (Quản lý yêu cầu nhận sách / trao đổi)
+    // =========================================================================
     match /requests/{requestId} {
-      // Đọc: Chỉ người gửi yêu cầu (requester), chủ sách (owner) không bị khóa hoặc Admin mới được đọc
+      // Đọc: Chỉ người xin sách (requester), chủ sách (owner) không bị khóa hoặc Admin
       allow read: if isAdmin() || (
         isNotLocked() && (
           resource.data.requesterId == request.auth.uid ||
@@ -114,10 +117,10 @@ service cloud.firestore {
         )
       );
 
-      // Tạo yêu cầu: Chỉ người gửi yêu cầu không bị khóa được tạo
+      // Tạo yêu cầu: Chỉ người xin sách không bị khóa được tạo
       allow create: if (isAdmin() || isNotLocked()) && request.resource.data.requesterId == request.auth.uid;
 
-      // Cập nhật hoặc Xóa: Chỉ người gửi yêu cầu, chủ sách không bị khóa hoặc Admin
+      // Cập nhật hoặc Xóa: Chỉ người xin, chủ sách không bị khóa hoặc Admin
       allow update, delete: if isAdmin() || (
         isNotLocked() && (
           resource.data.requesterId == request.auth.uid ||
@@ -126,20 +129,22 @@ service cloud.firestore {
       );
     }
 
+    // =========================================================================
     // 5. Collection Reviews (Đánh giá uy tín thành viên)
+    // =========================================================================
     match /reviews/{reviewId} {
       allow read: if true;
       allow create: if isNotLocked() && request.auth.uid == request.resource.data.reviewerId;
       allow update, delete: if isAdmin() || (isNotLocked() && request.auth.uid == resource.data.reviewerId);
     }
 
-    // 6. Collection Comments (Bình luận sách - Cùng cấp với books, favorites, requests, users)
-    // Khóa ngoại: bookId REF tới document trong collection books
+    // =========================================================================
+    // 6. Collection Comments (Bình luận sách)
+    // =========================================================================
     match /comments/{commentId} {
-      // Đọc: Cho phép đọc bình luận công khai
       allow read: if true;
 
-      // Tạo: Đăng nhập, không bị khóa, chính chủ userId, có trường khóa ngoại bookId hợp lệ trỏ tới sách tồn tại, nội dung hợp lệ
+      // Tạo: Đăng nhập, không bị khóa, chính chủ userId, nội dung hợp lệ <= 1000 ký tự
       allow create: if isNotLocked() &&
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.bookId is string &&
@@ -148,14 +153,14 @@ service cloud.firestore {
         request.resource.data.content.size() > 0 &&
         request.resource.data.content.size() <= 1000;
 
-      // Sửa: Chỉ tác giả bình luận không bị khóa hoặc Admin. Khóa ngoại bookId, userId, createdAt là bất biến (immutable)
+      // Sửa: Chỉ tác giả bình luận không bị khóa hoặc Admin; khóa ngoại bookId, userId, createdAt là bất biến
       allow update: if (isAdmin() || (isNotLocked() && request.auth.uid == resource.data.userId)) &&
         request.resource.data.content is string &&
         request.resource.data.content.size() > 0 &&
         request.resource.data.content.size() <= 1000 &&
         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['userId', 'bookId', 'createdAt']);
 
-      // Xóa: Tác giả bình luận, Chủ của cuốn sách được comment (thông qua khóa ngoại bookId), hoặc Admin
+      // Xóa: Tác giả bình luận, Chủ cuốn sách được bình luận, hoặc Admin
       allow delete: if isAdmin() || (
         isNotLocked() && (
           request.auth.uid == resource.data.userId ||
