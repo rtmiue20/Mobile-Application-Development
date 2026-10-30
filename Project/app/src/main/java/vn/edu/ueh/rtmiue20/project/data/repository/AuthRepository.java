@@ -163,9 +163,12 @@ public class AuthRepository {
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         String status = documentSnapshot.getString("status");
-                        if ("locked".equals(status)) {
+                        if ("locked".equalsIgnoreCase(status) || "banned".equalsIgnoreCase(status)) {
+                            String reason = documentSnapshot.getString("lockReason");
                             firebaseAuth.signOut();
-                            callback.onError("Tài khoản của bạn đã bị khóa bởi Quản trị viên.");
+                            String msg = "Tài khoản của bạn đã bị khóa bởi Quản trị viên."
+                                    + (reason != null && !reason.trim().isEmpty() ? "\nLý do: " + reason : "");
+                            callback.onError(msg);
                         } else {
                             callback.onSuccess(firebaseUser);
                         }
@@ -199,15 +202,26 @@ public class AuthRepository {
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         String status = documentSnapshot.getString("status");
-                        if ("locked".equals(status)) {
+                        if ("locked".equalsIgnoreCase(status) || "banned".equalsIgnoreCase(status)) {
+                            String reason = documentSnapshot.getString("lockReason");
                             firebaseAuth.signOut();
-                            callback.onError("Tài khoản của bạn đã bị khóa bởi Quản trị viên.");
+                            String msg = "Tài khoản của bạn đã bị khóa bởi Quản trị viên."
+                                    + (reason != null && !reason.trim().isEmpty() ? "\nLý do: " + reason : "");
+                            callback.onError(msg);
                             return;
                         }
                     }
                     callback.onSuccess(firebaseUser);
                 })
-                .addOnFailureListener(e -> callback.onSuccess(firebaseUser));
+                .addOnFailureListener(e -> {
+                    String msg = e.getMessage() != null ? e.getMessage() : "";
+                    if (msg.contains("PERMISSION_DENIED")) {
+                        firebaseAuth.signOut();
+                        callback.onError("Tài khoản của bạn đã bị khóa hoặc không có quyền truy cập hệ thống.");
+                    } else {
+                        callback.onSuccess(firebaseUser);
+                    }
+                });
     }
 
     public void sendPasswordResetEmail(String email, ActionCallback callback) {

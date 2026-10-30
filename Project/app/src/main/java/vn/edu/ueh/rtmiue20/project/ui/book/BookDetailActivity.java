@@ -37,6 +37,7 @@ import vn.edu.ueh.rtmiue20.project.data.model.Comment;
 import vn.edu.ueh.rtmiue20.project.data.model.User;
 import vn.edu.ueh.rtmiue20.project.data.repository.BookRepository;
 import vn.edu.ueh.rtmiue20.project.data.repository.UserRepository;
+import vn.edu.ueh.rtmiue20.project.ui.auth.LogInActivity;
 import vn.edu.ueh.rtmiue20.project.ui.favorite.FavoriteViewModel;
 import vn.edu.ueh.rtmiue20.project.ui.home.BookViewModel;
 
@@ -51,7 +52,7 @@ public class BookDetailActivity extends AppCompatActivity {
     private View layoutOwnerActions, btnEdit, btnDelete;
 
     private ImageView ivBookCover, ivOwnerAvatar, ivOwnerAvatarSmall;
-    private TextView tvTitle, tvAuthor, tvCategory, tvCondition, tvSharingType, tvDetailViewCount, tvDescription, tvOwnerName;
+    private TextView tvTitle, tvAuthor, tvCategory, tvCondition, tvSharingType, tvDetailViewCount, tvDescription, tvOwnerName, tvNoComments;
 
     private RecyclerView rvComments;
     private EditText etComment;
@@ -181,6 +182,7 @@ public class BookDetailActivity extends AppCompatActivity {
 
         rvComments = findViewById(R.id.rvComments);
         etComment = findViewById(R.id.et_comment);
+        tvNoComments = findViewById(R.id.tvNoComments);
 
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> finish());
@@ -214,16 +216,19 @@ public class BookDetailActivity extends AppCompatActivity {
         FirebaseFirestore.getInstance().collection("books").document(id).get()
                 .addOnSuccessListener(doc -> {
                     if (isFinishing() || isDestroyed()) return;
-                    if (doc != null && doc.exists()) {
-                        try {
-                            Book b = doc.toObject(Book.class);
-                            if (b != null) {
-                                b.setId(doc.getId());
-                                bindBookData(b);
-                            }
-                        } catch (Exception e) {
-                            android.util.Log.e("BookDetailActivity", "Lỗi parse Book từ Firestore: " + e.getMessage());
+                    if (doc == null || !doc.exists()) {
+                        Toast.makeText(BookDetailActivity.this, "Cuốn sách này đã bị xóa hoặc không còn tồn tại.", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
+                    try {
+                        Book b = doc.toObject(Book.class);
+                        if (b != null) {
+                            b.setId(doc.getId());
+                            bindBookData(b);
                         }
+                    } catch (Exception e) {
+                        android.util.Log.e("BookDetailActivity", "Lỗi parse Book từ Firestore: " + e.getMessage());
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -238,6 +243,24 @@ public class BookDetailActivity extends AppCompatActivity {
             currentOwnerId = book.getOwnerId() != null ? book.getOwnerId() : "";
             currentBookAuthor = book.getAuthor() != null ? book.getAuthor() : "";
             currentBookCover = book.getImageUrl() != null ? book.getImageUrl() : "";
+
+            if (commentAdapter != null) {
+                commentAdapter.setBookOwnerId(currentOwnerId);
+            }
+
+            FirebaseUser currentUserCheck = FirebaseAuth.getInstance().getCurrentUser();
+            if (currentUserCheck != null) {
+                userRepository.getUserProfile(currentUserCheck.getUid(), new UserRepository.UserCallback() {
+                    @Override
+                    public void onSuccess(User u) {
+                        if (u != null && "admin".equalsIgnoreCase(u.getRole()) && commentAdapter != null) {
+                            commentAdapter.setIsAdmin(true);
+                        }
+                    }
+                    @Override
+                    public void onError(String errorMessage) {}
+                });
+            }
 
             if (tvTitle != null) tvTitle.setText(currentBookTitle);
             if (tvAuthor != null) tvAuthor.setText(!currentBookAuthor.isEmpty() ? currentBookAuthor : "Chưa cập nhật");
@@ -363,12 +386,29 @@ public class BookDetailActivity extends AppCompatActivity {
     }
 
     private void showCommentActionDialog(final Comment comment) {
-        String[] options = {"Chỉnh sửa bình luận", "Xóa bình luận"};
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        boolean isCommentAuthor = currentUser != null && currentUser.getUid().equals(comment.getUserId());
+        boolean isBookOwner = currentUser != null && currentUser.getUid().equals(currentOwnerId);
+
+        java.util.List<String> options = new java.util.ArrayList<>();
+        if (isCommentAuthor) {
+            options.add("Chỉnh sửa bình luận");
+        }
+        if (isCommentAuthor || isBookOwner) {
+            options.add("Xóa bình luận");
+        }
+
+        if (options.isEmpty()) return;
+
         new AlertDialog.Builder(this)
                 .setTitle("Tùy chọn bình luận")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) showEditCommentDialog(comment);
-                    else if (which == 1) confirmDeleteComment(comment);
+                .setItems(options.toArray(new String[0]), (dialog, which) -> {
+                    String selected = options.get(which);
+                    if ("Chỉnh sửa bình luận".equals(selected)) {
+                        showEditCommentDialog(comment);
+                    } else if ("Xóa bình luận".equals(selected)) {
+                        confirmDeleteComment(comment);
+                    }
                 }).show();
     }
 
@@ -404,11 +444,18 @@ public class BookDetailActivity extends AppCompatActivity {
         if (bookId == null) return;
 
         commentViewModel.getComments(bookId).observe(this, comments -> {
-            if (commentAdapter != null) commentAdapter.setComments(comments);
+            if (commentAdapter != null) {
+                commentAdapter.setComments(comments);
+                commentAdapter.setBookOwnerId(currentOwnerId);
+            }
+            if (tvNoComments != null) {
+                tvNoComments.setVisibility((comments == null || comments.isEmpty()) ? View.VISIBLE : View.GONE);
+            }
         });
 
         commentViewModel.getAddSuccess().observe(this, success -> {
             if (success != null && success) {
+                Toast.makeText(BookDetailActivity.this, "Đã gửi bình luận!", Toast.LENGTH_SHORT).show();
                 if (etComment != null) etComment.setText("");
                 if (btnSendComment != null) btnSendComment.setEnabled(true);
                 commentViewModel.resetStatus();
@@ -449,13 +496,36 @@ public class BookDetailActivity extends AppCompatActivity {
                 }
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
                 if (user == null) {
-                    Toast.makeText(BookDetailActivity.this, getString(R.string.msg_comment_need_login), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(BookDetailActivity.this, "Vui lòng đăng nhập để bình luận!", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(BookDetailActivity.this, LogInActivity.class));
                     return;
                 }
-                String userName = user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty() ? user.getDisplayName() : user.getEmail();
-                Comment comment = new Comment(null, user.getUid(), userName, content, System.currentTimeMillis());
+
                 btnSendComment.setEnabled(false);
-                commentViewModel.addComment(bookId, comment);
+                userRepository.getUserProfile(user.getUid(), new UserRepository.UserCallback() {
+                    @Override
+                    public void onSuccess(User userProfile) {
+                        String userName = (userProfile != null && userProfile.getFullName() != null && !userProfile.getFullName().trim().isEmpty())
+                                ? userProfile.getFullName().trim()
+                                : (user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty() ? user.getDisplayName().trim() : user.getEmail());
+                        String userAvatar = (userProfile != null && userProfile.getAvatarUrl() != null)
+                                ? userProfile.getAvatarUrl()
+                                : (user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "");
+
+                        Comment comment = new Comment(null, user.getUid(), userName, userAvatar, content, System.currentTimeMillis());
+                        commentViewModel.addComment(bookId, comment);
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        String userName = user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty()
+                                ? user.getDisplayName().trim()
+                                : user.getEmail();
+                        String userAvatar = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
+                        Comment comment = new Comment(null, user.getUid(), userName, userAvatar, content, System.currentTimeMillis());
+                        commentViewModel.addComment(bookId, comment);
+                    }
+                });
             });
         }
 
@@ -477,7 +547,8 @@ public class BookDetailActivity extends AppCompatActivity {
             btnRequestBook.setOnClickListener(v -> {
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
                 if (user == null) {
-                    Toast.makeText(BookDetailActivity.this, "Cần đăng nhập!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(BookDetailActivity.this, "Vui lòng đăng nhập để gửi yêu cầu nhận sách!", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(BookDetailActivity.this, LogInActivity.class));
                     return;
                 }
                 if (currentOwnerId.equals(user.getUid())) {
@@ -561,7 +632,8 @@ public class BookDetailActivity extends AppCompatActivity {
             btnFavorite.setOnClickListener(v -> {
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
                 if (user == null) {
-                    Toast.makeText(BookDetailActivity.this, "Vui lòng đăng nhập để lưu bài yêu thích", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(BookDetailActivity.this, "Vui lòng đăng nhập để thêm vào yêu thích!", Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(BookDetailActivity.this, LogInActivity.class));
                     return;
                 }
                 if (bookId != null && !bookId.trim().isEmpty()) {

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true"
     android:orientation="horizontal"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp">
+    android:paddingVertical="10dp">
 
     <ImageView
         android:id="@+id/img_comment_avatar"
@@ -15,7 +15,7 @@
         android:layout_height="40dp"
         android:background="@drawable/bg_avatar_circle"
         android:contentDescription="@string/cd_comment_avatar"
-        android:padding="8dp"
+        android:scaleType="centerCrop"
         android:src="@drawable/ic_person" />
 
     <LinearLayout
@@ -33,14 +33,32 @@
 
             <TextView
                 android:id="@+id/tv_comment_user_name"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="#1F2937"
                 android:textSize="14sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_owner_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_tag_secondary"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:text="Chủ sách"
+                android:textColor="@color/secondary_green"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
             <TextView
                 android:id="@+id/tv_comment_time"
@@ -49,13 +67,27 @@
                 android:layout_marginStart="8dp"
                 android:textColor="#9CA3AF"
                 android:textSize="12sp" />
+
+            <ImageView
+                android:id="@+id/btn_comment_action"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="5dp"
+                android:src="@drawable/ic_edit_note"
+                android:visibility="gone"
+                app:tint="@color/text_secondary" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/tv_comment_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="4dp"
+            android:lineSpacingExtra="2dp"
             android:textColor="#374151"
             android:textSize="14sp" />
     </LinearLayout>

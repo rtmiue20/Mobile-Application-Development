@@ -19,17 +19,17 @@ android {
 
     signingConfigs {
         getByName("debug") {
-            val sharedKeystore = file("debug.keystore")
-            if (sharedKeystore.exists()) {
-                storeFile = sharedKeystore
-                storePassword = "android"
-                keyAlias = "androiddebugkey"
-                keyPassword = "android"
-            }
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
         }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             optimization {
                 enable = false

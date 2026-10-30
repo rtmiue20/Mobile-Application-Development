@@ -60,6 +60,14 @@ public class BookRepository {
                 return;
             }
             if (snap == null) return;
+            // Xử lý ngay các tài liệu bị xóa qua realtime change stream
+            for (com.google.firebase.firestore.DocumentChange dc : snap.getDocumentChanges()) {
+                if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.REMOVED) {
+                    String removedId = dc.getDocument().getId();
+                    io.execute(() -> dao.deleteById(removedId));
+                }
+            }
+
             List<Book> list = new ArrayList<>();
             for (DocumentSnapshot d : snap.getDocuments()) {
                 try {
@@ -101,7 +109,7 @@ public class BookRepository {
                 }
             }
             io.execute(() -> {
-                dao.insertAll(list);
+                dao.syncBooks(list);
             });
         });
     }
